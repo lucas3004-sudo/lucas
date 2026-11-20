@@ -200,3 +200,23 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Décision** : le site (Vercel) ne reçoit que les identifiants `app_user` et `app_auth`. Les migrations sont appliquées sous `app_owner` via le connecteur Supabase, avant le déploiement du code qui en dépend. La procédure figure dans `docs/deploiement-preprod.md`.
 - **Objection du Devil's Advocate** : l'application manuelle des migrations est une source d'oubli (un code déployé sans sa migration).
 - **Réponse** : c'est vrai. Le risque est accepté en préproduction. Avant la production, on ajoutera un contrôle au démarrage : l'application refusera de démarrer si une migration connue du code manque en base.
+
+## D-028 — Export PDF par l'impression du navigateur
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** : le bouton « Imprimer / PDF » utilise l'impression du navigateur, avec une mise en page dédiée (navigation et boutons masqués, fond blanc). Le document est identique à l'écran (critère F2), sans serveur de rendu.
+- **Raison** : un rendu PDF côté serveur exige un navigateur sans interface (Chromium), indisponible sur l'hébergement gratuit (fonctions sans serveur).
+- **Révision** : PDF serveur à l'image de l'agence (logo, mentions) quand le worker existera (phase 5).
+
+## D-029 — Comparables affichés sans adresse
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** : les ventes comparables montrent la date, la surface, le prix, le prix au m² et la distance, mais **jamais l'adresse**. C'est une précaution vis-à-vis de l'interdiction de réidentification (art. R112 A-3 du LPF, D-007) : la valeur d'argumentation reste entière.
+
+## D-030 — Ingestion DVF par département, nettoyage commune par commune
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** :
+  - les fichiers nationaux sont lus en flux ;
+  - seuls les départements demandés sont conservés ;
+  - les règles R1 à R5 sont appliquées commune par commune (comme le prototype et le test de référence), puis les ventes du département sont remplacées en une transaction tracée dans `ref.source_runs` ;
+  - fenêtre par défaut : les 3 derniers fichiers (environ 24 mois et une marge).
+- **Objection du Devil's Advocate** : dans une petite commune, R5 s'applique sur peu de ventes (moins de 8) et ne retient alors que les bornes absolues de 200 et 25 000 €/m².
+- **Réponse** : c'est vrai. Le niveau de confiance de l'estimation baisse dans ce cas (moins de 8 comparables : confiance « faible »). Un R5 au niveau de l'EPCI pourra être étudié avec plus de départements.

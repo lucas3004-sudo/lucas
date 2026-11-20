@@ -161,6 +161,41 @@ describe("isolation entre agences (RLS)", () => {
   });
 });
 
+describe("dossiers de biens (app.analyses)", () => {
+  const insert = (c: pg.PoolClient, orgId: string, by: string) =>
+    c.query(
+      `INSERT INTO app.analyses (org_id, created_by, address_label, ban_id, insee_code, inputs, snapshot)
+       VALUES ($1, $2, 'adresse test', '80021_0000_00001', '80021', '{}', '{}') RETURNING id`,
+      [orgId, by],
+    );
+
+  it("un négociateur crée un dossier (contrôle positif), visible par le gérant, pas par l'autre agence", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => (await insert(c, A, users.negoA)).rows[0].id);
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) => {
+      expect(await count(c, "app.analyses", "id = $1", [id])).toBe(1);
+    });
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => {
+      expect(await count(c, "app.analyses", "id = $1", [id])).toBe(0);
+    });
+  });
+
+  it("un dossier est immuable, même pour le gérant", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`UPDATE app.analyses SET snapshot = '{"x":1}'`)));
+  });
+
+  it("personne ne crée un dossier au nom d'un autre", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) => insert(c, A, users.gerantA)));
+  });
+
+  it("seuls le gérant et les managers suppriment", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => (await insert(c, A, users.negoA)).rows[0].id);
+    const byNego = await withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) => c.query(`DELETE FROM app.analyses WHERE id = $1`, [id]));
+    expect(byNego.rowCount).toBe(0);
+    const byGerant = await withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`DELETE FROM app.analyses WHERE id = $1`, [id]));
+    expect(byGerant.rowCount).toBe(1);
+  });
+});
+
 describe("garde-fou : aucune table d'agence n'échappe à la RLS", () => {
   it("chaque table du schéma app a la RLS activée, forcée, et une politique restrictive d'isolation", async () => {
     const { rows } = await owner.query<{ table: string; enabled: boolean; forced: boolean; restrictive: number }>(`

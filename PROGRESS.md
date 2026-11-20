@@ -13,7 +13,7 @@ d'acceptation sont vérifiés.
 | 1. Recherche et stratégie | ✅ Terminée (2026-11-20) : prix d'entrée et cible « petites agences » choisis par le fondateur | [Stratégie, prix, MVP](docs/phase-1-strategie.md), [Concurrents](docs/research/concurrents.md), [Fournisseurs d'annonces](docs/research/fournisseurs-annonces.md), [Données complémentaires](docs/research/donnees-complementaires.md), [Fiche juridique](docs/legal/fiche-juridique.md), [Guide d'entretien](docs/research/guide-entretien.md) |
 | 2. Architecture détaillée | ✅ Terminée (2026-11-20) | [Architecture](docs/phase-2/architecture.md), [Modèle de données](docs/phase-2/modele-donnees.md), [Permissions](docs/phase-2/permissions.md), [Moteur d'agents](docs/phase-2/moteur-agents.md), [Ingestion](docs/phase-2/ingestion.md) ; prototypes [RLS](prototypes/rls/run.sh) (12 tests sur 12) et [nettoyage DVF](prototypes/dvf/clean_dvf.py) |
 | 3. Fondation (+ préproduction) | ✅ Fondation livrée, testée (CI au vert), fusionnée dans `main`. Base de préproduction Supabase prête et testée. ⏸️ **Mise en ligne Vercel en attente d'un réglage par le fondateur, depuis un ordinateur** | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
-| 4. Intelligence immobilière | ⏳ En cours | — |
+| 4. Intelligence immobilière | ✅ Dossier de bien livré et testé (2026-11-20) ; données publiques à charger en préproduction une fois le site en ligne | [Phase 4](docs/phase-4-dossier-de-bien.md), [capture](docs/captures/08-dossier-de-bien.png) |
 | 5. Socle agents | À faire | — |
 | 6. Outils professionnels (fin du MVP) | À faire | — |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
@@ -34,10 +34,20 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-20) :
-- 21 tests unitaires (règles de rôle, contexte d'agence, garde-fous) ;
-- 11 tests d'intégration sur PostgreSQL (attaques d'isolation, contre-épreuve du garde-fou) ;
-- 5 scénarios de bout en bout (Playwright) ;
+- 51 tests unitaires (domaine, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 15 tests d'intégration sur PostgreSQL (isolation, dossiers immuables) ;
+- 6 scénarios de bout en bout (Playwright) ;
 - lint, types, build de production.
+
+**Dossier de bien (phase 4)** :
+- adresse BAN ;
+- ventes comparables DVF nettoyées ;
+- estimation en fourchette avec niveau de confiance ;
+- loyer ANIL, DPE ADEME, risques Géorisques (commune et adresse), zonage ABC ;
+- provenance affichée sur chaque bloc ;
+- instantané immuable, impression PDF.
+
+Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 
 **Outils** :
 - le script de vérification des sources (15 sources, dont 7 critiques) ;
@@ -78,6 +88,13 @@ d'acceptation sont vérifiés.
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
 
 ## Journal
+- **2026-11-20, phase 4** :
+  - domaine DVF porté en TypeScript (identique au prototype) ;
+  - schéma `ref` avec PostGIS dans `extensions` ;
+  - adaptateurs avec nouvelles tentatives (coupures de Géorisques constatées) ;
+  - ingestion réelle : Somme, loyers, zonage ;
+  - dossier de bien complet avec provenance et impression PDF ;
+  - décisions D-028 à D-030.
 - **2026-11-20, phase 3** :
   - monorepo pnpm/Turborepo, base locale PostgreSQL 16 + PostGIS, 4 migrations ;
   - isolation RLS reliée aux adhésions réelles, avec contre-épreuve du garde-fou ;
