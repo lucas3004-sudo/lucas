@@ -46,7 +46,7 @@ Choix réversibles (documentés dans `docs/DECISIONS.md`) : Python/FastAPI (éco
 2. **claude-code** : les tâches créatives sont mises en file et exécutées dans une session Claude Code via les Skills du projet (consomme ton quota Pro, aucune facture API).
 3. **api** : clé Anthropic, routage Haiku/Sonnet/Opus, prompt caching, Batch API, **plafond budgétaire journalier/mensuel bloquant**. Désactivé tant que tu ne l'autorises pas.
 
-### Agents (37 rôles demandés → 10 agents)
+### Agents (37 rôles demandés → 11 agents)
 | Agent | Rôles regroupés | Modèle par défaut (mode api) |
 |---|---|---|
 | Orchestrator | CEO, Project Manager | Sonnet |
@@ -72,7 +72,7 @@ Chaque agent : mission, instructions (Skill chargé à la demande), outils autor
 | 3 | Optimisation Claude Code | `CLAUDE.md` compact, mémoire projet (`docs/`), `RESUME.md`, `DEVLOG.md`, `.claude/settings.json` (permissions, exclusions de lecture), sous-agents de dev avec modèle économique | Une nouvelle session reprend le travail en lisant < 150 lignes |
 | 4 | Architecture | Squelette Python, config, secrets `.env` (gitignoré), Docker Compose | `make test` passe |
 | 5 | Backend & DB | Schéma (contenus, tâches, agents, runs, usage, conversations, journaux), file de tâches, scheduler, workers, reprise sur erreur | Tests : retry, lease expiré, dead-letter |
-| 6 | Multi-agents | 10 agents, LLM Gateway 3 modes, suivi tokens (mesuré / estimé / prévision), Character Studio | Run complet en mode offline de bout en bout |
+| 6 | Multi-agents | 11 agents, LLM Gateway 3 modes, suivi tokens (mesuré / estimé / prévision), Character Studio | Run complet en mode offline de bout en bout |
 | 7 | Intégrations | ElevenLabs (voix, réglages, génération, stockage), Alexya (si API confirmée, sinon alternative autorisée), ffmpeg montage, étude publication/stats/notifications | Test réel avec ta clé, ou limite documentée |
 | 8 | Pipeline | RECHERCHE → … → ANALYSE, ID unique, statuts, historique, zone Drop | Un contenu traverse toutes les étapes, approbation humaine obligatoire avant publication |
 | 9 | Dashboard | 14 pages, bouton « LANCER L'AGENCE », pause/arrêt/relance | Parcours testé au navigateur (Playwright) |

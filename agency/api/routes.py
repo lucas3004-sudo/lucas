@@ -546,6 +546,16 @@ def put_settings(body: dict = Body(...)):
         raise HTTPException(400, f"réglages inconnus : {sorted(unknown)}")
     if "llm_mode" in body and body["llm_mode"] not in LLM_MODES:
         raise HTTPException(400, f"llm_mode ∈ {sorted(LLM_MODES)}")
+    if "agent_modes" in body and (not isinstance(body["agent_modes"], dict) or set(body["agent_modes"].values()) - LLM_MODES
+                                  or set(body["agent_modes"]) - set(AGENTS)):
+        raise HTTPException(400, "agent_modes : {agent: offline|claude_code|api}")
+    if "posting_hours" in body:
+        import re
+        ok = isinstance(body["posting_hours"], dict) and all(
+            isinstance(v, list) and v and all(isinstance(h, str) and re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", h) for h in v)
+            for v in body["posting_hours"].values())
+        if not ok:
+            raise HTTPException(400, "posting_hours : {plateforme: [\"HH:MM\", ...]}")
     if "image_provider" in body and body["image_provider"] not in IMAGE_PROVIDERS:
         raise HTTPException(400, f"image_provider ∈ {sorted(IMAGE_PROVIDERS)}")
     for k in ("daily_budget_usd", "monthly_budget_usd"):

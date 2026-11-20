@@ -3,6 +3,8 @@ Endpoints implemented from the public API reference as known on 2026-11-20; the 
 build environment, so this client is UNVERIFIED until `POST /api/integrations/elevenlabs/test` succeeds with a real key."""
 from __future__ import annotations
 
+import re
+
 import httpx
 
 from ..config import has_secret, secret
@@ -48,8 +50,8 @@ def voices(search: str = "", page_size: int = 50) -> list[dict]:
 
 def tts(voice_id: str, text: str, model_id: str = DEFAULT_MODEL, settings: dict | None = None,
         output_format: str = "mp3_44100_128") -> bytes:
-    if not voice_id:
-        raise ElevenLabsError("voice_id missing (Character Studio > Voix)")
+    if not voice_id or not re.fullmatch(r"[A-Za-z0-9]{8,64}", voice_id):
+        raise ElevenLabsError("voice_id manquant ou invalide (Character Studio > Voix)")
     body = {"text": text, "model_id": model_id or DEFAULT_MODEL}
     if settings:
         body["voice_settings"] = {k: settings[k] for k in ("stability", "similarity_boost", "style", "use_speaker_boost", "speed") if k in settings}

@@ -30,6 +30,7 @@ export async function api(path, opts = {}) {
 }
 export const assetUrl = (u) => { const t = store.get("agency_token"); return t ? `${u}?token=${encodeURIComponent(t)}` : u; };
 export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+export const safeUrl = (u) => (/^(https?:\/\/|#\/)/i.test(String(u || "")) ? esc(u) : "#");
 export const fmt = {
   num: (n) => (n == null ? "—" : Number(n).toLocaleString("fr-FR")),
   usd: (n) => (n == null ? "—" : `${Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} $`),

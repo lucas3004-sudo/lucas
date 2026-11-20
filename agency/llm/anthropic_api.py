@@ -44,6 +44,8 @@ def can_call(task: Task) -> tuple[bool, str]:
         return False, "paid calls disabled (Settings > allow_paid_calls)"
     if not has_secret("ANTHROPIC_API_KEY"):
         return False, "ANTHROPIC_API_KEY missing"
+    if model_for(task.tier) not in pricing.PRICES:
+        return False, f"no known price for {model_for(task.tier)}: budget cannot be enforced"
     est = worst_case_cost(task)
     if spent("day") + est > float(s["daily_budget_usd"]):
         return False, f"daily budget reached ({s['daily_budget_usd']} USD)"

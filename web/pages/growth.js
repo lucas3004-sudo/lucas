@@ -1,4 +1,4 @@
-import { api, act, badge, esc, fmt, prov } from "../app.js";
+import { api, act, badge, esc, fmt, prov, safeUrl } from "../app.js";
 
 let tab = "research";
 
@@ -8,7 +8,7 @@ export async function render(el) {
   const body = {
     research: () => `<div class="card"><p class="m">Produit par l'agent Research à chaque run. Hors ligne : modèles génériques (pas des données). Une tendance « observée » cite sa source.</p>
       ${g.research.length ? `<div class="scroll"><table><tr><th>Type</th><th>Titre</th><th>Détail</th><th>Provenance</th><th>Date</th></tr>
-      ${g.research.map((r) => `<tr><td>${esc(r.kind)}</td><td>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>` : esc(r.title)}</td>
+      ${g.research.map((r) => `<tr><td>${esc(r.kind)}</td><td>${r.url ? `<a href="${safeUrl(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>` : esc(r.title)}</td>
         <td class="m">${esc((r.body || "").slice(0, 200))}</td><td>${prov(r.provenance)}</td><td>${fmt.date(r.created_at)}</td></tr>`).join("")}</table></div>` : `<p class="empty">Lancez l'agence pour alimenter la recherche.</p>`}</div>`,
     competitors: () => `<div class="card"><p class="m">Données publiques saisies manuellement (aucun scraping). L'agent Research n'en tire que des <b>patterns</b>, jamais de copie.</p>
       <div class="grid g4"><div><label>Plateforme</label><select id="cp"><option>tiktok</option><option>instagram</option></select></div><div><label>Compte (@)</label><input id="ch"></div>

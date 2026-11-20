@@ -106,3 +106,31 @@ def test_api_call_records_measured_usage(agency_env, monkeypatch):
     row = db.one("SELECT * FROM llm_calls WHERE provider='anthropic'")
     assert row["token_provenance"] == "measured" and row["cost_provenance"] == "estimated"
     assert row["cost_usd"] == pytest.approx((1000 * 0.10 + 200 * 0.50 + 3000 * 0.01) / 1e6)
+
+
+def test_cross_site_writes_and_unknown_hosts_refused(client):
+    r = client.post("/api/agency/launch", headers={"Origin": "https://evil.example"})
+    assert r.status_code == 403
+    assert client.post("/api/agency/launch", headers={"Origin": "http://testserver"}).status_code == 200
+    assert client.get("/api/health", headers={"Host": "rebind.evil.example"}).status_code == 400
+
+
+def test_unknown_model_cannot_bypass_budget(agency_env, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    db.set_settings({"llm_mode": "api", "allow_paid_calls": True, "model_routing": {"simple": "some-unpriced-model"}})
+    out = gateway.run(_task(), None, lambda: {"ok": True})
+    assert out["_generated_by"] == "offline-template"
+    assert "no known price" in db.one("SELECT details FROM activity_log WHERE action='llm_fallback_offline'")["details"]
+
+
+def test_cc_task_id_cannot_escape_inbox(client, agency_env):
+    victim = agency_env / "data" / "claude_code" / "victim.json"
+    victim.write_text("{}")
+    assert client.post("/api/cc/tasks/..%2Fvictim/result", json={}).status_code in (404, 422)
+    assert victim.exists()
+
+
+def test_settings_validation(client):
+    assert client.put("/api/settings", json={"posting_hours": {"tiktok": ["25:99"]}}).status_code == 400
+    assert client.put("/api/settings", json={"agent_modes": {"creative": "gpt"}}).status_code == 400
+    assert client.put("/api/settings", json={"agent_modes": {"creative": "claude_code"}}).status_code == 200

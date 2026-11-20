@@ -10,6 +10,7 @@ def agency_env(tmp_path, monkeypatch):
     for k in ("ANTHROPIC_API_KEY", "ELEVENLABS_API_KEY", "AGENCY_ADMIN_TOKEN", "NOTIFY_WEBHOOK_URL"):
         monkeypatch.setenv(k, "")
     monkeypatch.setenv("AGENCY_LLM_MODE", "offline")
+    monkeypatch.setenv("AGENCY_ALLOWED_HOSTS", "testserver")
     from agency import config, reports, worker
     config.load_env(reload=True)
     monkeypatch.setattr(reports, "BRIEFS_DIR", tmp_path / "briefs")

@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python -m pytest:*)",
+      "Bash(.venv/bin/python -m agency status)",
+      "Bash(.venv/bin/python -m agency cc:*)",
+      "Bash(.venv/bin/python -m agency work:*)",
+      "Bash(.venv/bin/python -m agency character)",
+      "Bash(.venv/bin/python -m agency brief:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Read(./agency/**)",
+      "Read(./web/**)",
+      "Read(./docs/**)",
+      "Read(./tests/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./data/**)",
+      "Read(./storage/**)",
+      "Read(./.venv/**)",
+      "Read(./**/*.mp4)",
+      "Read(./**/*.mov)",
+      "Read(./**/*.mp3)",
+      "Read(./**/*.db)"
+    ]
+  }
+}

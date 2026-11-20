@@ -76,3 +76,12 @@ Remarques : six skills (social-media-skills) citent des skills frères absents (
 - Production et montage vidéo, branding visuel : aucun skill sûr et autonome trouvé.
 - Légal growth (droit, ToS, droits musique) : à intégrer à `agency-compliance`.
 - Copywriting généraliste : aucun skill léger adapté au social, à écrire en maison si besoin.
+
+## Skills et sous-agents propres au projet
+| Élément | Rôle | Chargement |
+|---|---|---|
+| `.claude/skills/agency-run-tasks` | Traiter les tâches des agents en mode `claude_code` (inbox → JSON validé → reprise du pipeline) | À la demande : `/agency-run-tasks` |
+| `.claude/agents/scout.md` (Haiku) | Recherches larges en lecture seule, réponse ≤ 15 lignes | Délégation explicite |
+| `.claude/agents/reviewer.md` (Sonnet) | Revue d'un diff : bugs, garde-fous, secrets, provenance, coût | Avant un commit important |
+
+Les règles de conformité et la bible du personnage ne sont **pas** dupliquées en skills : elles vivent dans le code (`compliance.py`, `CORE_RULES`, `python -m agency character`) pour rester une source unique.

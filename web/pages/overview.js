@@ -1,4 +1,4 @@
-import { api, act, badge, esc, fmt, prov } from "../app.js";
+import { api, act, badge, esc, fmt, prov, safeUrl } from "../app.js";
 import { stat } from "../charts.js";
 
 export const poll = 4;
@@ -47,7 +47,7 @@ export async function render(el) {
         : `<p class="empty">Rien de planifié</p>`}</div>
       <div class="card"><div class="row between"><h2>Alertes</h2>${o.alerts.length ? `<button class="btn sm" data-a="read">Tout marquer lu</button>` : ""}</div>
         ${o.alerts.length ? `<div class="list">${o.alerts.map((n) => `<div class="item"><div><div class="t">${badge(n.level === "error" ? "error" : n.level === "warn" ? "paused" : "new")} ${esc(n.title)}</div>
-          <div class="m">${esc(n.body || "")}</div></div>${n.link ? `<a href="${esc(n.link)}">Ouvrir</a>` : ""}</div>`).join("")}</div>` : `<p class="empty">Aucune alerte</p>`}</div>
+          <div class="m">${esc(n.body || "")}</div></div>${n.link ? `<a href="${safeUrl(n.link)}">Ouvrir</a>` : ""}</div>`).join("")}</div>` : `<p class="empty">Aucune alerte</p>`}</div>
     </div>
   </div>
   <p class="sub" style="margin-top:16px">🔒 Garde-fous verrouillés : contenu adulte <b>désactivé</b> · validation humaine avant publication <b>obligatoire</b> · mention IA <b>obligatoire</b>.</p>`;

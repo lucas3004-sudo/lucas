@@ -54,6 +54,7 @@ def get_task(task_id: str) -> dict:
 
 
 def submit(task_id: str, data: dict) -> dict:
+    task_id = Path(task_id).name  # never let an id escape the inbox
     t = get_task(task_id)
     errors = validate(data, t["schema"])
     if errors:
