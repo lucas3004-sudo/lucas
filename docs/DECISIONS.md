@@ -247,3 +247,13 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 ## D-034 — Le CRM et le matching avant les agents IA
 - **Date** : 2026-11-20 · **Statut** : Acceptée (choix du fondateur)
 - **Décision** : la partie CRM et matching de la phase 6 est construite avant la phase 5 (agents). Une petite agence peut ainsi utiliser l'outil sans IA, et les agents auront ensuite de vraies données métier à traiter.
+
+## D-035 — Investment Studio : rendements sur le coût total, avant impôt, simulation dans le lien
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** :
+  - les rendements sont calculés sur le **coût total** d'acquisition (prix, frais, travaux, mobilier), et non sur le seul prix : c'est plus prudent ;
+  - tous les résultats sont **avant impôt** : la fiscalité dépend de la situation de chacun, et aucun conseil fiscal n'est donné ;
+  - la simulation n'est pas enregistrée : ses hypothèses sont dans le lien de la page (aucune table, aucune donnée personnelle) ;
+  - le repère de loyer ANIL (charges comprises) est affiché mais ne remplit jamais le loyer hors charges.
+- **Objection du Devil's Advocate** : beaucoup d'annonces affichent un rendement « loyer / prix ». Le nôtre paraîtra plus faible que celui des concurrents.
+- **Réponse** : c'est vrai. La définition est écrite à l'écran, sous les résultats. Un chiffre prudent et expliqué vaut mieux qu'un chiffre flatteur.

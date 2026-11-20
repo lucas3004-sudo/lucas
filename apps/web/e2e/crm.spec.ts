@@ -147,6 +147,11 @@ test.describe.serial("CRM et matching", () => {
     await expect(match.getByText(`${ines.name} prévenu(e)`)).toBeVisible();
     await match.getByText("Pourquoi ce score ?").click();
     await capture(page, "09-bien-acquereurs-correspondants");
+
+    // Le bien alimente l'Investment Studio : adresse et prix repris comme hypothèses.
+    await page.getByRole("link", { name: "Simuler un investissement" }).click();
+    await expect(page.getByText(`Simulation locative pour ${address}.`)).toBeVisible();
+    await expect(page.getByLabel(/Prix d'achat/)).toHaveValue("250000");
   });
 
   test("Inès reçoit la tâche et voit le bien correspondant sur la fiche de son acquéreur", async ({ page }) => {

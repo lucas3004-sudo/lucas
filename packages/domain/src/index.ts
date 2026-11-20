@@ -4,3 +4,4 @@ export * from "./dvf/clean";
 export * from "./valuation/estimate";
 export * from "./matching/match";
 export * from "./crm/duplicates";
+export * from "./invest/simulate";

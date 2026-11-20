@@ -46,6 +46,13 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
   const inputs = snap.inputs.value!;
   const est = snap.estimate.value;
   const market = snap.market.value;
+  // Investment Studio : l'adresse et le repère de loyer ANIL (charges comprises) sont transmis ;
+  // le prix et le loyer hors charges restent à saisir (ce sont des hypothèses du projet).
+  const rentRef = snap.rent.value;
+  const simulationLink = `/app/investissement?${new URLSearchParams({
+    bien: snap.address.value?.label ?? row.addressLabel,
+    ...(rentRef ? { repere_bas: String(Math.round(rentRef.monthlyLow)), repere_haut: String(Math.round(rentRef.monthlyHigh)) } : {}),
+  })}`;
 
   return (
     <article className="space-y-4">
@@ -57,8 +64,9 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
             {inputs.type} · {fmt.number(inputs.surface)} m²{inputs.rooms ? ` · ${inputs.rooms} pièce(s)` : ""} <StatusBadge status="declaree" /> · calculé le {fmt.date(snap.computedAt)} par {author}
           </p>
         </div>
-        <div className="flex gap-2 print:hidden">
+        <div className="flex flex-wrap gap-2 print:hidden">
           <PrintButton />
+          <LinkButton href={simulationLink} variant="secondary">Simuler un investissement</LinkButton>
           <LinkButton href="/app/biens/nouveau" variant="secondary">Nouveau dossier</LinkButton>
           {ctx.role === "gerant" || ctx.role === "manager" ? (
             <form action={deleteDossierAction}>

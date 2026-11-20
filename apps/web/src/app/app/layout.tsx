@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/app/proprietes", label: "Biens de l'agence", icon: "key" },
     { href: "/app/biens", label: "Dossiers de biens", icon: "building" },
     { href: "/app/taches", label: "Tâches", icon: "check" },
+    { href: "/app/investissement", label: "Investment Studio", icon: "chart" },
     { href: "/app/equipe", label: "Équipe", icon: "team" },
     { href: "/app/parametres", label: "Paramètres", icon: "settings" },
     ...(canReadAuditLog(role) ? [{ href: "/app/journal", label: "Journal d'audit", icon: "journal" as const }] : []),
