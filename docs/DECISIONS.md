@@ -257,3 +257,14 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - le repère de loyer ANIL (charges comprises) est affiché mais ne remplit jamais le loyer hors charges.
 - **Objection du Devil's Advocate** : beaucoup d'annonces affichent un rendement « loyer / prix ». Le nôtre paraîtra plus faible que celui des concurrents.
 - **Réponse** : c'est vrai. La définition est écrite à l'écran, sous les résultats. Un chiffre prudent et expliqué vaut mieux qu'un chiffre flatteur.
+
+## D-036 — Pilotage du gérant : activité mesurée par le journal d'audit, sans classement
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** :
+  - l'activité par membre se compte à partir du journal d'audit, qui ne fait qu'ajouter des lignes, et des dates de fin des tâches ;
+  - la création manuelle d'une tâche est désormais journalisée (identifiant seulement) ;
+  - les membres sont affichés par ordre alphabétique, sans aucun tri par performance ;
+  - un bien est « sans acquéreur » si aucun profil actif n'atteint 50 % avec les pondérations par défaut.
+- **Raison** : la stratégie (F13) exclut tout classement automatique des personnes. Un tableau de bord sert à repérer ce qui bloque (biens non couverts, relances en retard), pas à noter les gens.
+- **Objection du Devil's Advocate** : même sans tri, un tableau de chiffres par personne permet de comparer les membres, et peut servir de surveillance.
+- **Réponse** : c'est vrai. Les chiffres se limitent à l'activité dans l'outil, sur une période choisie. Il n'y a ni horaires, ni connexions, ni durées. L'accès est réservé au gérant et aux managers. L'information des salariés sur cet outil fera partie des questions à l'avocat (CSE, information préalable).

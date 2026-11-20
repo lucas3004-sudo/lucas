@@ -116,6 +116,11 @@ test.describe.serial("CRM et matching", () => {
     test.setTimeout(60_000);
     await signIn(page, hugo.email);
 
+    // Le tableau de bord de l'agence est réservé au gérant et aux managers.
+    await expect(page.getByRole("link", { name: "Pilotage" })).toHaveCount(0);
+    await page.goto("/app/pilotage");
+    await expect(page.getByText("réservé au gérant et aux managers")).toBeVisible();
+
     // Le contact privé d'Inès est invisible pour Hugo, y compris par son adresse directe.
     await page.goto("/app/contacts");
     await expect(page.getByText("Paul Acheteur")).toHaveCount(0);
@@ -181,5 +186,34 @@ test.describe.serial("CRM et matching", () => {
     }
     await expect(page.getByText(buyerEmail)).toHaveCount(0);
     await expect(page.getByText("Acheteur")).toHaveCount(0);
+  });
+
+  test("le gérant pilote l'agence : activité mesurée par membre, biens couverts, relances en retard", async ({ page }) => {
+    await signIn(page, gerant.email);
+    // Une relance en retard confiée à Hugo (échéance : hier).
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    await page.goto("/app/taches");
+    await page.getByLabel("Tâche", { exact: true }).fill("Rappeler le vendeur");
+    await page.getByLabel("Pour", { exact: true }).selectOption({ label: hugo.name });
+    await page.getByLabel("Échéance").fill(yesterday);
+    await page.getByRole("button", { name: "Ajouter la tâche" }).click();
+    await expect(page.getByText("Tâche créée.")).toBeVisible();
+
+    await page.getByRole("link", { name: "Pilotage" }).click();
+    await expect(page.getByRole("heading", { name: "Pilotage de l'agence" })).toBeVisible();
+    await expect(page.getByText(/Période du .* au /)).toBeVisible();
+    // Colonnes : contacts, consentements, biens, dossiers, tâches créées, tâches terminées, en retard.
+    const cells = (name: string) => page.getByRole("row", { name: new RegExp(name) }).getByRole("cell");
+    await expect(cells(ines.name).nth(0)).toHaveText("1");
+    await expect(cells(ines.name).nth(1)).toHaveText("1");
+    await expect(cells(ines.name).nth(5)).toHaveText("1");
+    await expect(cells(hugo.name).nth(2)).toHaveText("1");
+    await expect(cells(hugo.name).nth(4)).toHaveText("1");
+    await expect(cells(hugo.name).nth(6)).toHaveText("1");
+    await expect(cells(gerant.name).nth(4)).toHaveText("1");
+    await expect(page.getByText("Chaque bien proposé a au moins un acquéreur correspondant.")).toBeVisible();
+    await expect(page.getByText("Relances en retard (1)")).toBeVisible();
+    await expect(page.getByText("Rappeler le vendeur")).toBeVisible();
+    await capture(page, "13-pilotage");
   });
 });
