@@ -662,6 +662,11 @@ def notifications_read():
     return {"updated": db.execute("UPDATE notifications SET read=1 WHERE read=0")}
 
 
+@r.get("/todo")
+def todo():
+    return reports.build_todo()
+
+
 @r.get("/briefs")
 def briefs():
     return sorted((p.stem for p in reports.BRIEFS_DIR.glob("*.md")), reverse=True) if reports.BRIEFS_DIR.is_dir() else []

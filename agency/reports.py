@@ -122,3 +122,67 @@ def write_weekly_review() -> Path:
     path = BRIEFS_DIR / f"weekly-{week}.md"
     path.write_text(md, encoding="utf-8")
     return path
+
+
+def build_todo() -> list[dict]:
+    """Morning to-do: only what needs a human, most important first. Deterministic (zero tokens)."""
+    from . import growth
+    from .llm import claude_code
+    items: list[dict] = []
+
+    def add(prio: int, cat: str, title: str, detail: str = "", link: str = "#/daily", n: int = 1) -> None:
+        if n:
+            items.append({"priority": prio, "category": cat, "title": title, "detail": detail, "link": link, "count": n})
+
+    for a in growth.anomalies():
+        add(1, "alerte", a["title"], a["body"], a["link"])
+    q = lambda st: db.rows("SELECT id, title, platform FROM contents WHERE status=? ORDER BY updated_at", (st,))  # noqa: E731
+    appr, assets, rev = q("awaiting_approval"), q("waiting_assets"), q("needs_revision")
+    add(2, "validation", f"Valider {len(appr)} contenu(s)", ", ".join(c["title"] for c in appr[:3]), "#/daily", len(appr))
+    add(2, "visuels", f"Générer {len(assets)} visuel(s) dans Alexya et les déposer", ", ".join(c["title"] for c in assets[:3]), "#/generator", len(assets))
+    day_end = db.now(86400)
+    pub = db.rows("SELECT id, title, platform, scheduled_at, status FROM contents WHERE status IN ('ready_to_publish','scheduled') "
+                  "AND scheduled_at<=? ORDER BY scheduled_at", (day_end,))
+    for c in pub:
+        add(2, "publication", f"Publier « {c['title']} » sur {c['platform']}", f"créneau {c['scheduled_at']} · étiquette IA de la plateforme à activer",
+            f"#/studio?c={c['id']}")
+    j1 = db.rows("SELECT c.id, c.title FROM contents c WHERE c.status='published' AND c.published_at<=? "
+                 "AND NOT EXISTS (SELECT 1 FROM metrics m WHERE m.content_id=c.id)", (db.now(-86400),))
+    j7 = db.rows("SELECT c.id, c.title FROM contents c WHERE c.status='published' AND c.published_at<=? AND "
+                 "(SELECT MAX(date) FROM metrics m WHERE m.content_id=c.id) < substr(c.published_at,1,10)", (db.now(-7 * 86400),))
+    j7 = [c for c in j7 if c["id"] not in {x["id"] for x in j1}]
+    add(3, "stats", f"Saisir les stats J+1 de {len(j1)} contenu(s)", "vues, interactions, durée moyenne : c'est ce qui nourrit le moteur", "#/analytics", len(j1))
+    add(3, "stats", f"Saisir les stats J+7 de {len(j7)} contenu(s)", "", "#/analytics", len(j7))
+    human = db.scalar("SELECT COUNT(*) FROM messages WHERE status='needs_human'")
+    drafted = db.scalar("SELECT COUNT(*) FROM messages WHERE status='drafted'")
+    add(3, "communauté", f"Traiter {human} message(s) sensibles", "", "#/community", human)
+    add(4, "communauté", f"Envoyer {drafted} réponse(s) préparées", "copier-coller depuis Community", "#/community", drafted)
+    add(3, "corrections", f"Revoir {len(rev)} contenu(s) bloqué(s) par le QC", "", "#/studio", len(rev))
+    for c in db.rows("SELECT id, name, stage, next_action_at FROM collabs WHERE next_action_at IS NOT NULL AND next_action_at<=? "
+                     "AND stage NOT IN ('done','declined')", (day_end[:10],)):
+        add(4, "partenariat", f"Relancer {c['name']} ({c['stage']})", "", "#/growth")
+    for c in db.rows("SELECT name, due_date FROM collabs WHERE kind='brand' AND paid=0 AND due_date IS NOT NULL AND due_date<=?", (day_end[:10],)):
+        add(3, "partenariat", f"Échéance deal {c['name']} ({c['due_date']})", "livrables publiés ? paiement reçu ?", "#/finance")
+    cc = len(claude_code.list_tasks())
+    add(2, "agents", f"{cc} tâche(s) d'agents en attente : ouvre Claude Code et tape /agency-run-tasks", "", "#/daily", cc)
+    failed = db.scalar("SELECT COUNT(*) FROM jobs WHERE status IN ('failed','dead') AND updated_at>=?", (db.now(-86400),))
+    add(4, "technique", f"{failed} tâche(s) en échec à relancer", "", "#/agents", failed)
+    if not db.scalar("SELECT COUNT(*) FROM accounts"):
+        add(4, "configuration", "Ajouter tes comptes officiels (page Comptes)", "active les quotas et la veille santé", "#/accounts")
+    return sorted(items, key=lambda i: i["priority"])
+
+
+def write_todo() -> Path:
+    tz = ZoneInfo(load_env().timezone)
+    d = datetime.now(timezone.utc).astimezone(tz).date().isoformat()
+    items = build_todo()
+    labels = {1: "Urgent", 2: "Aujourd'hui", 3: "Important", 4: "Quand tu peux"}
+    L = [f"# To-do du {d}", "", f"{len(items)} action(s). Tout le reste, les agents s'en occupent.", ""]
+    for p in (1, 2, 3, 4):
+        sub = [i for i in items if i["priority"] == p]
+        if sub:
+            L += [f"## {labels[p]}"] + [f"- [ ] {i['title']}" + (f" — {i['detail']}" if i["detail"] else "") for i in sub] + [""]
+    BRIEFS_DIR.mkdir(exist_ok=True)
+    path = BRIEFS_DIR / f"todo-{d}.md"
+    path.write_text("\n".join(L), encoding="utf-8")
+    return path

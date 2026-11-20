@@ -579,6 +579,15 @@ def analyst_weekly_review(job: dict) -> dict:
     return {"path": str(write_weekly_review())}
 
 
+def analyst_morning_todo(job: dict) -> dict:
+    from ..reports import build_todo, write_todo
+    path = write_todo()
+    items = build_todo()
+    top = "\n".join(f"• {i['title']}" for i in items[:5])
+    notify(f"To-do du jour : {len(items)} action(s)", top or "Rien d'urgent : les agents gèrent.", "info", "#/daily")
+    return {"path": str(path), "items": len(items)}
+
+
 def analyst_daily_brief(job: dict) -> dict:
     from ..reports import write_daily_brief
     path = write_daily_brief()
@@ -702,5 +711,5 @@ HANDLERS = {
     "planner.schedule": planner_schedule, "publisher.prepare": publisher_prepare,
     "analyst.analyze": analyst_analyze, "analyst.learn": analyst_learn, "analyst.daily_brief": analyst_daily_brief,
     "community.triage": community_triage, "community.outreach_draft": community_outreach_draft,
-    "analyst.watch": analyst_watch, "analyst.weekly_review": analyst_weekly_review,
+    "analyst.watch": analyst_watch, "analyst.weekly_review": analyst_weekly_review, "analyst.morning_todo": analyst_morning_todo,
 }

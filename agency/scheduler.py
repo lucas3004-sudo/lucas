@@ -16,6 +16,7 @@ DEFAULT_SCHEDULES = [
     ("Autopilote : lancer l'agence", "orchestrator.autolaunch", "orchestrator", "daily:08:00", 0),
     ("Veille santé des comptes", "analyst.watch", "analyst", "every:3600", 1),
     ("Revue stratégique hebdo", "analyst.weekly_review", "analyst", "weekly:0:08:30", 1),
+    ("To-do du matin", "analyst.morning_todo", "analyst", "daily:07:45", 1),
 ]
 
 

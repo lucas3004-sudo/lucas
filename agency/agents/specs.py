@@ -107,7 +107,7 @@ AGENTS: dict[str, dict] = {
                    "suivre coûts et tokens, écrire le rapport quotidien et la revue hebdo.",
         "instructions": "Deterministic aggregation from DB. No LLM.",
         "tools": ["db.read", "briefs.write"], "tier": "none", "skills": ["analytics-and-reporting"],
-        "limits": {}, "jobs": ["analyst.analyze", "analyst.learn", "analyst.daily_brief", "analyst.watch", "analyst.weekly_review"],
+        "limits": {}, "jobs": ["analyst.analyze", "analyst.learn", "analyst.daily_brief", "analyst.watch", "analyst.weekly_review", "analyst.morning_todo"],
         "success": ["rapport quotidien + revue hebdo écrits", "expériences conclues avec statistiques", "alertes de santé des comptes",
                     "chaque chiffre avec provenance"], "handoff": ["orchestrator"],
     },

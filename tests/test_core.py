@@ -85,3 +85,17 @@ def test_daily_brief_written(agency_env):
     p = reports.write_daily_brief()
     text = p.read_text()
     assert p.name.endswith(".md") and "# Rapport quotidien" in text and "Ressources & coûts" in text
+
+
+def test_morning_todo(client):
+    from agency import worker
+    db.set_settings({"contents_per_run": 1, "platforms": ["tiktok"], "auto_quota": False})
+    client.post("/api/agency/launch")
+    worker.run_once(ignore_state=True)
+    todo = client.get("/api/todo").json()
+    cats = {t["category"] for t in todo}
+    assert "visuels" in cats and "configuration" in cats
+    assert [t["priority"] for t in todo] == sorted(t["priority"] for t in todo)
+    res = worker.run_now("analyst.morning_todo", "analyst")
+    assert res["status"] == "done" and res["result"]["items"] == len(todo)
+    assert db.one("SELECT title FROM notifications ORDER BY id DESC LIMIT 1")["title"].startswith("To-do du jour")
