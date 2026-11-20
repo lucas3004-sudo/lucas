@@ -38,6 +38,12 @@ importers:
       '@immopilot/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@immopilot/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@immopilot/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       better-auth:
         specifier: 1.7.25
         version: 1.7.25(drizzle-orm@0.45.4(@types/pg@8.23.1)(kysely@0.29.9)(pg@8.23.1))(next@16.4.6(@playwright/test@1.63.0)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(pg@8.23.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@types/node@22.20.5)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)))
@@ -87,6 +93,24 @@ importers:
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@types/pg@8.23.1)(kysely@0.29.9)(pg@8.23.1)
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+    devDependencies:
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+
+  packages/domain: {}
+
+  packages/integrations:
+    dependencies:
+      '@immopilot/domain':
+        specifier: workspace:*
+        version: link:../domain
       pg:
         specifier: 8.23.1
         version: 8.23.1

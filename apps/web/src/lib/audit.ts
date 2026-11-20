@@ -13,7 +13,9 @@ export type AuditAction =
   | "equipe.invitation_annulee"
   | "equipe.invitation_acceptee"
   | "equipe.role_modifie"
-  | "equipe.membre_retire";
+  | "equipe.membre_retire"
+  | "dossier.cree"
+  | "dossier.supprime";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -24,6 +26,8 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "equipe.invitation_acceptee": "Invitation acceptée",
   "equipe.role_modifie": "Rôle modifié",
   "equipe.membre_retire": "Membre retiré",
+  "dossier.cree": "Dossier de bien créé",
+  "dossier.supprime": "Dossier de bien supprimé",
 };
 
 export async function audit(params: {

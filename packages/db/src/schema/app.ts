@@ -24,3 +24,17 @@ export const auditLog = app.table("audit_log", {
   details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Dossiers de biens : instantanés immuables (aucun droit UPDATE en base). */
+export const analyses = app.table("analyses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull(),
+  createdBy: uuid("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  kind: text("kind", { enum: ["dossier"] }).notNull().default("dossier"),
+  addressLabel: text("address_label").notNull(),
+  banId: text("ban_id").notNull(),
+  inseeCode: text("insee_code").notNull(),
+  inputs: jsonb("inputs").$type<Record<string, unknown>>().notNull(),
+  snapshot: jsonb("snapshot").$type<Record<string, unknown>>().notNull(),
+});

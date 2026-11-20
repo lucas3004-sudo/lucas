@@ -11,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Seuls les modules réellement construits apparaissent (aucun lien vers une page vide).
   const items: NavItem[] = [
     { href: "/app", label: "Tableau de bord", icon: "home" },
+    { href: "/app/biens", label: "Dossiers de biens", icon: "building" },
     { href: "/app/equipe", label: "Équipe", icon: "team" },
     { href: "/app/parametres", label: "Paramètres", icon: "settings" },
     ...(canReadAuditLog(role) ? [{ href: "/app/journal", label: "Journal d'audit", icon: "journal" as const }] : []),
@@ -38,8 +39,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
-      <aside className="hidden border-r border-line bg-surface lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:sticky lg:top-0 lg:px-4 lg:py-5">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[256px_minmax(0,1fr)] print:block">
+      <aside className="hidden print:!hidden border-r border-line bg-surface lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:sticky lg:top-0 lg:px-4 lg:py-5">
         <div className="px-1">
           <Logo />
         </div>
@@ -50,7 +51,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {account}
       </aside>
 
-      <details className="group border-b border-line bg-surface lg:hidden">
+      <details className="group border-b border-line bg-surface lg:hidden print:hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
           <Logo />
           <span className="text-sm font-medium text-ink-muted group-open:hidden">Menu</span>

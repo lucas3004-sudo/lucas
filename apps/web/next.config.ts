@@ -28,7 +28,7 @@ const securityHeaders = [
 ];
 
 const config: NextConfig = {
-  transpilePackages: ["@immopilot/db"],
+  transpilePackages: ["@immopilot/db", "@immopilot/domain", "@immopilot/integrations"],
   serverExternalPackages: ["pg"],
   poweredByHeader: false,
   async headers() {
