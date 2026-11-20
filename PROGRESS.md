@@ -100,7 +100,9 @@ Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-
   - domaine : matching expliqué et détection des doublons ;
   - écrans Contacts, Biens de l'agence, Tâches ; matching à l'échelle de l'agence ;
   - **défaut de sécurité trouvé par un test et corrigé** : une règle « le profil suit le responsable du contact » était toujours vraie (colonne SQL non qualifiée) ;
-  - seuils anti-abus réglables pour la CI ; décisions D-031 à D-034.
+  - seuils anti-abus réglables pour la CI ; décisions D-031 à D-034 ;
+  - migrations 0007 et 0008 appliquées en préproduction (Supabase), règles de sécurité identiques au local (34 règles, même empreinte) ;
+  - autorisation permanente du fondateur pour les fusions et les migrations testées (CLAUDE.md).
 - **2026-11-20, phase 4** :
   - domaine DVF porté en TypeScript (identique au prototype) ;
   - schéma `ref` avec PostGIS dans `extensions` ;

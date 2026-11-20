@@ -53,4 +53,4 @@ Le test de réattribution a montré qu'une règle de la base était **toujours v
 - Investment Studio (simulations).
 
 ## Déploiement
-Les migrations 0007 et 0008 sont à appliquer en préproduction (Supabase) **avant** le déploiement du code, selon `docs/deploiement-preprod.md`.
+Les migrations 0007 et 0008 sont **appliquées en préproduction** (Supabase, 2026-11-20). Contrôle : les 34 règles de sécurité du schéma `app` ont la même empreinte en préproduction et dans la base testée localement.
