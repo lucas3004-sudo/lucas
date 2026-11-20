@@ -22,6 +22,10 @@ Correctifs Windows : tzdata, échappement du chemin de police ffmpeg, encodage c
 4. Onboarding (assistant de création de personnage), page d'accueil, documentation client.
 Décisions utilisateur requises : société/statut, compte Stripe, hébergeur, prix (500 €/mois évoqué), CGV.
 
+## Périmètre (rappel ferme, 2026-11-20)
+L'utilisateur vise une agence « OFM IA » (vues → lien en bio Telegram → vente de médias explicites). L'OS reste un outil de contenu **non explicite** : aucune
+fonctionnalité d'entonnoir vers la vente adulte, de gestion Telegram/Drop ou de chatting de vente ne sera ajoutée (DECISIONS #15, #19, #22).
+
 ## Problèmes connus / non vérifié
 1. **ElevenLabs** : client écrit d'après l'API publique connue, **jamais testé** (réseau du conteneur bloqué). À tester avec la clé : Integrations › Tester.
 2. **Alexya** : API **non vérifiée** (site inaccessible). Mode manuel en place (prompts → Alexya → Drop).
