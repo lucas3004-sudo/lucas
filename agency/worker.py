@@ -44,6 +44,19 @@ def run_now(job_type: str, agent: str, payload: dict | None = None, content_id: 
     return {"job_id": jid, "status": status, "result": db.loads(row["result"], None), "error": row["last_error"]}
 
 
+def drain_content(content_id: str, max_steps: int = 8) -> list[dict]:
+    """Run the queued pipeline steps of one content right now (human-triggered: regenerate / continue)."""
+    steps = []
+    for _ in range(max_steps):
+        j = db.one("SELECT id FROM jobs WHERE content_id=? AND status='queued' AND run_after<=? "
+                   "ORDER BY priority DESC, created_at LIMIT 1", (content_id, db.now()))
+        job = queue.lease_id(j["id"], WORKER_ID) if j else None
+        if not job:
+            break
+        steps.append({"type": job["type"], "status": process(job)})
+    return steps
+
+
 def run_once(max_jobs: int = 1000, ignore_state: bool = False) -> int:
     """Drain ready jobs synchronously (tests, CLI `agency work --once`, Claude Code sessions)."""
     n = 0

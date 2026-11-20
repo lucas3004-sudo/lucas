@@ -215,12 +215,12 @@ def content_action(cid: str, action: str, body: dict = Body(default={})):
     if action == "regenerate":
         save_content(cid, "user", "regenerate_requested", {"feedback": body.get("feedback")}, status="in_progress", stage="concept")
         queue.enqueue("creative.develop", "creative", {"feedback": body.get("feedback", "")}, run_id=c["run_id"], content_id=cid, priority=6)
-        return {"ok": True, "agency_status": control.state()["status"]}
+        return {"ok": True, "steps": worker.drain_content(cid)}
     if action == "continue":  # after dropping visuals
         step = "producer.edit" if c["stage"] in ("editing", "qc") else "producer.generate"
         save_content(cid, "user", "continue_requested", {"step": step}, status="in_progress")
         queue.enqueue(step, "producer", {}, run_id=c["run_id"], content_id=cid, priority=6)
-        return {"ok": True, "step": step, "agency_status": control.state()["status"]}
+        return {"ok": True, "steps": worker.drain_content(cid)}
     if action == "requalify":  # re-run QC after manual edits
         return worker.run_now("reviewer.qc", "reviewer", {}, content_id=cid)
     if action == "mark-published":

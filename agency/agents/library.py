@@ -5,15 +5,15 @@ from __future__ import annotations
 import hashlib
 import random
 
-HOOKS = [
-    ("liste", "3 erreurs que je faisais avec {topic} (la 2e surtout)"),
-    ("contre-intuitif", "Personne ne parle de ça quand on parle de {topic}"),
-    ("pov", "POV : tu découvres {topic} version créatrice IA"),
-    ("défi", "J'ai testé {topic} pendant 7 jours, voilà le bilan"),
-    ("question", "Tu fais aussi ça avec {topic} ?"),
-    ("coulisses", "Ce que vous ne voyez pas derrière {topic}"),
-    ("rapide", "{topic} en moins de 30 secondes"),
-    ("transparence", "Oui je suis une IA, et voici comment je gère {topic}"),
+HOOKS = [  # {topic} is a noun phrase with its article ("la routine du matin")
+    ("liste", "3 erreurs que je faisais avec {topic}"),
+    ("contre-intuitif", "Personne ne te dit ça sur {topic}"),
+    ("pov", "POV : une IA t'explique {topic}"),
+    ("défi", "J'ai testé {topic} pendant 7 jours"),
+    ("question", "Toi aussi tu galères avec {topic} ?"),
+    ("coulisses", "Les coulisses de {topic}"),
+    ("rapide", "{topic} en 30 secondes chrono"),
+    ("transparence", "Oui je suis une IA, et voici mon avis sur {topic}"),
 ]
 FORMATS = {
     "tiktok": ["talking_head", "tutorial", "storytime", "day_in_life", "pov", "trend_remix"],
@@ -52,8 +52,9 @@ def pick_briefs(character: dict, platforms: list[str], n: int, insights: list[di
         formats = [f for f in FORMATS[platform] if f in preferred] or FORMATS[platform]
         hook_type, hook_tpl = r.choice(HOOKS)
         topic = r.choice(p["topics"])
+        hook = hook_tpl.format(topic=topic)
         briefs.append({"platform": platform, "format": r.choice(formats), "pillar": p["name"], "angle": topic,
-                       "hook_idea": hook_tpl.format(topic=topic), "hook_type": hook_type,
+                       "hook_idea": hook[0].upper() + hook[1:], "hook_type": hook_type,
                        "objective": r.choice(["portée", "engagement", "abonnés"])})
     return briefs
 
@@ -61,10 +62,10 @@ def pick_briefs(character: dict, platforms: list[str], n: int, insights: list[di
 def script_for(brief: dict, character: dict, seed: str) -> dict:
     r = rng(seed, "script")
     topic, name = brief["angle"], character["name"]
-    steps = [f"Astuce {k} : une idée simple et concrète sur {topic}" for k in (1, 2, 3)]
+    steps = [f"Astuce {k} sur {topic} : une idée simple, montrée à l'écran" for k in (1, 2, 3)]
     beats = [{"t": "0-2s", "visual": f"Gros plan sur {name}, regard caméra, décor lumineux", "on_screen_text": brief["hook_idea"], "voiceover": brief["hook_idea"]}]
     for k, s in enumerate(steps):
-        beats.append({"t": f"{2 + k * 6}-{8 + k * 6}s", "visual": f"Plan illustrant l'étape {k + 1} ({topic})", "on_screen_text": f"{k + 1}.", "voiceover": s})
+        beats.append({"t": f"{2 + k * 6}-{8 + k * 6}s", "visual": f"Plan illustrant l'étape {k + 1} ({topic})", "on_screen_text": f"Astuce {k + 1}", "voiceover": s})
     cta = r.choice(CTAS)
     beats.append({"t": "20-24s", "visual": f"{name} sourit, geste vers la caméra", "on_screen_text": cta, "voiceover": cta})
     return {

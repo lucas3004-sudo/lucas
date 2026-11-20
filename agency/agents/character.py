@@ -16,10 +16,10 @@ DEFAULT_CHARACTER = {
     "tone": "tutoiement, phrases courtes, humour léger, jamais vulgaire",
     "niche": "lifestyle, mode accessible, bien-être",
     "pillars": [
-        {"name": "Style du quotidien", "topics": ["looks à petit budget", "associer les couleurs", "capsule wardrobe", "accessoires qui changent tout"]},
-        {"name": "Routines & bien-être", "topics": ["routine du matin", "pause digitale", "organisation de la semaine", "motivation douce"]},
-        {"name": "Coulisses d'une créatrice IA", "topics": ["comment Nova est créée", "questions sur l'IA", "erreurs drôles de l'IA", "IA et créativité"]},
-        {"name": "Tendances & mini-défis", "topics": ["trend du moment", "défi 7 jours", "avant/après organisation", "sondage communauté"]},
+        {"name": "Style du quotidien", "topics": ["les looks à petit budget", "l'association des couleurs", "la garde-robe capsule", "les accessoires qui changent tout"]},
+        {"name": "Routines & bien-être", "topics": ["la routine du matin", "la pause digitale", "l'organisation de la semaine", "la motivation douce"]},
+        {"name": "Coulisses d'une créatrice IA", "topics": ["la création d'une influenceuse IA", "vos questions sur l'IA", "les erreurs drôles de l'IA", "l'IA et la créativité"]},
+        {"name": "Tendances & mini-défis", "topics": ["la trend du moment", "le défi 7 jours", "le rangement avant/après", "les sondages de la communauté"]},
     ],
     "visual_identity": {
         "face": "visage ovale, pommettes hautes, taches de rousseur légères, sourire asymétrique reconnaissable",

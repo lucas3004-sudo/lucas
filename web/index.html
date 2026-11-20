@@ -1,1 +1,30 @@
-<!doctype html><title>AI Agency OS</title>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Agency OS</title>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c8643b'/><text x='16' y='21' font-size='14' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='700'>AI</text></svg>">
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><span class="logo">AI</span><span>Agency OS</span></div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button class="btn sm menu-btn" id="menu" aria-label="Menu">☰</button>
+      <span id="state-pill" class="badge">…</span>
+      <span id="mode-pill" class="badge"></span>
+      <span class="grow"></span>
+      <button class="btn sm" id="theme" title="Thème clair/sombre">◐</button>
+      <a class="btn sm" href="#/daily" id="bell" title="Alertes">🔔 <span id="bell-n">0</span></a>
+    </header>
+    <main class="page" id="page"></main>
+  </div>
+</div>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>
