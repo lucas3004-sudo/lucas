@@ -12,7 +12,7 @@ d'acceptation sont vérifiés.
 | 0. Audit | ✅ Terminée (2026-11-20) | [Audit](docs/phase-0-audit.md), [Décisions](docs/DECISIONS.md), [Script de vérification des sources](scripts/check-data-sources.sh) |
 | 1. Recherche et stratégie | ✅ Terminée (2026-11-20) : prix d'entrée et cible « petites agences » choisis par le fondateur | [Stratégie, prix, MVP](docs/phase-1-strategie.md), [Concurrents](docs/research/concurrents.md), [Fournisseurs d'annonces](docs/research/fournisseurs-annonces.md), [Données complémentaires](docs/research/donnees-complementaires.md), [Fiche juridique](docs/legal/fiche-juridique.md), [Guide d'entretien](docs/research/guide-entretien.md) |
 | 2. Architecture détaillée | ✅ Terminée (2026-11-20) | [Architecture](docs/phase-2/architecture.md), [Modèle de données](docs/phase-2/modele-donnees.md), [Permissions](docs/phase-2/permissions.md), [Moteur d'agents](docs/phase-2/moteur-agents.md), [Ingestion](docs/phase-2/ingestion.md) ; prototypes [RLS](prototypes/rls/run.sh) (12 tests sur 12) et [nettoyage DVF](prototypes/dvf/clean_dvf.py) |
-| 3. Fondation (+ préproduction) | ⏳ Prochaine | — |
+| 3. Fondation (+ préproduction) | 🟡 Fondation livrée et testée en local (2026-11-20) ; **préproduction en attente de l'accord du fondateur** (création des comptes Vercel et Supabase) | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
 | 4. Intelligence immobilière | À faire | — |
 | 5. Socle agents | À faire | — |
 | 6. Outils professionnels (fin du MVP) | À faire | — |
@@ -22,8 +22,24 @@ d'acceptation sont vérifiés.
 | 10. Espace particuliers | À faire | — |
 | 11. Production | À faire | — |
 
-## Fonctionnalités opérationnelles
-Aucune fonctionnalité applicative pour le moment. Ce qui fonctionne et a été exécuté :
+## Fonctionnalités opérationnelles (testées)
+**Application (phase 3)** :
+- **Comptes** : inscription, connexion, déconnexion. Mot de passe de 12 caractères minimum. Limitation des tentatives (429 constaté).
+- **Agences** : création (le créateur devient gérant), choix de l'agence active.
+- **Équipe** : invitation par lien (7 jours), acceptation, changement de rôle, retrait.
+  - Règles testées : un manager ne nomme jamais de gérant, l'agence garde toujours un gérant.
+- **Paramètres** : nom de l'agence (gérant seulement), visibilité par défaut (gérant et managers). Enregistrés sous RLS.
+- **Journal d'audit** : ajout seul, lecture réservée au gérant et aux managers.
+- **Isolation entre agences** dans la base (RLS), avec un garde-fou automatique « aucune table oubliée ».
+- **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
+
+**Tests** (tous au vert le 2026-11-20) :
+- 21 tests unitaires (règles de rôle, contexte d'agence, garde-fous) ;
+- 11 tests d'intégration sur PostgreSQL (attaques d'isolation, contre-épreuve du garde-fou) ;
+- 5 scénarios de bout en bout (Playwright) ;
+- lint, types, build de production.
+
+**Outils** :
 - le script de vérification des sources (15 sources, dont 7 critiques) ;
 - le prototype d'isolation entre agences : `sudo ./prototypes/rls/run.sh` (12 tests sur 12, PostgreSQL 16.15) ;
 - le prototype de nettoyage DVF : `python3 -I prototypes/dvf/clean_dvf.py <fichier.csv>`.
@@ -40,8 +56,13 @@ Aucune fonctionnalité applicative pour le moment. Ce qui fonctionne et a été 
 - [x] Coupures ponctuelles constatées (Géorisques, static.data.gouv.fr) : le script fait désormais 2 nouvelles tentatives.
 - [ ] Cerema DVF+ : injoignable. Non bloquant, non retenu.
 
+## Lacunes connues (à combler avant de vraies agences)
+- **Vérification de l'adresse e-mail** et envoi des invitations par e-mail : nécessitent un service d'e-mail, donc un compte externe (D-023).
+- **Double authentification** obligatoire pour le gérant (prévue au socle de sécurité) : pas encore construite.
+- CSP sans nonces (`unsafe-inline`) : durcissement prévu en phase 9.
+
 ## Décisions en attente du fondateur
-1. Choix de l'hébergement, en fin de phase 3.
+1. **Création des comptes gratuits Vercel et Supabase** pour la préproduction (D-020).
 2. Clé API Anthropic avec plafond de dépense, avant la phase 5.
 3. Demandes de devis aux fournisseurs d'annonces : **reportées** avant la phase 6 (choix du fondateur).
 4. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`, avec les questions pour gérant).
@@ -51,6 +72,13 @@ Aucune fonctionnalité applicative pour le moment. Ce qui fonctionne et a été 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
 
 ## Journal
+- **2026-11-20, phase 3** :
+  - monorepo pnpm/Turborepo, base locale PostgreSQL 16 + PostGIS, 4 migrations ;
+  - isolation RLS reliée aux adhésions réelles, avec contre-épreuve du garde-fou ;
+  - Better Auth (agences, rôles, invitations), routes HTTP de gestion d'agence fermées (D-021) ;
+  - design system clair et sombre, 11 écrans, CI GitHub Actions ;
+  - test réel du limiteur : seuil ajusté (D-022) ;
+  - décisions D-020 à D-025.
 - **2026-11-20, phase 2** :
   - stratégie adaptée à la cible « petites agences » : rôles, visibilité, matching à l'échelle de l'agence, tableau de bord du gérant (F13) ;
   - prototype RLS : un défaut trouvé (la fonction `SECURITY DEFINER` était bloquée par `FORCE`), corrigé, contrôles positifs ajoutés, 12 tests sur 12 ;

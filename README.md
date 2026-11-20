@@ -10,6 +10,44 @@ Plateforme immobilière intelligente et multi-agents pour les agents immobiliers
 - [Architecture détaillée — phase 2](docs/phase-2/architecture.md) : modèle de données, permissions, moteur d'agents, ingestion.
 - [Journal des décisions](docs/DECISIONS.md)
 
+## Développement
+
+Prérequis : Node.js 22, pnpm 10, et soit Docker, soit PostgreSQL 16 avec PostGIS installé localement.
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm db:start
+```
+
+```bash
+cp .env.example apps/web/.env.local
+```
+
+Renseignez `BETTER_AUTH_SECRET` dans `apps/web/.env.local` (par exemple avec `openssl rand -base64 32`), puis lancez l'application :
+
+```bash
+pnpm dev
+```
+
+L'application tourne sur http://localhost:3000.
+
+Vérifications (les mêmes que la CI) :
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test
+```
+
+```bash
+pnpm test:integration
+```
+
+```bash
+pnpm build && pnpm --filter @immopilot/web test:e2e
+```
+
 ## Prototypes de validation
 ```bash
 sudo ./prototypes/rls/run.sh                               # isolation entre agences (PostgreSQL 16 requis)

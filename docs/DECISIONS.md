@@ -148,3 +148,44 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 ## D-019 — DPE : rapprochement par identifiant BAN, choix humain si plusieurs DPE
 - **Date** : 2026-11-20 · **Statut** : Acceptée (5 rapprochements sur 5 vérifiés à Amiens)
 - **Décision** : rapprochement par `identifiant_ban`. Si plusieurs DPE correspondent à la même adresse, l'utilisateur choisit dans une liste. Sans DPE, le statut `manquante` est affiché. Un DPE antérieur à 2026 pour un logement chauffé à l'électricité porte une alerte.
+
+## D-020 — Préproduction sur des offres gratuites : Vercel Hobby + Supabase Free
+- **Date** : 2026-11-20 · **Statut** : **Choix du fondateur** (« hébergement gratuit ») ; création des comptes en attente de son accord
+- **Décision** : site sur Vercel (offre Hobby), base PostgreSQL + PostGIS sur Supabase (offre gratuite, région européenne). Le code reste portable vers n'importe quel PostgreSQL.
+- **Limites connues** (vérifiées le 2026-11-20) :
+  - l'offre Vercel Hobby est réservée à un **usage personnel et non commercial** : il faudra passer sur une offre payante ou changer d'hébergeur **avant toute vente** ;
+  - Supabase Free : base de 500 Mo, **mise en veille après une semaine sans activité** ; la préproduction ne couvrira DVF que pour quelques départements ;
+  - les tâches de fond (worker) de la phase 5 devront tourner ailleurs (fonctions limitées à 300 s sur Vercel Hobby). À décider en phase 5.
+- **Objection du Devil's Advocate** : construire la préproduction sur un hébergement qu'il faudra quitter crée une migration future.
+- **Réponse** : le code n'utilise aucune fonction propre à Vercel ou à Supabase (PostgreSQL standard, Next.js standard). La migration se limitera à changer des variables d'environnement.
+
+## D-021 — Routes HTTP de gestion d'agence fermées
+- **Date** : 2026-11-20 · **Statut** : Acceptée, **testée** (scénario de bout en bout : réponse 404, même connecté)
+- **Contexte** : les crochets (« hooks ») de Better Auth reçoivent le membre visé, pas l'auteur de l'action. Ils ne permettent donc pas d'empêcher un manager de nommer un gérant en appelant l'API directement.
+- **Décision** : les 35 routes `/api/auth/organization/*` sont fermées (`disabledPaths`). Toutes les opérations passent par des actions serveur qui :
+  - vérifient le rôle de l'auteur, lu par la base ;
+  - appliquent les règles testées de `rules.ts` (dont : un manager ne nomme jamais de gérant, l'agence garde toujours un gérant) ;
+  - journalisent l'action.
+
+## D-022 — Limitation des tentatives stockée en base, 10 connexions par minute et par adresse IP
+- **Date** : 2026-11-20 · **Statut** : Acceptée, **testée** (réponse 429 constatée)
+- **Décision** : le compteur de Better Auth est stocké en base (table `auth.rateLimit`), donc valable avec plusieurs instances. La connexion est limitée à 10 tentatives par minute et par IP, l'inscription à 5.
+- **Raison du seuil** : avec 5 tentatives, le blocage est arrivé dès la 3e tentative pendant les tests. Une équipe d'agence partage souvent la même IP de bureau.
+
+## D-023 — Invitations par lien, vérification d'e-mail reportée (lacune connue)
+- **Date** : 2026-11-20 · **Statut** : Acceptée **temporairement**
+- **Contexte** : envoyer des e-mails exige un compte chez un prestataire (Brevo, Resend…), donc l'accord du fondateur.
+- **Décision** : l'invitation est un lien à copier (7 jours). Elle n'est acceptable que par un compte dont l'adresse correspond à l'adresse invitée.
+- **Lacune** : sans vérification d'e-mail, une personne qui obtiendrait le lien **et** créerait la première un compte à l'adresse invitée pourrait rejoindre l'agence. **La vérification d'e-mail est obligatoire avant toute utilisation par de vraies agences** (inscrite dans les blocages de PROGRESS.md).
+
+## D-024 — Migrations SQL écrites à la main, schéma Drizzle pour le typage
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** :
+  - les migrations SQL (`packages/db/migrations`) sont la source de vérité, car les politiques RLS, les rôles et les fonctions s'écrivent en SQL ;
+  - le schéma Drizzle sert au typage des requêtes ;
+  - les tables d'authentification sont générées par Better Auth à partir de la configuration réelle, relues, puis figées dans une migration ;
+  - une migration publiée n'est jamais modifiée (contrôle d'empreinte).
+
+## D-025 — TypeScript 5.9 plutôt que 7.0
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Raison** : TypeScript 7 (réécriture native) est très récent. Les outils (Next.js, ESLint, Vitest) sont éprouvés avec la version 5. Réévaluation en phase 9.
