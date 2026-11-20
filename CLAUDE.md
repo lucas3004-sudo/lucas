@@ -13,7 +13,8 @@ Backend Python/FastAPI + SQLite, dashboard web sans build. Langue de travail : f
 - `agency/queue.py`, `scheduler.py`, `worker.py`, `control.py` : file, planification, workers, cycle de vie
 - `agency/api/routes.py` : API REST · `web/pages/<page>.js` : une page = un fichier
 - `agency/growth.py` : moteur de croissance (indice de perf, bandit, A/B bayésien, créneaux, alertes, objectifs)
-- `agency/agents/compliance.py` : garde-fous déterministes · `agency/migrations/*.sql` : schéma
+- `agency/business.py` : deals de marques → contenus sponsorisés → revenus, rentabilité, kit média
+- `agency/agents/compliance.py` : garde-fous déterministes (dont mentions loi influenceurs) · `agency/migrations/*.sql` : schéma
 - Docs : `docs/ARCHITECTURE.md`, `DECISIONS.md`, `INTEGRATIONS.md`, `SKILLS.md`, `TOKEN_OPTIMIZATION.md`, `DEPLOYMENT.md`, `DEVLOG.md`
 
 ## Commandes

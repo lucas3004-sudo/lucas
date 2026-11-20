@@ -50,7 +50,8 @@ AGENTS: dict[str, dict] = {
         "instructions": "Write concept, hook (<12 words, payoff promised in the first 2 s, matches hook_type), a timed script "
                         "(beats: visual, on-screen text, voiceover) within target_duration_s with a pattern interrupt every 3-5 s "
                         "and a loopable ending, caption with one clear CTA (comment/save/share). Series: keep the recurring "
-                        "intro and episode number. follow_up_of: a real part 2 that references the original. Character's tone.",
+                        "intro and episode number. follow_up_of: a real part 2 that references the original. sponsor: integrate the brand naturally "
+                        "and honestly (no exaggerated or health claims), keep it useful for the viewer. Character's tone.",
         "tools": ["db.read"], "tier": "standard", "skills": ["tiktok-script", "storytelling-and-narrative", "hook-anatomy", "agency-growth-playbook"],
         "limits": {"llm_calls_per_content": 2, "max_output_tokens": 1800}, "jobs": ["creative.develop"],
         "success": ["hook < 12 mots", "script complet", "ton du personnage respecté"], "handoff": ["platform"],

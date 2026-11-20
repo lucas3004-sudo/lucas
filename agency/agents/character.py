@@ -54,7 +54,7 @@ DEFAULT_CHARACTER = {
                  "promesses irréalistes", "faux témoignages"],
     },
     "disclosure": {
-        "short": "#IA · personnage virtuel",
+        "short": "Image virtuelle · #IA",
         "bio_line": "Personnage virtuel 🤖 généré par IA",
         "long": "Nour est un personnage virtuel créé par intelligence artificielle. Son histoire est fictive ; les contenus sont générés et validés par l'équipe.",
     },

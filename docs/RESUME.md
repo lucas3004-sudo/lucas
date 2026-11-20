@@ -1,12 +1,14 @@
 # Reprise — état au 2026-11-20 (fin de session 1)
 
 ## État
-- **Fonctionnel et testé** (35 tests, ≈ 12 s) : backend complet, 11 agents, pipeline RECHERCHE → ANALYSE avec approbation humaine, dashboard 14 pages (testé Chromium desktop + mobile), suivi tokens, rapport quotidien, garde-fous.
+- **Fonctionnel et testé** (40 tests, ≈ 14 s) : backend complet, 11 agents, pipeline RECHERCHE → ANALYSE avec approbation humaine, dashboard 14 pages (testé Chromium desktop + mobile), suivi tokens, rapport quotidien, garde-fous.
 - Mode LLM par défaut : `offline` (gratuit, brouillons à base de modèles). Aucune dépense possible sans `allow_paid_calls` + clé.
 - Branche : `claude/ai-agency-os-build-t1od41`.
 
 ## Ajouté (session 1, suite)
 Moteur de croissance (bandit, double-down, A/B bayésien, quotas, séries, déclinaisons Shorts/Spotlight, veille santé, objectifs + projections, revue hebdo), page **Comptes**, Growth Center (Intelligence, Séries, Partenariats), playbook `agency-growth-playbook`. 35 tests.
+
+Business : mentions légales FR automatiques, deals de marques → contenus sponsorisés → revenus, rentabilité, kit média + grille tarifaire (Finance). 40 tests.
 
 ## Problèmes connus / non vérifié
 1. **ElevenLabs** : client écrit d'après l'API publique connue, **jamais testé** (réseau du conteneur bloqué). À tester avec la clé : Integrations › Tester.
@@ -15,6 +17,8 @@ Moteur de croissance (bandit, double-down, A/B bayésien, quotas, séries, décl
 4. **Docker** : `docker compose config` valide, **image jamais construite** (pas de démon Docker dans le conteneur).
 5. Publication et statistiques : manuelles (pas d'app Meta/TikTok validée).
 6. Le mode `offline` produit des brouillons génériques ; la qualité créative vient des modes `claude_code` ou `api`.
+
+7. **Faire valider par un juriste** la conformité à la loi influenceurs (mentions, catégories interdites, contrat d'agent si gestion pour tiers).
 
 ## Prochaines étapes (ordre conseillé)
 1. Sur le PC de l'utilisateur : `pip install -e ".[api,dev]"`, `cp .env.example .env`, `python -m agency serve`, vérifier ffmpeg.

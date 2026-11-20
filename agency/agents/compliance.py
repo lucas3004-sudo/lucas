@@ -28,14 +28,35 @@ def scan(text: str) -> tuple[list[str], list[str]]:
     return blocks, warns
 
 
+# French influencer law (loi n° 2023-451): AI-generated face/silhouette -> "Image virtuelle";
+# commercial partnership -> "Publicité" or "Collaboration commerciale". To be confirmed by a lawyer.
+VIRTUAL_MENTION = "image virtuelle"
+SPONSOR_MENTIONS = ("collaboration commerciale", "publicité")
+# Categories banned or heavily restricted for influencer promotion (same law + sector rules): block sponsorship.
+RESTRICTED_SPONSOR = r"(chirurgi\w* esth[ée]tique|injection|botox|nicotine|vape|puff|cigarette|crypto|trading|forex|nft|" \
+                     r"paris sportifs?|casino|jeux d'argent|pronostic|m[ée]dicament|abstention th[ée]rapeutique|animaux sauvages)"
+
+
 def ensure_disclosure(caption: str, tag: str) -> tuple[str, bool]:
     low = (caption or "").lower()
-    if "#ia" in low or "généré par ia" in low or "personnage virtuel" in low or "#ai" in low:
+    if VIRTUAL_MENTION in low:
         return caption, False
     return (caption.rstrip() + f"\n\n{tag}").strip(), True
 
 
-def check_content(c: dict, assets: list[dict], disclosure_tag: str) -> dict:
+def ensure_sponsor(caption: str, brand: str) -> tuple[str, bool]:
+    low = (caption or "").lower()
+    if any(m in low for m in SPONSOR_MENTIONS):
+        return caption, False
+    return f"Collaboration commerciale avec {brand} · {caption}".strip(), True
+
+
+def restricted_sponsor(text: str) -> list[str]:
+    import re as _re
+    return sorted(set(_re.findall(RESTRICTED_SPONSOR, (text or "").lower())))
+
+
+def check_content(c: dict, assets: list[dict], disclosure_tag: str, sponsor: str | None = None) -> dict:
     """Returns {passed, score, blockers[], warnings[], fixes[], caption}."""
     blockers, warnings, fixes = [], [], []
     script = c.get("script") or {}
@@ -51,7 +72,13 @@ def check_content(c: dict, assets: list[dict], disclosure_tag: str) -> dict:
 
     caption, fixed = ensure_disclosure(c.get("caption") or "", disclosure_tag)
     if fixed:
-        fixes.append("mention IA ajoutée à la légende")
+        fixes.append("mention « Image virtuelle » ajoutée à la légende")
+    if sponsor:
+        caption, fixed = ensure_sponsor(caption, sponsor)
+        if fixed:
+            fixes.append("mention « Collaboration commerciale » ajoutée en tête de légende")
+        if restricted_sponsor(f"{sponsor} {c.get('concept', '')} {caption}"):
+            blockers.append("catégorie de produit interdite ou encadrée pour la promotion par influenceur")
     lim = PLATFORMS.get(c["platform"], PLATFORMS["instagram"])
     if len(caption) > lim["caption"]:
         blockers.append(f"légende trop longue ({len(caption)}>{lim['caption']})")

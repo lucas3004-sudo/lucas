@@ -70,6 +70,11 @@ def script_for(brief: dict, character: dict, seed: str) -> dict:
     end = 2 + n_steps * 6
     beats.append({"t": f"{end}-{end + 4}s", "visual": f"{name} sourit, geste vers la caméra", "on_screen_text": cta, "voiceover": cta})
     prefix = f"{brief['series_name']} #{brief.get('episode') or '?'} · " if brief.get("series_name") else ""
+    if brief.get("sponsor"):
+        prefix = f"Partenariat {brief['sponsor']['brand']} · "
+        beats.insert(-1, {"t": f"{end - 4}-{end}s", "visual": f"{name} montre le produit {brief['sponsor']['brand']} en situation réelle",
+                          "on_screen_text": f"Collaboration commerciale · {brief['sponsor']['brand']}",
+                          "voiceover": brief["sponsor"].get("key_message") or f"Merci à {brief['sponsor']['brand']} pour ce partenariat"})
     return {
         "title": f"{prefix}{brief['pillar']} · {topic}",
         "concept": f"{brief['format']} sur « {topic} » ({brief['pillar']}), angle {brief['hook_type']}, objectif {brief['objective']}.",

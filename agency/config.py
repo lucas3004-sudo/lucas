@@ -115,6 +115,7 @@ DEFAULT_SETTINGS: dict = {
     "voice_enabled": False,  # ElevenLabs generation consumes account credits -> explicit opt-in
     "voice_daily_char_cap": 5000,
     "max_upload_mb": 200,
+    "cpm_eur": {"low": None, "high": None},       # YOUR price per 1,000 views for brand deals (no invented market rate)
 }
 
 LOCKED_SETTINGS = {

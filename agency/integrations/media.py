@@ -14,7 +14,7 @@ FONT_CANDIDATES = [
     "/Library/Fonts/Arial Bold.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
     "C:/Windows/Fonts/arialbd.ttf",
 ]
-DISCLOSURE = "Contenu généré par IA"
+DISCLOSURE = "Image virtuelle · générée par IA"
 
 
 class MediaError(RuntimeError):
@@ -66,14 +66,14 @@ def placeholder_image(out: Path, label: str, w: int = 1080, h: int = 1920, color
         _run(["-f", "lavfi", "-i", f"color=c={color}:s={w}x{h}", "-frames:v", "1", "-vf", txt, str(out)])
 
 
-def normalize_image(src: Path, out: Path, w: int = 1080, h: int = 1350) -> None:
+def normalize_image(src: Path, out: Path, w: int = 1080, h: int = 1350, label: str = DISCLOSURE) -> None:
     with tempfile.TemporaryDirectory() as t:
-        vf = f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},{_overlay_disclosure(Path(t))}"
+        vf = f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},{_overlay_disclosure(Path(t), label)}"
         _run(["-i", str(src), "-frames:v", "1", "-vf", vf, str(out)])
 
 
 def build_video(visuals: list[Path], out: Path, texts: list[str] | None = None, voice: Path | None = None,
-                seconds_per_image: float = 4.0, fps: int = 30) -> float:
+                seconds_per_image: float = 4.0, fps: int = 30, label: str = DISCLOSURE) -> float:
     """Images -> slideshow with gentle zoom; a single clip -> normalised. Returns output duration (s)."""
     if not visuals:
         raise MediaError("no visual")
@@ -110,7 +110,7 @@ def build_video(visuals: list[Path], out: Path, texts: list[str] | None = None, 
             enable = f":enable='between(t,{i * seg_d:.2f},{(i + 1) * seg_d:.2f})'" if seg_d else ""
             draw.append(f"drawtext=textfile='{_textfile(tmp, f't{i}.txt', textwrap.fill(txt[:110], 22))}'{_font()}:fontsize=58:fontcolor=white:line_spacing=12:"
                         f"borderw=4:bordercolor=black:x=(w-tw)/2:y=h*0.18{enable}")
-        draw.append(_overlay_disclosure(tmp))
+        draw.append(_overlay_disclosure(tmp, label))
         filters.append(chain + ",".join(draw) + "[outv]")
         maps = ["-map", "[outv]"]
         if voice:

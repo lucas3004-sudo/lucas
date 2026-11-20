@@ -53,9 +53,12 @@ def test_compliance_rules():
     assert "fake_human" in compliance.check_text("je ne suis pas une IA, promis")
     assert "minor" in compliance.check_text("look de lycéenne")
     assert compliance.check_text("ma routine du matin en 3 étapes") == []
-    cap, fixed = compliance.ensure_disclosure("Super look", "#IA · personnage virtuel")
-    assert fixed and cap.endswith("#IA · personnage virtuel")
-    assert compliance.ensure_disclosure(cap, "#IA")[1] is False
+    cap, fixed = compliance.ensure_disclosure("Super look #IA", "Image virtuelle · #IA")
+    assert fixed and cap.endswith("Image virtuelle · #IA")  # FR law wording required, "#IA" alone is not enough
+    assert compliance.ensure_disclosure(cap, "Image virtuelle · #IA")[1] is False
+    sp, fixed = compliance.ensure_sponsor(cap, "MarqueX")
+    assert fixed and sp.startswith("Collaboration commerciale avec MarqueX")
+    assert compliance.restricted_sponsor("promo crypto trading") and not compliance.restricted_sponsor("sneakers")
 
 
 def test_claude_code_usage_import_dedupes(agency_env):

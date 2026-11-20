@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, Body, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, PlainTextResponse
 
-from .. import control, db, queue, reports, storage, usage, worker
+from .. import business, control, db, queue, reports, storage, usage, worker
 from .. import growth as engine
 from ..agents import compliance
 from ..agents.character import active_character, save_character
@@ -614,6 +614,10 @@ def _put_settings(body: dict):
     if "crosspost" in body and (not isinstance(body["crosspost"], dict)
                                 or any(set(v) - set(PLATFORMS) or k not in PLATFORMS for k, v in body["crosspost"].items())):
         raise HTTPException(400, "crosspost : {plateforme: [plateformes]}")
+    if "cpm_eur" in body:
+        c = body["cpm_eur"]
+        if not isinstance(c, dict) or any(v is not None and not 0 < float(v) < 1000 for v in (c.get("low"), c.get("high"))):
+            raise HTTPException(400, "cpm_eur : {low, high} en € pour 1 000 vues")
     if "double_down_index" in body and not 1.2 <= float(body["double_down_index"]) <= 10:
         raise HTTPException(400, "double_down_index entre 1.2 et 10")
     if "experiment_min_views" in body and not 100 <= int(body["experiment_min_views"]) <= 1_000_000:
@@ -831,6 +835,8 @@ def add_collab(body: dict = Body(...)):
         raise HTTPException(400, "kind (creator|brand|media|engage) et name requis")
     if compliance.check_text(f"{body['name']} {body.get('notes', '')}"):
         raise HTTPException(422, "partenaire non conforme (aucun partenariat adulte)")
+    if body["kind"] == "brand" and compliance.restricted_sponsor(f"{body['name']} {body.get('notes', '')}"):
+        raise HTTPException(422, "catégorie interdite ou encadrée pour la promotion par influenceur (loi n° 2023-451)")
     cid = db.new_id("COL")
     db.insert("collabs", {"id": cid, "kind": body["kind"], "name": body["name"][:80], "platform": body.get("platform"), "handle": body.get("handle"),
                           "audience_size": body.get("audience_size"), "stage": "prospect", "fit_score": body.get("fit_score"),
@@ -840,8 +846,16 @@ def add_collab(body: dict = Body(...)):
 
 @r.patch("/collabs/{cid}")
 def update_collab(cid: str, body: dict = Body(...)):
-    fields = {k: body[k] for k in ("stage", "fit_score", "notes", "next_action_at", "draft_message") if k in body}
+    col = db.one("SELECT * FROM collabs WHERE id=?", (cid,)) or _404("partenariat")
+    fields = {k: body[k] for k in ("stage", "fit_score", "notes", "next_action_at", "draft_message", "deal_value", "deliverables", "due_date") if k in body}
     _clean(fields.get("notes"), fields.get("draft_message"))
+    if col["kind"] == "brand" and compliance.restricted_sponsor(f"{col['name']} {fields.get('notes') or col['notes'] or ''}"):
+        raise HTTPException(422, "catégorie interdite ou encadrée pour la promotion par influenceur (loi n° 2023-451)")
+    for k, cast in (("deal_value", float), ("deliverables", int)):
+        if k in fields:
+            fields[k] = _num(fields[k], k, cast)
+    if "due_date" in fields:
+        fields["due_date"] = _ts(fields["due_date"], "due_date", date_only=True)
     if "fit_score" in fields:
         fields["fit_score"] = _num(fields["fit_score"], "fit_score", int)
     if fields.get("stage") and fields["stage"] not in COLLAB_STAGES:
@@ -855,6 +869,41 @@ def collab_draft(cid: str):
     db.one("SELECT 1 FROM collabs WHERE id=?", (cid,)) or _404("partenariat")
     res = worker.run_now("community.outreach_draft", "community", {"collab_id": cid})
     return {**res, "collab": db.one("SELECT * FROM collabs WHERE id=?", (cid,))}
+
+
+@r.post("/collabs/{cid}/deliverables")
+def collab_deliverables(cid: str):
+    try:
+        ids = business.create_deliverables(cid)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    return {"created": ids, "steps": [worker.drain_content(i) for i in ids]}
+
+
+@r.post("/collabs/{cid}/paid")
+def collab_paid(cid: str):
+    try:
+        return business.mark_paid(cid)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@r.get("/business/economics")
+def economics(days: int = Query(90, le=365)):
+    return business.economics(days)
+
+
+@r.get("/business/media-kit")
+def media_kit():
+    return business.media_kit()
+
+
+@r.post("/business/media-kit/export")
+def media_kit_export():
+    reports.BRIEFS_DIR.mkdir(exist_ok=True)
+    path = reports.BRIEFS_DIR / f"media-kit-{db.now()[:10]}.md"
+    path.write_text(business.media_kit_markdown(business.media_kit()), encoding="utf-8")
+    return {"path": path.name, "markdown": path.read_text(encoding="utf-8")}
 
 
 @r.get("/targets")

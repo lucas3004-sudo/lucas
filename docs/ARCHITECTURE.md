@@ -59,6 +59,13 @@ Chaque spec : mission, instructions (courtes, centralisées), outils, limites, c
 - **Veille** (horaire) : chute de portée, absence de publication 48 h, compte restreint, file de validation ; **revue hebdo** `briefs/weekly-AAAA-Sxx.md`.
 - **Objectifs** par compte avec projection linéaire (provenance `forecast`) ; **partenariats** (CRM + brouillons de messages, envoi humain).
 
+## Business (`agency/business.py`)
+- Deal de marque (grand public) : `agreed` → livrables = contenus sponsorisés (brief sponsor) → « payé » crée le revenu (une fois).
+- Mentions légales FR (loi n° 2023-451, à valider par un juriste) : « Image virtuelle » sur chaque contenu (légende + incrustation),
+  « Collaboration commerciale avec <marque> » en tête de légende et en incrustation pour tout contenu sponsorisé ; catégories interdites/encadrées bloquées.
+- Rentabilité : revenu par contenu (deal réparti sur ses livrables + écritures liées), coût LLM estimé, € / 1 000 vues, par plateforme et pilier.
+- Kit média + grille tarifaire = vues moyennes réelles × **votre** CPM (aucun tarif marché inventé), export Markdown dans `briefs/`.
+
 ## Données & provenance
 Tables principales : `accounts`, `account_events`, `series`, `collabs`, `targets`, `contents`, `content_history`, `assets`, `jobs`, `runs`, `schedules`, `characters`, `research_items`, `competitors`, `experiments`, `metrics`, `messages`, `finance_entries`, `llm_calls`, `cc_usage`, `api_usage`, `activity_log`, `notifications`, `integration_checks`.
 Provenance : `measured` (API/journaux), `manual` (saisi), `estimated` (calculé), `template`, `hypothesis`, `observed` (avec URL).

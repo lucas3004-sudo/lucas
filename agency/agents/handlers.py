@@ -215,7 +215,7 @@ def reviewer_challenge(job: dict) -> dict:
 def reviewer_qc(job: dict) -> dict:
     c = get_content(job["content_id"])
     ch = active_character()
-    res = compliance.check_content(c, storage.content_assets(c["id"]), ch["disclosure"]["short"])
+    res = compliance.check_content(c, storage.content_assets(c["id"]), ch["disclosure"]["short"], sponsor_of(c))
     qc = {k: res[k] for k in ("passed", "score", "blockers", "warnings", "fixes")} | {"checked_at": db.now(), "by": "rules"}
     status, stage = ("awaiting_approval", "approval") if res["passed"] else ("needs_revision", "qc")
     save_content(c["id"], "reviewer", "qc_passed" if res["passed"] else "qc_failed", qc, qc=qc, caption=res["caption"], status=status, stage=stage)
@@ -242,6 +242,7 @@ def creative_develop(job: dict) -> dict:
            "feedback": fb, "target_duration_s": f"{dur[0]}-{dur[1]}", "hook_type": brief.get("hook_type"),
            "series": {**series, "episode": c.get("episode")} if series else None,
            "follow_up_of": c["meta"].get("follow_up_of"),
+           "sponsor": brief.get("sponsor"),
            "hook_patterns": [h for _, h in library.HOOKS[:4]]}
     data = llm(_task("creative", "develop", inp, CREATIVE_SCHEMA, 1800), job,
                lambda: library.script_for({**brief, "series_name": series and series["name"], "episode": c.get("episode")}, ch, c["id"] + fb))
@@ -368,6 +369,15 @@ def producer_generate(job: dict) -> dict:
     return {"notes": notes}
 
 
+def sponsor_of(c: dict) -> str | None:
+    return db.scalar("SELECT name FROM collabs WHERE id=?", (c["deal_id"],)) if c.get("deal_id") else None
+
+
+def _overlay_label(c: dict) -> str:
+    """Burned-in mentions, visible for the whole video (French influencer law)."""
+    return f"Collaboration commerciale\n{media.DISCLOSURE}" if c.get("deal_id") else media.DISCLOSURE
+
+
 def producer_edit(job: dict) -> dict:
     c = get_content(job["content_id"])
     if not media.available():
@@ -382,7 +392,7 @@ def producer_edit(job: dict) -> dict:
     if c["format"] in VIDEO_FORMATS:
         texts = [b.get("on_screen_text", "") for b in c["script"].get("beats", [])]
         rel, out = storage.new_path(f"contents/{c['id']}", ".mp4")
-        d = media.build_video([storage.abs_path(a["path"]) for a in visuals], out, texts, voice)
+        d = media.build_video([storage.abs_path(a["path"]) for a in visuals], out, texts, voice, label=_overlay_label(c))
         storage.register(rel, "final", src, content_id=c["id"], meta={"duration_s": round(d, 2), "w": 1080, "h": 1920})
         info = {"video_s": round(d, 2)}
     else:
@@ -391,7 +401,7 @@ def producer_edit(job: dict) -> dict:
             if not a["path"].lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
                 continue
             rel, out = storage.new_path(f"contents/{c['id']}", ".jpg")
-            media.normalize_image(storage.abs_path(a["path"]), out)
+            media.normalize_image(storage.abs_path(a["path"]), out, label=_overlay_label(c))
             storage.register(rel, "final", src, content_id=c["id"], meta={"w": 1080, "h": 1350})
             n += 1
         info = {"images": n}
@@ -446,7 +456,9 @@ def create_variant(parent_id: str, platform: str, actor: str = "user") -> dict:
         return {"platform": platform, "skipped": "compte en pause ou restreint"}
     tag = active_character()["disclosure"]["short"]
     vid = db.new_id("CNT")
-    caption, _ = compliance.ensure_disclosure(library.fit_caption(c["caption"] or "", platform, tag), tag)
+    sponsor = sponsor_of(c)
+    room = tag + (f"Collaboration commerciale avec {sponsor} · " if sponsor else "")
+    caption, _ = compliance.ensure_disclosure(library.fit_caption(c["caption"] or "", platform, room), tag)
     db.insert("contents", {
         "id": vid, "run_id": c["run_id"], "parent_id": parent_id, "title": f"{c['title']} [{PLATFORMS[platform]['label']}]"[:200],
         "stage": "approval", "status": "in_progress", "platform": platform, "format": PLATFORMS[platform]["formats"][0],
@@ -454,13 +466,14 @@ def create_variant(parent_id: str, platform: str, actor: str = "user") -> dict:
         "prompts": db.dumps(c["prompts"]), "caption": caption, "hashtags": db.dumps(library.hashtags_for(c["pillar"] or "", platform)),
         "meta": db.dumps({**{k: v for k, v in c["meta"].items() if k not in ("experiment", "follow_up_of")},
                           "variant_of": parent_id, "doubled_down": True}), "account_id": primary_account(platform),
-        "series_id": c.get("series_id"), "episode": c.get("episode"), "created_at": db.now(), "updated_at": db.now()})
+        "series_id": c.get("series_id"), "episode": c.get("episode"), "deal_id": c.get("deal_id"),
+        "created_at": db.now(), "updated_at": db.now()})
     for a in storage.content_assets(parent_id):
         if a["kind"] == "final":
             db.insert("assets", {**a, "id": db.new_id("AST"), "content_id": vid, "created_at": db.now()})
     history(vid, actor, "variant_created", {"parent": parent_id, "platform": platform})
     v = get_content(vid)
-    res = compliance.check_content(v, storage.content_assets(vid), tag)
+    res = compliance.check_content(v, storage.content_assets(vid), tag, sponsor_of(v))
     qc = {k: res[k] for k in ("passed", "score", "blockers", "warnings", "fixes")} | {"checked_at": db.now(), "by": "rules"}
     if not res["passed"]:
         save_content(vid, "reviewer", "qc_failed", qc, qc=qc, caption=res["caption"], status="needs_revision", stage="qc")
