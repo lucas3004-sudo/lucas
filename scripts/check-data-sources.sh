@@ -21,7 +21,10 @@ printf "%-34s %-9s %-6s %-8s %s\n" "SOURCE" "CRITIQUE" "HTTP" "TEMPS" "RÉSULTAT
 check() {
   local name="$1" critical="$2" url="$3" pattern="$4"
   local out="$TMP/body" meta code time status
-  meta=$(curl -sS -L -o "$out" -w "%{http_code} %{time_total}" --max-time "$TIMEOUT" "$url" 2>"$TMP/err") || true
+  # Jusqu'à 2 nouvelles tentatives : les services publics ont des coupures ponctuelles
+  # (constaté le 2026-11-20 sur Géorisques et static.data.gouv.fr).
+  meta=$(curl -sS -L -o "$out" -w "%{http_code} %{time_total}" --max-time "$TIMEOUT" \
+    --retry 2 --retry-delay 3 --retry-all-errors "$url" 2>"$TMP/err") || true
   code="${meta%% *}"; time="${meta##* }"
   if [[ "$code" == "200" ]] && grep -qE "$pattern" "$out" 2>/dev/null; then
     status="OK"
@@ -63,6 +66,22 @@ check "DVF par commune (archive)" non \
   "https://files.data.gouv.fr/geo-dvf/latest/csv/2025/communes/80/80021.csv" '^id_mutation'
 check "Cerema DVF+ (préprod)" non \
   "https://apidf-preprod.cerema.fr/dvf_opendata/mutations/?code_insee=80021&page_size=1" '"results"'
+
+# Données complémentaires (phase 1). Les URL static.data.gouv.fr sont datées :
+# elles changent à chaque nouveau millésime (voir docs/research/donnees-complementaires.md).
+check "Loyers d'annonce 2025 (ANIL)" non \
+  "https://static.data.gouv.fr/resources/carte-des-loyers-indicateurs-de-loyers-dannonce-par-commune-en-2025/20251211-145010/pred-app-mef-dhup.csv" 'loypredm2'
+check "Zonage ABC (juin 2026)" non \
+  "https://static.data.gouv.fr/resources/liste-des-communes-selon-le-zonage-abc/20260703-091314/liste-ensemble-des-communes-zonage-abc-en-vigueur-26-juin-2026.csv" '^80021;80;Amiens;B1'
+check "transport.data.gouv.fr (API)" non \
+  "https://transport.data.gouv.fr/api/datasets" '"public-transit"'
+check "Fond de carte IGN (style)" non \
+  "https://data.geopf.fr/annexes/ressources/vectorTiles/styles/PLAN.IGN/standard.json" '"PLAN IGN"'
+
+# Fichier volumineux (~136 Mo) : on vérifie seulement sa disponibilité, sans le télécharger.
+BPE_CODE=$(curl -sS -o /dev/null -I -w "%{http_code}" --max-time "$TIMEOUT" "https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.zip" 2>/dev/null)
+if [[ "$BPE_CODE" == "200" ]]; then BPE_STATUS="OK (disponible)"; else BPE_STATUS="ÉCHEC"; fi
+printf "%-34s %-9s %-6s %-8s %s\n" "INSEE BPE 2025 (équipements)" "non" "${BPE_CODE:-000}" "-" "$BPE_STATUS"
 
 # URL résolue dynamiquement depuis les métadonnées data.gouv : elle change à chaque livraison.
 DVF_URL=$(curl -sS --max-time "$TIMEOUT" "https://www.data.gouv.fr/api/1/datasets/demandes-de-valeurs-foncieres-geolocalisees/" 2>/dev/null \

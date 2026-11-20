@@ -85,3 +85,27 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Date** : 2026-11-20 · **Statut** : Acceptée (approuvée par le fondateur via l'invite d'approbation)
 - **Décision** : un environnement personnel limité aux domaines des données publiques françaises listés dans l'audit (section 1.3), sans accès réseau illimité.
 - **Révision** : chaque nouveau domaine (fournisseur d'annonces, API Anthropic, Stripe…) est ajouté explicitement, au moment où il devient nécessaire.
+- **Mise à jour du 2026-11-20 (phase 1)** : ajout de `static.data.gouv.fr` (fichiers DVF et loyers), `www.insee.fr` (BPE) et `transport.data.gouv.fr`.
+
+## D-011 — Origine des annonces : les flux des agences d'abord, un fournisseur seulement après vérification juridique
+- **Date** : 2026-11-20 · **Statut** : Acceptée (devis autorisés par le fondateur, sans engagement)
+- **Contexte** : Jinka a été condamnée deux fois (CA Versailles, 16/12/2025 au profit de SeLoger ; 200 000 € en avril 2026 au profit de Leboncoin). La réutilisation est interdite au même titre que l'extraction (art. L342-1 du CPI). Un fournisseur qui scrape exposerait ImmoPilot.
+- **Décision** : priorité aux annonces des clients eux-mêmes (saisie, import, puis réception de leurs flux de diffusion). Un fournisseur tiers n'est retenu que s'il prouve des accords écrits avec ses sources et apporte une garantie contractuelle. Fluximmo est exclu (scraping revendiqué).
+- **Objection du Devil's Advocate** : aucun fournisseur ne pourra peut-être prouver ses droits sur toutes ses sources, et l'Opportunity Finder restera limité.
+- **Réponse** : c'est possible. On l'assume et on le présente honnêtement aux clients. Un réseau de partage volontaire de mandats entre utilisateurs (sur le modèle du Fichier AMEPI) est une piste à soumettre au Council en phase 7.
+
+## D-012 — Loyers : Carte des loyers ANIL 2025, avec son intervalle
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** : le loyer par défaut des simulations vient de la Carte des loyers 2025 (loyer d'annonce, charges comprises, non meublé, 3e trimestre 2025). On affiche l'intervalle de prédiction, la qualité du modèle (R², nombre d'observations) et la citation imposée. L'utilisateur peut toujours remplacer la valeur.
+- **Objection du Devil's Advocate** : un loyer d'annonce surestime le loyer réellement signé, ce qui gonfle les rendements affichés.
+- **Réponse** : c'est exact. Le produit le dit explicitement, propose par défaut la borne basse de l'intervalle pour les calculs de rentabilité, et laisse l'utilisateur saisir le loyer réel.
+
+## D-013 — L'apprentissage reste à l'intérieur de chaque organisation
+- **Date** : 2026-11-20 · **Statut** : Acceptée, **règle permanente**
+- **Contexte** : un éditeur qui réutilise les données de ses clients pour améliorer son service perd son statut de sous-traitant RGPD et devient responsable de traitement pour ces données.
+- **Décision** : les retours et l'historique d'une organisation n'améliorent que les agents de cette organisation. Au niveau global, on n'utilise que des métriques agrégées et anonymisées. Aucune donnée client ne sert à entraîner un modèle. Cela complète D-006.
+
+## D-014 — Grille tarifaire de lancement
+- **Date** : 2026-11-20 · **Statut** : **En attente du fondateur**
+- **Proposition** : option A, des prix d'entrée (Investisseur 19 €, Solo 59 €, Pro 99 €, Agency 249 € HT), plutôt que l'hypothèse initiale (79, 149 et 299 €). Arguments et calculs : `docs/phase-1-strategie.md`, section 2.
+- **Règle** : aucune formule n'est vendue avant que ses fonctions existent et soient testées.
