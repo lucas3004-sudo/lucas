@@ -7,3 +7,4 @@ data/
 storage/
 *.db
 *.db-*
+*.egg-info/
