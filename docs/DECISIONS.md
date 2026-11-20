@@ -189,3 +189,14 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 ## D-025 — TypeScript 5.9 plutôt que 7.0
 - **Date** : 2026-11-20 · **Statut** : Acceptée
 - **Raison** : TypeScript 7 (réécriture native) est très récent. Les outils (Next.js, ESLint, Vitest) sont éprouvés avec la version 5. Réévaluation en phase 9.
+
+## D-026 — Schéma d'authentification « iam », et non « auth »
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Contexte** : Supabase réserve le schéma `auth` à son propre service de connexion. Y créer nos tables risquait de casser Supabase ou d'entrer en conflit avec ses mises à jour.
+- **Décision** : le schéma est renommé `iam` avant tout déploiement. Les migrations ont été corrigées sur place : elles n'avaient été appliquées qu'aux bases locales, recréées ensuite. Le chemin de recherche du rôle `app_auth` est fixé en base (`ALTER ROLE … SET search_path`), compatible avec les répartiteurs de connexions.
+
+## D-027 — Aucun accès propriétaire à la base depuis le site
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** : le site (Vercel) ne reçoit que les identifiants `app_user` et `app_auth`. Les migrations sont appliquées sous `app_owner` via le connecteur Supabase, avant le déploiement du code qui en dépend. La procédure figure dans `docs/deploiement-preprod.md`.
+- **Objection du Devil's Advocate** : l'application manuelle des migrations est une source d'oubli (un code déployé sans sa migration).
+- **Réponse** : c'est vrai. Le risque est accepté en préproduction. Avant la production, on ajoutera un contrôle au démarrage : l'application refusera de démarrer si une migration connue du code manque en base.

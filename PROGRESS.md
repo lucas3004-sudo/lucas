@@ -12,7 +12,7 @@ d'acceptation sont vérifiés.
 | 0. Audit | ✅ Terminée (2026-11-20) | [Audit](docs/phase-0-audit.md), [Décisions](docs/DECISIONS.md), [Script de vérification des sources](scripts/check-data-sources.sh) |
 | 1. Recherche et stratégie | ✅ Terminée (2026-11-20) : prix d'entrée et cible « petites agences » choisis par le fondateur | [Stratégie, prix, MVP](docs/phase-1-strategie.md), [Concurrents](docs/research/concurrents.md), [Fournisseurs d'annonces](docs/research/fournisseurs-annonces.md), [Données complémentaires](docs/research/donnees-complementaires.md), [Fiche juridique](docs/legal/fiche-juridique.md), [Guide d'entretien](docs/research/guide-entretien.md) |
 | 2. Architecture détaillée | ✅ Terminée (2026-11-20) | [Architecture](docs/phase-2/architecture.md), [Modèle de données](docs/phase-2/modele-donnees.md), [Permissions](docs/phase-2/permissions.md), [Moteur d'agents](docs/phase-2/moteur-agents.md), [Ingestion](docs/phase-2/ingestion.md) ; prototypes [RLS](prototypes/rls/run.sh) (12 tests sur 12) et [nettoyage DVF](prototypes/dvf/clean_dvf.py) |
-| 3. Fondation (+ préproduction) | 🟡 Fondation livrée et testée en local (2026-11-20) ; **préproduction en attente de l'accord du fondateur** (création des comptes Vercel et Supabase) | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
+| 3. Fondation (+ préproduction) | 🟡 Fondation livrée, testée en local et en CI (au vert). Base de préproduction Supabase prête et testée ; **reste la création du compte Vercel par le fondateur** | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
 | 4. Intelligence immobilière | À faire | — |
 | 5. Socle agents | À faire | — |
 | 6. Outils professionnels (fin du MVP) | À faire | — |
@@ -62,7 +62,8 @@ d'acceptation sont vérifiés.
 - CSP sans nonces (`unsafe-inline`) : durcissement prévu en phase 9.
 
 ## Décisions en attente du fondateur
-1. **Création des comptes gratuits Vercel et Supabase** pour la préproduction (D-020).
+1. **Création du compte Vercel gratuit** et import du dépôt (guide pas à pas fourni). La base Supabase est prête.
+2. **Création du compte Brevo** (e-mails), choisi le 2026-11-20 : à guider après la mise en ligne.
 2. Clé API Anthropic avec plafond de dépense, avant la phase 5.
 3. Demandes de devis aux fournisseurs d'annonces : **reportées** avant la phase 6 (choix du fondateur).
 4. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`, avec les questions pour gérant).
