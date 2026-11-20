@@ -106,6 +106,45 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Décision** : les retours et l'historique d'une organisation n'améliorent que les agents de cette organisation. Au niveau global, on n'utilise que des métriques agrégées et anonymisées. Aucune donnée client ne sert à entraîner un modèle. Cela complète D-006.
 
 ## D-014 — Grille tarifaire de lancement
-- **Date** : 2026-11-20 · **Statut** : **En attente du fondateur**
-- **Proposition** : option A, des prix d'entrée (Investisseur 19 €, Solo 59 €, Pro 99 €, Agency 249 € HT), plutôt que l'hypothèse initiale (79, 149 et 299 €). Arguments et calculs : `docs/phase-1-strategie.md`, section 2.
+- **Date** : 2026-11-20 · **Statut** : **Acceptée par le fondateur** (prix d'entrée)
+- **Décision** : Investisseur 19 €, Solo 59 €, Pro 99 €, Agency 249 € HT (3 utilisateurs, puis 49 € par utilisateur supplémentaire), Business sur devis. Arguments et calculs : `docs/phase-1-strategie.md`, section 2.
 - **Règle** : aucune formule n'est vendue avant que ses fonctions existent et soient testées.
+
+## D-015 — Cible prioritaire : les petites agences (2 à 10 personnes)
+- **Date** : 2026-11-20 · **Statut** : **Acceptée, choix du fondateur** (la recommandation initiale visait les indépendants)
+- **Conséquences** : la formule Agency devient la formule phare. Rôles et visibilité dès le MVP. Matching à l'échelle de l'agence. Tableau de bord du gérant (F13). Import depuis le logiciel de l'agence. Détail : `docs/phase-1-strategie.md`, section 1 bis.
+- **Objections du Devil's Advocate et réponses** : voir la section 1 bis (cycle de vente plus long, MVP plus lourd, risque de surveillance des salariés : question ajoutée pour l'avocat).
+
+## D-016 — Isolation : RLS restrictive, appartenance vérifiée par la base, contexte par transaction
+- **Date** : 2026-11-20 · **Statut** : Acceptée, **validée par prototype** (`prototypes/rls`, 12 tests sur 12)
+- **Décision** :
+  - rôle applicatif non propriétaire et sans contournement de la RLS ;
+  - `FORCE ROW LEVEL SECURITY` ;
+  - politique restrictive d'isolation + politiques permissives de visibilité ;
+  - rôle de l'utilisateur **lu dans la base** à partir de l'adhésion, et non fourni par l'application ;
+  - contexte fixé **uniquement en mode transaction**.
+- **Règles qui en découlent** :
+  - `SET` sans `LOCAL` et `set_config(…, false)` sont interdits (le test T11 prouve la fuite) ;
+  - tout test de refus a un contrôle positif ;
+  - un test de CI vérifie qu'aucune table portant `org_id` n'échappe à la RLS.
+- **Défaut trouvé par le prototype** : avec `FORCE`, il faut une politique explicite pour la fonction `SECURITY DEFINER` qui lit les adhésions.
+
+## D-017 — Règles de nettoyage DVF R1 à R5
+- **Date** : 2026-11-20 · **Statut** : Acceptée, **mesurée sur données réelles** (Amiens 2025)
+- **Décision** : les règles R1 à R5 de `docs/phase-2/ingestion.md`. Le neuf (VEFA) est séparé de l'ancien. Les ventes de plusieurs logements sont exclues. Les résultats du prototype deviennent des tests de non-régression.
+- **Objection du Devil's Advocate** : exclure 624 ventes sur 2 305 (27 %) réduit le nombre de comparables dans les petites communes.
+- **Réponse** : c'est vrai, mais garder ces ventes fausse la médiane de 20 %. Le rayon de recherche s'élargit par paliers, et le niveau de confiance affiché baisse quand les comparables manquent. Mieux vaut moins de données justes que beaucoup de données fausses.
+
+## D-018 — Fiches d'agents dans le code, approbation humaine L3 non désactivable
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** :
+  - les fiches d'agents (outils, plafonds, budgets, modèles) sont versionnées dans git et synchronisées au démarrage avec contrôle d'empreinte ;
+  - l'interface permet seulement d'activer ou de désactiver un agent ;
+  - les actions L3 exigent une approbation humaine à chaque fois, sans réglage pour l'automatiser ;
+  - les droits d'un agent sont l'intersection de ceux de l'utilisateur, de sa liste d'outils et de son plafond.
+- **Objection du Devil's Advocate** : des agences voudront automatiser leurs relances par e-mail, et devoir les approuver une par une va les frustrer.
+- **Réponse** : au MVP, l'approbation se fait **par lot** (une validation pour une liste d'envois préparés et visibles), ce qui reste une validation humaine explicite. Un envoi automatique sans validation n'est envisageable qu'après l'avis de l'avocat sur la prospection, et par une nouvelle décision.
+
+## D-019 — DPE : rapprochement par identifiant BAN, choix humain si plusieurs DPE
+- **Date** : 2026-11-20 · **Statut** : Acceptée (5 rapprochements sur 5 vérifiés à Amiens)
+- **Décision** : rapprochement par `identifiant_ban`. Si plusieurs DPE correspondent à la même adresse, l'utilisateur choisit dans une liste. Sans DPE, le statut `manquante` est affiché. Un DPE antérieur à 2026 pour un logement chauffé à l'électricité porte une alerte.

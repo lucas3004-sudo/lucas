@@ -21,6 +21,7 @@
 | H6 | Il paierait 50 à 150 €/mois pour gagner plusieurs heures par semaine | Il cite des outils qu'il paie déjà et leur prix | Prix acceptable inférieur à 30 € |
 | H7 | La fin du démarchage téléphonique (août 2026) a changé sa prospection | Il cherche de nouvelles sources de mandats | Pas concerné, ou il continue comme avant |
 | H8 | Il fait confiance à une IA si elle cite ses sources | Il veut vérifier, et apprécie la transparence | Il refuse toute IA, ou au contraire ne vérifie jamais |
+| H9 | Le gérant passe du temps à reconstituer l'activité de son équipe, et les biens circulent mal entre négociateurs | Réunions hebdomadaires, tableurs, acheteurs « perdus » d'un négociateur à l'autre | Son logiciel actuel le fait déjà bien |
 
 ## Déroulé
 
@@ -44,6 +45,12 @@
 **5. IA et confiance (3 min)**
 - Utilisez-vous déjà une IA (ChatGPT ou une autre) dans votre travail ? Pour quoi faire ? Qu'est-ce qui vous gêne ? *(H8)*
 - *(Seulement maintenant)* Présenter l'idée en une phrase : « un copilote qui prépare vos rendez-vous avec des données officielles sourcées, rapproche vos biens et vos acheteurs, et rédige à votre place, à côté de votre logiciel actuel ». Quelle est sa première réaction ? Qu'est-ce qui manque ?
+
+**5 bis. Si la personne interrogée est gérant(e) d'agence** (cible prioritaire depuis le 20/11/2026), remplacer la partie 2 par :
+- Comment savez-vous, chaque semaine, ce que fait chaque négociateur (rendez-vous, relances, affaires) ? Combien de temps cela vous prend-il ? *(H9)*
+- La dernière fois qu'un bien est entré, a-t-il été proposé aux acheteurs des **autres** négociateurs ? Comment ? *(H3 à l'échelle de l'agence)*
+- Quand un négociateur part, que deviennent ses contacts et ses affaires ?
+- Qui décide d'acheter un logiciel dans l'agence ? Faut-il convaincre l'équipe ?
 
 **Fin**
 - Puis-je vous recontacter pour tester une première version ?

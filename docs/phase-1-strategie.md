@@ -1,7 +1,7 @@
 # ImmoPilot AI — phase 1 : stratégie, prix et périmètre du MVP
 
 - **Date** : 20 novembre 2026
-- **Statut** : proposition, **en attente des choix du fondateur** (prix, cible prioritaire)
+- **Statut** : **validée par le fondateur le 20/11/2026** : prix d'entrée (option A), cible prioritaire **petites agences** (voir section 1 bis)
 - **Documents de recherche** :
   - [Concurrents](research/concurrents.md)
   - [Fournisseurs d'annonces](research/fournisseurs-annonces.md)
@@ -20,6 +20,34 @@
 
 **Devil's Advocate** : *les mandataires de réseau (iad, Safti, Capifrance…) reçoivent souvent des outils de leur réseau, parfois gratuits, voire Yanport via un partenariat dans le cas d'iad. Le marché réel est peut-être plus étroit qu'il n'y paraît.*
 **Réponse** : c'est un vrai risque. Les entretiens (H5, H6) et le premier mois de bêta le mesureront. Les petites agences restent la cible de repli.
+
+## 1 bis. Décision du fondateur : les petites agences en priorité (D-015)
+
+Le fondateur a choisi comme cible prioritaire les **petites agences (2 à 10 personnes)** plutôt que les agents indépendants. Le positionnement devient :
+
+> **« L'équipe d'assistants IA de votre agence : elle prépare les rendez-vous de vos négociateurs avec des données officielles sourcées, rapproche tous les biens de l'agence de tous ses acheteurs, et donne au gérant une vue claire de l'activité. Elle fonctionne à côté de votre logiciel de transaction. »**
+
+**Ce qui change dans le produit :**
+
+| Domaine | Changement |
+|---|---|
+| **Formule phare** | **Agency** (249 € HT, 3 utilisateurs, puis 49 € par utilisateur supplémentaire). Les formules Solo et Pro restent ouvertes aux indépendants |
+| **Rôles dès le MVP** | Gérant (propriétaire du compte), manager, négociateur, assistant(e), lecture seule. Détail dans `docs/phase-2/permissions.md` |
+| **Visibilité** | Chaque contact et chaque bien a un responsable et une visibilité (« privé » ou « agence »). Le gérant voit tout. Les règles sont paramétrables par l'agence |
+| **Matching à l'échelle de l'agence** | Un nouveau bien est rapproché des acheteurs **de tous les négociateurs**, pas seulement de ceux de son responsable. C'est la valeur principale pour une équipe, chaque négociateur restant propriétaire de ses contacts |
+| **Tableau de bord du gérant** (nouvelle fonction F13) | Activité par négociateur (rendez-vous, relances, dossiers), pipeline de l'agence, biens sans acquéreur, relances en retard. **Uniquement des données mesurées**, aucun classement automatique des personnes |
+| **Import depuis le logiciel de l'agence** | Priorité plus forte : import CSV des biens et des contacts exportés depuis Hektor, Apimo ou Modelo. Les formats exacts seront à obtenir auprès des agences bêta |
+| **Conformité de l'agence** (piste hors MVP) | Suivi des échéances de la carte T, de la garantie financière, de l'assurance de responsabilité civile professionnelle et des attestations d'habilitation des collaborateurs. Le registre des mandats (numérotation continue, conservation 10 ans) reste dans le logiciel de transaction : **ImmoPilot ne le remplace pas**, à cause de ses exigences légales |
+
+**Devil's Advocate** :
+- *une agence décide plus lentement qu'un indépendant (le gérant doit convaincre son équipe) ;*
+- *le besoin d'outils d'équipe alourdit le MVP ;*
+- *le gérant peut voir le tableau de bord comme un outil de surveillance, ce qui pose des questions de droit du travail si l'on mesure l'activité des salariés.*
+
+**Réponse** :
+- le cycle de vente plus long est compensé par un panier trois à quatre fois supérieur ;
+- les rôles et la visibilité sont de toute façon nécessaires à l'isolation des données (phase 3) ;
+- le tableau de bord affiche l'**activité commerciale** (rendez-vous, affaires) et non la surveillance des personnes (pas de temps de connexion, pas de classement). Le **point droit du travail** (information des salariés sur les outils de suivi) est ajouté aux questions pour l'avocat.
 
 ## 2. Prix et quotas
 
@@ -72,18 +100,19 @@ Chaque fonction a des critères d'acceptation **vérifiables**. Elle n'est termi
 
 | # | Fonction | Critères d'acceptation principaux |
 |---|---|---|
-| F1 | **Comptes, organisations, rôles** | Inscription, création d'organisation, invitation, rôles (propriétaire, agent, lecture seule). **Un test automatique prouve, pour chaque table, qu'un utilisateur de l'organisation A ne peut ni lire ni modifier les données de l'organisation B.** Journal d'audit des connexions et des actions sensibles |
+| F1 | **Comptes, agences, rôles, visibilité** | Inscription, création de l'agence, invitation des collaborateurs, rôles (gérant, manager, négociateur, assistant, lecture seule), visibilité « privé » ou « agence » sur les contacts et les biens, réaffectation d'un portefeuille quand un collaborateur part. **Un test automatique prouve, pour chaque table, qu'un utilisateur de l'organisation A ne peut ni lire ni modifier les données de l'organisation B.** Journal d'audit des connexions et des actions sensibles |
 | F2 | **Dossier de bien depuis une adresse** | Adresse géocodée par la BAN. Comparables DVF nettoyés dans un rayon réglable, avec leur nombre, la médiane et l'intervalle du prix au m². DPE trouvés à l'adresse, avec leur date. Risques Géorisques. Zone ABC. Loyer ANIL avec son intervalle. **Chaque valeur affiche sa source et sa date.** En Alsace-Moselle, un message explicite « DVF non disponible ». Export PDF identique à l'écran |
 | F3 | **Estimation indicative** | Toujours une **fourchette** (jamais un prix unique) et un niveau de confiance (élevé, moyen ou faible) calculé à partir du nombre et de la dispersion des comparables. Ajustements de l'agent tracés. Mention « estimation indicative, pas une expertise ». Calcul testé sur des jeux de données de référence |
 | F4 | **CRM** | Contacts (acquéreurs, vendeurs, investisseurs), profils de recherche, pipeline, notes, tâches et rappels, rendez-vous (export calendrier .ics). **Champ consentement** (canal, date, preuve). Détection des doublons. Import CSV. Export et suppression d'un contact (droits RGPD) |
 | F5 | **Biens de l'agence** | Saisie, import CSV, photos. Statut (mandat, sous offre, vendu) |
-| F6 | **Smart Matching** | Score de 0 à 100 par paire bien / acheteur. **Pondérations modifiables.** Explication des critères remplis et manquants. Liste fermée de critères, sans aucun critère discriminatoire. Calcul testé |
+| F6 | **Smart Matching** | Rapprochement **à l'échelle de l'agence** (biens et acheteurs de tous les négociateurs, dans le respect de la visibilité « privé »). Score de 0 à 100 par paire bien / acheteur. **Pondérations modifiables.** Explication des critères remplis et manquants. Liste fermée de critères, sans aucun critère discriminatoire. Calcul testé |
 | F7 | **Investment Studio** | Rendement brut et net, cash-flow, mensualité de prêt, frais d'acquisition, travaux, charges, vacance, sensibilité au prix et au loyer. **Toutes les hypothèses sont modifiables et affichées.** Résultats vérifiés sur au moins 10 cas calculés à la main. Mention « simulation, pas un conseil » |
 | F8 | **AI Copilot** | Questions en langage naturel sur les biens, contacts et dossiers de l'utilisateur. Appels d'outils réels. **Mention visible « vous échangez avec une IA ».** Cite ses sources. Répond « donnée manquante » plutôt que d'inventer. Toute action externe passe par la file d'approbation |
 | F9 | **Rédaction assistée** | Annonce avec **contrôle automatique des mentions obligatoires**, compte rendu de visite, e-mail de relance, préparation de rendez-vous vendeur. Contenus **marqués « générés par IA »**. Rien n'est envoyé ni publié sans validation |
 | F10 | **Agent Center v1** | Liste des agents, avec leur mode (déterministe, assisté ou autonome), leur statut, leurs dernières missions et leur **coût réel mesuré**. Boîte d'approbations |
 | F11 | **Opportunity Finder v1** | Recherches enregistrées sur les biens de l'agence et les biens importés. Alerte quand un nouveau bien correspond à un acheteur. Branchement d'un fournisseur d'annonces seulement après sa validation juridique |
 | F12 | **Transactions (version légère)** | Étapes du compromis à l'acte, liste de pièces par étape, alertes d'échéance |
+| F13 | **Tableau de bord du gérant** (ajouté avec D-015) | Activité par négociateur (rendez-vous, relances, dossiers, affaires), pipeline de l'agence, biens sans acquéreur correspondant, relances en retard. Chiffres **mesurés** uniquement, chacun avec sa période. Aucun classement automatique des personnes. Visible seulement par les rôles gérant et manager |
 
 **Hors MVP** : espace particuliers (phase 10), organisation entreprise et Agent Council (phase 7), facturation Stripe (phase 8, **avant toute vente**), multidiffusion vers les portails, application mobile native (le site sera responsive).
 

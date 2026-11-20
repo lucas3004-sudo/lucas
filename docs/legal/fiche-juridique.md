@@ -71,6 +71,8 @@
 6. **Estimation** : quelle formulation pour l'« estimation indicative » afin d'éviter toute confusion avec une expertise ou un avis de valeur engageant ?
 7. **DVF** : des statistiques agrégées par commune (médianes, nombre de ventes), publiées en accès libre, respectent-elles la condition de non-indexation ?
 8. **CGU et CGV** : clauses de limitation de responsabilité pour les contenus générés par l'IA.
+9. **Droit du travail, tableau de bord du gérant** (ajouté avec la cible « petites agences », D-015) : afficher l'activité commerciale par négociateur salarié (rendez-vous, relances, affaires) impose-t-il une information préalable des salariés ou du CSE ? Quelles limites respecter pour ne pas en faire un dispositif de surveillance ?
+10. **Registre des mandats** : à quelles conditions un registre tenu sous forme électronique est-il valable ? (ImmoPilot ne le gère pas au MVP, mais les agences le demanderont.)
 
 ## Sources
 - [UNIS : tableau des mentions obligatoires des annonces de vente (février 2026)](https://www.unis-immo.fr/app/uploads/2026/02/tableau-annonces-ventes-mentions-obligatoires-090226-2.pdf)
