@@ -15,3 +15,4 @@
 | 11 | 2026-11-20 | Rapport quotidien sans LLM | Zéro token ; chiffres issus de la base avec provenance | Oui |
 | 12 | 2026-11-20 | Skills tiers vendorisés (Markdown seul, SOURCE.md) | Revue de sécurité possible, pas de dépendance réseau, pas de script exécuté | Oui |
 | 13 | 2026-11-20 | `vercel.json` supprimé | Résidu d'un projet calculatrice ; serverless incompatible avec des workers persistants | Oui (historique git) |
+| 14 | 2026-11-20 | Personnage par défaut « Nour » (franco-marocaine, quartier, étudiante) à **22 ans** ; âge plancher **21** codé en dur ; pas de symboles religieux ni de clichés | Demande initiale 18-19 ans refusée : le personnage sert de vitrine à une activité adulte hors OS ; en France l'art. 227-23 du Code pénal vise aussi les images d'une personne « dont l'aspect physique est celui d'un mineur » — un personnage IA n'a pas d'âge prouvable, seule l'apparence compte | Non (volontaire) |

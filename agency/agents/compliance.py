@@ -7,7 +7,7 @@ BLOCK_PATTERNS = {
     "explicit": r"\b(nude|nudes|nu(e|es)?\s+int[ée]gral|porn\w*|xxx|nsfw|sex(e|uel|uelle)?\b|[ée]rotique|fetish|f[ée]tich\w*|strip[- ]?tease|seins nus|topless|lingerie sexy)",
     "adult_platform": r"\b(onlyfans|only\s*fans|fanvue|mym\.fans|\bmym\b|fansly|patreon\s*18|18\+|contenu (priv[ée]|exclusif) payant)",
     "solicitation": r"(lien (en|dans (la|ma)) bio pour (plus|voir)|dm (moi )?pour (plus|du contenu)|abonne[- ]?toi pour voir|contenu non censur[ée])",
-    "minor": r"\b(mineure?s?|ado(lescente)?s?|teen\w*|lyc[ée]enne|coll[ée]gienne|schoolgirl|petite fille|loli\w*)\b",
+    "minor": r"\b(mineure?s?|ado(lescente)?s?|teen\w*|lyc[ée]enne|coll[ée]gienne|schoolgirl|petite fille|loli\w*|barely legal|tout juste majeure|petite jeune)\b",
     "fake_human": r"(je suis une vraie (fille|femme|personne)|pas une ia\b|not an ai|real (girl|person|woman)|je ne suis pas une ia)",
 }
 WARN_PATTERNS = {

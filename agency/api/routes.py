@@ -331,7 +331,10 @@ def character():
 @r.put("/character")
 def update_character(body: dict = Body(...)):
     body.pop("references", None)
-    blocks = compliance.check_text(db.dumps(body))
+    scanned = {k: v for k, v in body.items() if k not in ("visual_identity", "editorial_line")}
+    for k in ("visual_identity", "editorial_line"):  # "dont" lists describe what is forbidden: not scanned
+        scanned[k] = {kk: vv for kk, vv in (body.get(k) or {}).items() if kk != "dont"}
+    blocks = compliance.check_text(db.dumps(scanned))
     if blocks:
         raise HTTPException(422, f"fiche personnage non conforme : {blocks}")
     data = save_character({**active_character(), **body, "is_placeholder": False})

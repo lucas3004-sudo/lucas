@@ -10,7 +10,7 @@ export async function render(el) {
   el.innerHTML = `<h1>Character Studio</h1><p class="sub">La bible du personnage : source unique utilisée par tous les agents (prompts, scripts, voix, QC).</p>
   ${c.is_placeholder ? `<div class="card" style="border-color:var(--warning)"><b>! Profil provisoire.</b> Personnalisez le nom, la niche et l'identité visuelle puis enregistrez.</div>` : ""}
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h2>Identité</h2><div class="grid g2">${f("name", "Nom", c.name)}${f("age", "Âge (adulte, ≥ 18)", c.age)}</div>
+    <div class="card"><h2>Identité</h2><div class="grid g2">${f("name", "Nom", c.name)}${f("age", "Âge (≥ 21, apparence clairement adulte)", c.age)}</div>
       ${f("tagline", "Accroche", c.tagline)}${f("bio", "Biographie", c.bio, true)}${f("personality", "Personnalité (virgules)", list(c.personality))}
       ${f("values", "Valeurs (virgules)", list(c.values))}${f("tone", "Ton", c.tone)}${f("niche", "Niche", c.niche)}
       <label>Piliers éditoriaux (une ligne par pilier : Nom: sujet1, sujet2)</label><textarea id="pillars" style="min-height:110px">${esc(c.pillars.map((p) => `${p.name}: ${p.topics.join(", ")}`).join("\n"))}</textarea></div>

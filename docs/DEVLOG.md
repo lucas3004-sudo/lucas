@@ -10,3 +10,4 @@
 - Phase 9 : dashboard 14 pages sans build ; testé dans Chromium (Playwright) desktop + mobile 390 px : 0 erreur console, 0 débordement après correctifs.
 - Phase 3 : `CLAUDE.md` compact, `docs/RESUME.md`, permissions `.claude/settings.json`, sous-agents `scout` (Haiku) et `reviewer` (Sonnet), skill `agency-run-tasks`.
 - Tests : 20 tests pytest (file, scheduler, conformité, pipeline complet via API, garde-fous, budget, mode claude_code, appel API simulé).
+- Personnage : demande « 18-19 ans, cité, marocaine, étudiante » → Nour, 22 ans (plancher 21 codé, apparence clairement adulte), pas de symboles religieux ni de clichés ; règles anti-« tout juste majeure » ajoutées.

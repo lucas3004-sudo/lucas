@@ -11,7 +11,7 @@ HOOKS = [  # {topic} is a noun phrase with its article ("la routine du matin")
     ("pov", "POV : une IA t'explique {topic}"),
     ("défi", "J'ai testé {topic} pendant 7 jours"),
     ("question", "Toi aussi tu galères avec {topic} ?"),
-    ("coulisses", "Les coulisses de {topic}"),
+    ("coulisses", "Dans les coulisses : {topic}"),
     ("rapide", "{topic} en 30 secondes chrono"),
     ("transparence", "Oui je suis une IA, et voici mon avis sur {topic}"),
 ]
@@ -27,10 +27,11 @@ EVERGREEN_FORMATS = [
     ("Coulisses IA", "Montrer le processus de création de façon transparente", "talking_head"),
 ]
 HASHTAGS = {
-    "Style du quotidien": ["#ootd", "#lookdujour", "#modeaccessible", "#styleinspo"],
-    "Routines & bien-être": ["#routinedumatin", "#bienetre", "#organisation", "#selfcare"],
+    "Vie étudiante": ["#etudiante", "#viedetudiante", "#fac", "#revisions"],
+    "Style & beauté accessibles": ["#ootd", "#streetwear", "#petitbudget", "#lookdujour"],
+    "Vie de quartier & famille": ["#famille", "#quartier", "#viedequartier", "#humour"],
+    "Culture marocaine & cuisine": ["#maroc", "#cuisinemarocaine", "#recette", "#darija"],
     "Coulisses d'une créatrice IA": ["#creatriceIA", "#intelligenceartificielle", "#coulisses", "#virtualcreator"],
-    "Tendances & mini-défis": ["#defi7jours", "#tendance", "#challenge", "#pourtoi"],
 }
 PLATFORM_TAGS = {"tiktok": ["#pourtoi", "#fyp"], "instagram": ["#reels", "#inspiration"]}
 CTAS = ["Dis-moi en commentaire laquelle tu préfères 👇", "Enregistre pour plus tard 📌",

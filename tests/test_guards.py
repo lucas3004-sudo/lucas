@@ -25,7 +25,8 @@ def test_upload_rejects_bad_extension(client, agency_env):
 
 def test_character_must_stay_compliant_and_adult(client):
     assert client.put("/api/character", json={"bio": "lien OnlyFans en bio"}).status_code == 422
-    assert client.put("/api/character", json={"age": 15}).json()["age"] == 18
+    assert client.put("/api/character", json={"age": 18}).json()["age"] == 21
+    assert client.put("/api/character", json={"tagline": "tout juste majeure"}).status_code == 422
 
 
 def test_admin_token(agency_env, monkeypatch):
@@ -134,3 +135,10 @@ def test_settings_validation(client):
     assert client.put("/api/settings", json={"posting_hours": {"tiktok": ["25:99"]}}).status_code == 400
     assert client.put("/api/settings", json={"agent_modes": {"creative": "gpt"}}).status_code == 400
     assert client.put("/api/settings", json={"agent_modes": {"creative": "claude_code"}}).status_code == 200
+
+
+def test_default_character_is_compliant_and_saveable(client):
+    ch = client.get("/api/character").json()
+    assert ch["age"] >= 21 and "IA" in ch["disclosure"]["short"]
+    ch.pop("references")
+    assert client.put("/api/character", json=ch).status_code == 200

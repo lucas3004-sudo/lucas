@@ -15,7 +15,7 @@
 
 ## Prochaines étapes (ordre conseillé)
 1. Sur le PC de l'utilisateur : `pip install -e ".[api,dev]"`, `cp .env.example .env`, `python -m agency serve`, vérifier ffmpeg.
-2. Personnaliser Character Studio (nom, niche, visage, voix) — le profil « Nova » est provisoire.
+2. Personnage par défaut : **Nour**, 22 ans, franco-marocaine, cité de banlieue, étudiante en marketing digital (âge plancher 21, cf. DECISIONS #14). Affiner dans Character Studio puis enregistrer.
 3. Ajouter `ELEVENLABS_API_KEY` → tester → choisir `voice_id` → activer `voice_enabled` (avec accord sur les crédits).
 4. Vérifier l'API Alexya (docs officielles + compte) ; si elle existe : module `agency/integrations/alexya.py` + branche `image_provider=alexya` dans `producer_generate`, avec test réel.
 5. Essayer le mode `claude_code` : Settings › LLM = claude_code, LANCER, puis `/agency-run-tasks` dans Claude Code.
