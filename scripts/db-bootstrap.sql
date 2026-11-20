@@ -24,6 +24,9 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'dbname') \gexec
 SELECT format('ALTER ROLE app_auth IN DATABASE %I SET search_path = iam', :'dbname') \gexec
 
 \connect :dbname
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- PostGIS dans un schéma dédié « extensions », comme sur Supabase : bases locales et distantes identiques.
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA extensions;
+GRANT USAGE ON SCHEMA extensions TO app_owner, app_user, app_ingest;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT CONNECT ON DATABASE :"dbname" TO app_user, app_auth, app_ingest;

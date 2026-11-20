@@ -100,6 +100,22 @@ importers:
 
   packages/domain: {}
 
+  packages/integrations:
+    dependencies:
+      '@immopilot/domain':
+        specifier: workspace:*
+        version: link:../domain
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+    devDependencies:
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+
 packages:
 
   '@alloc/quick-lru@5.3.0':
