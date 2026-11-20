@@ -220,3 +220,30 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - fenêtre par défaut : les 3 derniers fichiers (environ 24 mois et une marge).
 - **Objection du Devil's Advocate** : dans une petite commune, R5 s'applique sur peu de ventes (moins de 8) et ne retient alors que les bornes absolues de 200 et 25 000 €/m².
 - **Réponse** : c'est vrai. Le niveau de confiance de l'estimation baisse dans ce cas (moins de 8 comparables : confiance « faible »). Un R5 au niveau de l'EPCI pourra être étudié avec plus de départements.
+
+## D-031 — Critères des profils d'acquéreurs lisibles par toute l'agence, identité protégée
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Contexte** : le matching doit se faire à l'échelle de l'agence (D-015, F6), même quand un négociateur garde ses acquéreurs en « privé ».
+- **Décision** :
+  - les **critères** d'un profil de recherche (type, budget, surface, pièces, communes, équipements) sont lisibles par tous les membres de l'agence ;
+  - l'**identité** reste protégée par la visibilité du contact : pour un collègue, l'acquéreur s'affiche « Acquéreur de [responsable] (privé) » ;
+  - « Prévenir » crée une tâche pour le responsable, qui décide seul de la suite.
+- **Objection du Devil's Advocate** : un budget et une commune peuvent, dans un petit village, suffire à deviner qui cherche.
+- **Réponse** : c'est vrai. Le risque est limité à l'intérieur d'une même agence, dont les membres sont tenus au secret professionnel. On peut le réduire plus tard : afficher une fourchette de budget au lieu du montant, ou laisser le gérant désactiver le partage des critères.
+
+## D-032 — Seuils anti-abus de connexion réglables pour les tests
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** : les seuils d'inscription (5 par minute) et de connexion (10 par minute) peuvent être relevés par les variables `AUTH_RATE_LIMIT_SIGNUP` et `AUTH_RATE_LIMIT_SIGNIN` (entier de 1 à 1000). Seule la CI les relève, car les tests créent une douzaine de comptes en quelques secondes depuis une seule adresse IP. Sans variable, les valeurs de production s'appliquent.
+
+## D-033 — Consentements en ajout seul
+- **Date** : 2026-11-20 · **Statut** : Acceptée
+- **Décision** :
+  - un consentement de prospection ne se modifie ni ne s'efface : un retrait est une nouvelle ligne, et la dernière ligne par canal fait foi ;
+  - la preuve (où, quand, comment) est obligatoire ;
+  - la base refuse toute modification (aucune politique UPDATE ni DELETE).
+- **Raison** : en cas de contestation, l'agence doit montrer quand et comment l'accord a été obtenu, puis retiré (fiche juridique, prospection).
+- **Limite** : la suppression du contact efface ses consentements (droit à l'effacement). Une conservation de la seule preuve du retrait, sous forme anonymisée, sera étudiée avec l'avocat.
+
+## D-034 — Le CRM et le matching avant les agents IA
+- **Date** : 2026-11-20 · **Statut** : Acceptée (choix du fondateur)
+- **Décision** : la partie CRM et matching de la phase 6 est construite avant la phase 5 (agents). Une petite agence peut ainsi utiliser l'outil sans IA, et les agents auront ensuite de vraies données métier à traiter.

@@ -9,7 +9,12 @@
   - plusieurs questions indépendantes peuvent être regroupées (4 au maximum par envoi) ;
   - chaque question doit se comprendre seule, sans relire la conversation.
 - Les décisions techniques réversibles se prennent sans demander ; elles sont documentées dans `docs/DECISIONS.md`.
-- Demander l'accord pour tout ce qui engage de l'argent, des comptes externes ou des données sensibles.
+- **Autorisation permanente du fondateur (2026-11-20) : « j'autorise à chaque fois, ne demande pas tout le temps ».** Sans redemander, une fois les tests et la CI au vert :
+  - fusionner dans `main` ;
+  - appliquer en préproduction (Supabase) les migrations testées ;
+  - enchaîner sur l'étape suivante de la feuille de route déjà validée.
+  Le fondateur est ensuite informé de ce qui a été fait, en une phrase.
+- Demander encore l'accord seulement pour ce qui engage de l'argent, crée un nouveau compte externe ou touche des données personnelles réelles.
 
 ## Suivi du projet
 - Tenir à jour `PROGRESS.md` (état des phases, blocages, journal) et `docs/DECISIONS.md`.

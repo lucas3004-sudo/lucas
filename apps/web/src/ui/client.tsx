@@ -1,6 +1,6 @@
 "use client";
 /** Composants interactifs du design system (nécessitent le navigateur). */
-import { useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { buttonClass } from "./button";
 
@@ -10,18 +10,62 @@ export function SubmitButton({
   variant = "primary",
   size = "md",
   className,
+  pending,
 }: {
   children: React.ReactNode;
   pendingLabel?: string;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md";
   className?: string;
+  /** État d'attente fourni par ActionForm (sinon, lu depuis le formulaire parent). */
+  pending?: boolean;
 }) {
-  const { pending } = useFormStatus();
+  const status = useFormStatus();
+  const busy = pending ?? status.pending;
   return (
-    <button type="submit" disabled={pending} aria-busy={pending} className={buttonClass(variant, size, className)}>
-      {pending ? (pendingLabel ?? "Un instant…") : children}
+    <button type="submit" disabled={busy} aria-busy={busy} className={buttonClass(variant, size, className)}>
+      {busy ? (pendingLabel ?? "Un instant…") : children}
     </button>
+  );
+}
+
+type ActionResult = { error?: string; success?: string };
+
+/**
+ * Formulaire relié à une action serveur, SANS remise à zéro automatique des champs (React 19
+ * vide un formulaire après chaque envoi : la saisie serait perdue en cas d'erreur).
+ * Les champs ne sont vidés qu'après un succès, si resetOnSuccess est demandé.
+ */
+export function ActionForm<S extends ActionResult>({
+  action,
+  initial,
+  resetOnSuccess = false,
+  className,
+  children,
+}: {
+  action: (prev: S, form: FormData) => Promise<S>;
+  initial: S;
+  resetOnSuccess?: boolean;
+  className?: string;
+  children: (state: S, pending: boolean) => ReactNode;
+}) {
+  const [state, dispatch, pending] = useActionState<S, FormData>(action, initial as Awaited<S>);
+  const ref = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (resetOnSuccess && state.success) ref.current?.reset();
+  }, [state, resetOnSuccess]);
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const data = new FormData(event.currentTarget, submitter);
+    startTransition(() => dispatch(data));
+  }
+
+  return (
+    <form ref={ref} method="post" onSubmit={onSubmit} className={className}>
+      {children(state, pending)}
+    </form>
   );
 }
 
@@ -48,5 +92,22 @@ export function CopyField({ value, label }: { value: string; label: string }) {
         {copied ? "Copié" : "Copier"}
       </button>
     </div>
+  );
+}
+
+/** Bouton d'envoi qui demande une confirmation (suppression, action irréversible). */
+export function ConfirmSubmit({ message, children, size = "sm" }: { message: string; children: ReactNode; size?: "sm" | "md" }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className={buttonClass("danger", size)}
+      onClick={(e) => {
+        if (!window.confirm(message)) e.preventDefault();
+      }}
+    >
+      {pending ? "Un instant…" : children}
+    </button>
   );
 }

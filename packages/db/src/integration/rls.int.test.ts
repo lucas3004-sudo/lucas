@@ -23,7 +23,7 @@ const pool = new pg.Pool({ connectionString: USER_URL, max: 1 });
 
 const A = randomUUID();
 const B = randomUUID();
-const users = { gerantA: randomUUID(), negoA: randomUUID(), gerantB: randomUUID() };
+const users = { gerantA: randomUUID(), negoA: randomUUID(), nego2A: randomUUID(), lectureA: randomUUID(), gerantB: randomUUID() };
 
 async function expectDenied(promise: Promise<unknown>) {
   await expect(promise).rejects.toMatchObject({ code: "42501" });
@@ -46,6 +46,8 @@ beforeAll(async () => {
   for (const [userId, orgId, role] of [
     [users.gerantA, A, "gerant"],
     [users.negoA, A, "negociateur"],
+    [users.nego2A, A, "negociateur"],
+    [users.lectureA, A, "lecture"],
     [users.gerantB, B, "gerant"],
   ] as const) {
     await owner.query(
@@ -193,6 +195,134 @@ describe("dossiers de biens (app.analyses)", () => {
     expect(byNego.rowCount).toBe(0);
     const byGerant = await withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`DELETE FROM app.analyses WHERE id = $1`, [id]));
     expect(byGerant.rowCount).toBe(1);
+  });
+});
+
+describe("CRM : contacts, consentements, profils, biens, tâches (migration 0007)", () => {
+  const A1 = () => ({ orgId: A, userId: users.negoA });
+  const A2 = () => ({ orgId: A, userId: users.nego2A });
+  const GA = () => ({ orgId: A, userId: users.gerantA });
+  const newContact = (c: pg.PoolClient, owner: string, by: string, visibility: "private" | "agency", name: string) =>
+    c.query(
+      `INSERT INTO app.contacts (org_id, owner_user_id, visibility, roles, last_name, created_by)
+       VALUES ($1, $2, $3, '{acquereur}', $4, $5) RETURNING id`,
+      [A, owner, visibility, name, by],
+    ).then((r) => r.rows[0].id as string);
+
+  let privateId = "";
+  let sharedId = "";
+
+  beforeAll(async () => {
+    privateId = await withTenant(pool, A1(), (_db, c) => newContact(c, users.negoA, users.negoA, "private", "Privé de A1"));
+    sharedId = await withTenant(pool, A1(), (_db, c) => newContact(c, users.negoA, users.negoA, "agency", "Partagé de A1"));
+  });
+
+  it("contact privé : visible par son responsable et le gérant, pas par un collègue ni l'autre agence", async () => {
+    await withTenant(pool, A1(), async (_db, c) => expect(await count(c, "app.contacts", "id = $1", [privateId])).toBe(1));
+    await withTenant(pool, GA(), async (_db, c) => expect(await count(c, "app.contacts", "id = $1", [privateId])).toBe(1));
+    await withTenant(pool, A2(), async (_db, c) => expect(await count(c, "app.contacts", "id = $1", [privateId])).toBe(0));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.contacts")).toBe(0));
+  });
+
+  it("contact partagé : lu par un collègue, modifié seulement par son responsable", async () => {
+    await withTenant(pool, A2(), async (_db, c) => {
+      expect(await count(c, "app.contacts", "id = $1", [sharedId])).toBe(1);
+      expect((await c.query(`UPDATE app.contacts SET notes = 'x' WHERE id = $1`, [sharedId])).rowCount).toBe(0);
+    });
+    await withTenant(pool, A1(), async (_db, c) => {
+      expect((await c.query(`UPDATE app.contacts SET notes = 'ok' WHERE id = $1`, [sharedId])).rowCount).toBe(1);
+    });
+  });
+
+  it("un négociateur ne crée pas de contact au nom d'un collègue ; le gérant peut attribuer, mais pas à l'autre agence", async () => {
+    await expectDenied(withTenant(pool, A1(), (_db, c) => newContact(c, users.nego2A, users.negoA, "agency", "Usurpé")));
+    const assigned = await withTenant(pool, GA(), (_db, c) => newContact(c, users.nego2A, users.gerantA, "agency", "Attribué"));
+    expect(assigned).toBeTruthy();
+    await expectDenied(withTenant(pool, GA(), (_db, c) => newContact(c, users.gerantB, users.gerantA, "agency", "Hors agence")));
+  });
+
+  it("lecture seule : aucune création", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.lectureA }, (_db, c) => newContact(c, users.lectureA, users.lectureA, "agency", "Lecteur")));
+  });
+
+  it("consentements : suivent la visibilité du contact, ne se modifient ni ne s'effacent", async () => {
+    await withTenant(pool, A1(), (_db, c) =>
+      c.query(
+        `INSERT INTO app.contact_consents (org_id, contact_id, channel, status, obtained_at, proof, recorded_by)
+         VALUES ($1, $2, 'telephone', 'accorde', current_date, 'Accord oral lors de la visite', $3)`,
+        [A, privateId, users.negoA],
+      ));
+    await withTenant(pool, A1(), async (_db, c) => expect(await count(c, "app.contact_consents", "contact_id = $1", [privateId])).toBe(1));
+    await withTenant(pool, A2(), async (_db, c) => expect(await count(c, "app.contact_consents", "contact_id = $1", [privateId])).toBe(0));
+    await expectDenied(withTenant(pool, A1(), (_db, c) => c.query(`UPDATE app.contact_consents SET status = 'retire'`)));
+    await expectDenied(withTenant(pool, A1(), (_db, c) => c.query(`DELETE FROM app.contact_consents`)));
+  });
+
+  it("profil d'un acquéreur privé : critères lisibles par un collègue (matching), identité invisible, aucune modification", async () => {
+    const profileId = await withTenant(pool, A1(), async (_db, c) =>
+      (await c.query(
+        `INSERT INTO app.buyer_profiles (org_id, contact_id, owner_user_id, types, budget_max, created_by)
+         VALUES ($1, $2, $3, '{Appartement}', 200000, $3) RETURNING id`,
+        [A, privateId, users.negoA],
+      )).rows[0].id as string);
+    await withTenant(pool, A2(), async (_db, c) => {
+      const { rows } = await c.query(
+        `SELECT p.budget_max::int AS budget, ct.last_name AS name FROM app.buyer_profiles p
+         LEFT JOIN app.contacts ct ON ct.id = p.contact_id WHERE p.id = $1`,
+        [profileId],
+      );
+      expect(rows).toEqual([{ budget: 200000, name: null }]);
+      expect((await c.query(`UPDATE app.buyer_profiles SET budget_max = 1 WHERE id = $1`, [profileId])).rowCount).toBe(0);
+    });
+    await expectDenied(withTenant(pool, A2(), (_db, c) =>
+      c.query(`INSERT INTO app.buyer_profiles (org_id, contact_id, owner_user_id, created_by) VALUES ($1, $2, $3, $4)`, [A, privateId, users.negoA, users.nego2A])));
+  });
+
+  it("tâches : un collègue peut prévenir A1 ; jamais d'attribution hors agence ; lecture seule ne crée rien", async () => {
+    await withTenant(pool, A2(), (_db, c) =>
+      c.query(`INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title) VALUES ($1, $2, $3, 'Acquéreur pour ton bien')`, [A, users.negoA, users.nego2A]));
+    await withTenant(pool, A1(), async (_db, c) => expect(await count(c, "app.tasks", "title = 'Acquéreur pour ton bien'")).toBe(1));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.tasks")).toBe(0));
+    await expectDenied(withTenant(pool, A2(), (_db, c) =>
+      c.query(`INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title) VALUES ($1, $2, $3, 'Hors agence')`, [A, users.gerantB, users.nego2A])));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.lectureA }, (_db, c) =>
+      c.query(`INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title) VALUES ($1, $2, $2, 'Lecteur')`, [A, users.lectureA])));
+  });
+
+  it("réattribution : le gérant transfère un contact et ses profils ; le nouveau responsable prend la main, l'ancien la perd", async () => {
+    const contactId = await withTenant(pool, A1(), (_db, c) => newContact(c, users.negoA, users.negoA, "private", "À transférer"));
+    const profileId = await withTenant(pool, A1(), async (_db, c) =>
+      (await c.query(
+        `INSERT INTO app.buyer_profiles (org_id, contact_id, owner_user_id, types, created_by) VALUES ($1, $2, $3, '{Maison}', $3) RETURNING id`,
+        [A, contactId, users.negoA],
+      )).rows[0].id as string);
+    // Même transaction, comme l'action « Modifier le contact » de l'application.
+    await withTenant(pool, GA(), async (_db, c) => {
+      expect((await c.query(`UPDATE app.contacts SET owner_user_id = $2 WHERE id = $1`, [contactId, users.nego2A])).rowCount).toBe(1);
+      expect((await c.query(`UPDATE app.buyer_profiles SET owner_user_id = $2 WHERE contact_id = $1`, [contactId, users.nego2A])).rowCount).toBe(1);
+    });
+    await withTenant(pool, A2(), async (_db, c) => {
+      expect(await count(c, "app.contacts", "id = $1", [contactId])).toBe(1);
+      expect((await c.query(`UPDATE app.buyer_profiles SET status = 'en_pause' WHERE id = $1`, [profileId])).rowCount).toBe(1);
+    });
+    await withTenant(pool, A1(), async (_db, c) => {
+      expect(await count(c, "app.contacts", "id = $1", [contactId])).toBe(0);
+      expect((await c.query(`UPDATE app.buyer_profiles SET status = 'actif' WHERE id = $1`, [profileId])).rowCount).toBe(0);
+    });
+    // Un profil ne peut pas être rattaché à un autre responsable que celui du contact.
+    await expectDenied(withTenant(pool, GA(), (_db, c) =>
+      c.query(`UPDATE app.buyer_profiles SET owner_user_id = $2 WHERE id = $1`, [profileId, users.negoA])));
+    const insertProfile = (owner: string) => (_db: unknown, c: pg.PoolClient) =>
+      c.query(`INSERT INTO app.buyer_profiles (org_id, contact_id, owner_user_id, created_by) VALUES ($1, $2, $3, $4)`, [A, contactId, owner, users.nego2A]);
+    await expectDenied(withTenant(pool, A2(), insertProfile(users.negoA)));
+    await withTenant(pool, A2(), insertProfile(users.nego2A)); // contrôle positif
+  });
+
+  it("suppression d'un contact : refusée au négociateur (0 ligne), possible pour le gérant", async () => {
+    await withTenant(pool, A1(), async (_db, c) =>
+      expect((await c.query(`DELETE FROM app.contacts WHERE id = $1`, [sharedId])).rowCount).toBe(0));
+    await withTenant(pool, GA(), async (_db, c) =>
+      expect((await c.query(`DELETE FROM app.contacts WHERE id = $1`, [sharedId])).rowCount).toBe(1));
   });
 });
 

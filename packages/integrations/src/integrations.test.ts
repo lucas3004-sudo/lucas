@@ -123,3 +123,13 @@ describe("zonage ABC", () => {
     expect(parseInForceDate("en vigueur depuis le 5 septembre 2025")).toBe("2025-09-05");
   });
 });
+
+describe("communes par code postal (API Géo)", async () => {
+  const { communesByPostcode } = await import("./communes");
+  it("transforme la réponse réelle (80000 → Amiens) et ignore un code invalide", async () => {
+    const fetcher = vi.fn().mockResolvedValue(json([{ nom: "Amiens", code: "80021", codesPostaux: ["80000", "80080", "80090"] }]));
+    expect(await communesByPostcode("80000", fetcher)).toEqual([{ inseeCode: "80021", name: "Amiens", postcodes: ["80000", "80080", "80090"] }]);
+    expect(await communesByPostcode("8000", fetcher)).toEqual([]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+});
