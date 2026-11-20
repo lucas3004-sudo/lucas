@@ -3,17 +3,19 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from pathlib import Path
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, PlainTextResponse
 
 from .. import control, db, queue, reports, storage, usage, worker
+from .. import growth as engine
 from ..agents import compliance
 from ..agents.character import active_character, save_character
-from ..agents.handlers import get_content, save_content
+from ..agents.handlers import create_variant, get_content, save_content
 from ..agents.specs import AGENTS
-from ..config import DEFAULT_SETTINGS, LOCKED_SETTINGS
+from ..config import DEFAULT_SETTINGS, LOCKED_SETTINGS, PLATFORMS
 from ..events import activity, history
 from ..integrations import elevenlabs, registry
 from ..llm import claude_code
@@ -25,6 +27,32 @@ IMAGE_PROVIDERS = {"manual", "placeholder", "alexya"}
 
 def _404(what: str):
     raise HTTPException(404, f"{what} introuvable")
+
+
+def _ts(value: str | None, field: str, date_only: bool = False) -> str | None:
+    """Validate a date/datetime and normalise it to UTC ISO (or YYYY-MM-DD)."""
+    if not value:
+        return None
+    from datetime import datetime, timezone
+    try:
+        d = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(400, f"{field} : date invalide (AAAA-MM-JJ ou ISO 8601)")
+    if date_only:
+        return d.date().isoformat()
+    return (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).astimezone(timezone.utc).isoformat(timespec="seconds")
+
+
+def _num(value, field: str, cast=float):
+    try:
+        return None if value is None or value == "" else cast(value)
+    except (TypeError, ValueError):
+        raise HTTPException(400, f"{field} : nombre invalide")
+
+
+def _clean(*texts) -> None:
+    if compliance.check_text(" ".join(str(t) for t in texts if t)):
+        raise HTTPException(422, "texte non conforme (contenu adulte, mineur ou fausse identité humaine)")
 
 
 def _get(cid: str) -> dict:
@@ -143,7 +171,7 @@ def job_action(job_id: str, action: str):
 @r.get("/runs")
 def runs():
     return [{**x, "params": db.loads(x["params"], {}), "summary": db.loads(x["summary"], {})}
-            for x in db.rows("SELECT * FROM runs ORDER BY started_at DESC LIMIT 50")]
+            for x in db.rows("SELECT * FROM runs ORDER BY started_at DESC, rowid DESC LIMIT 50")]
 
 
 # --- contents ----------------------------------------------------------------------
@@ -174,7 +202,7 @@ EDITABLE = {"title", "concept", "hook", "script", "caption", "hashtags", "prompt
 def create_content(body: dict = Body(...)):
     cid = db.new_id("CNT")
     platform = body.get("platform", "instagram")
-    if platform not in ("tiktok", "instagram"):
+    if platform not in PLATFORMS:
         raise HTTPException(400, "platform invalide")
     db.insert("contents", {"id": cid, "title": (body.get("title") or "Contenu manuel")[:200], "stage": "concept", "status": "in_progress",
                            "platform": platform, "format": body.get("format", "reel"), "pillar": body.get("pillar"),
@@ -207,8 +235,19 @@ def content_action(cid: str, action: str, body: dict = Body(default={})):
     if action == "approve":
         if c["status"] != "awaiting_approval":
             raise HTTPException(409, "seul un contenu ayant passé le QC peut être approuvé")
-        save_content(cid, "user", "approved", {"note": body.get("note")}, status="approved", stage="approval")
-        return worker.run_now("planner.schedule", "planner", {"scheduled_at": body.get("scheduled_at")}, content_id=cid)
+        targets = body.get("crosspost") or []
+        if not isinstance(targets, list) or set(targets) - set(PLATFORMS):
+            raise HTTPException(400, f"crosspost ⊂ {sorted(PLATFORMS)}")
+        save_content(cid, "user", "approved", {"note": body.get("note"), "crosspost": targets}, status="approved", stage="approval")
+        res = worker.run_now("planner.schedule", "planner", {"scheduled_at": body.get("scheduled_at")}, content_id=cid)
+        parent_slot = db.scalar("SELECT scheduled_at FROM contents WHERE id=?", (cid,))
+        res["variants"] = []
+        for p in targets:
+            v = create_variant(cid, p)
+            if v.get("status") == "approved":
+                v["schedule"] = worker.run_now("planner.schedule", "planner", {"not_before": parent_slot}, content_id=v["id"])["status"]
+            res["variants"].append(v)
+        return res
     if action == "reject":
         save_content(cid, "user", "rejected", {"reason": body.get("reason")}, status="rejected")
         return {"ok": True}
@@ -227,7 +266,7 @@ def content_action(cid: str, action: str, body: dict = Body(default={})):
         if c["status"] not in ("ready_to_publish", "scheduled"):
             raise HTTPException(409, "contenu non prêt à publier")
         save_content(cid, "user", "published", {"url": body.get("url")}, status="published", stage="analysis",
-                     published_at=body.get("published_at") or db.now(), published_url=body.get("url"))
+                     published_at=_ts(body.get("published_at"), "published_at") or db.now(), published_url=body.get("url"))
         return {"ok": True}
     if action == "reschedule":
         if c["status"] != "scheduled" or not body.get("scheduled_at"):
@@ -304,7 +343,8 @@ def asset_update(aid: str, body: dict = Body(...)):
 @r.delete("/assets/{aid}")
 def asset_delete(aid: str):
     a = db.one("SELECT * FROM assets WHERE id=?", (aid,)) or _404("fichier")
-    storage.abs_path(a["path"]).unlink(missing_ok=True)
+    if db.scalar("SELECT COUNT(*) FROM assets WHERE path=?", (a["path"],)) == 1:  # variants share files
+        storage.abs_path(a["path"]).unlink(missing_ok=True)
     db.execute("DELETE FROM assets WHERE id=?", (aid,))
     activity("user", "asset_deleted", aid)
     return {"ok": True}
@@ -377,8 +417,8 @@ def growth():
 
 @r.post("/competitors")
 def add_competitor(body: dict = Body(...)):
-    if not body.get("handle") or body.get("platform") not in ("tiktok", "instagram"):
-        raise HTTPException(400, "handle et platform (tiktok|instagram) requis")
+    if not body.get("handle") or body.get("platform") not in PLATFORMS:
+        raise HTTPException(400, f"handle et platform ({'|'.join(PLATFORMS)}) requis")
     cid = db.new_id("CMP")
     db.insert("competitors", {"id": cid, "platform": body["platform"], "handle": body["handle"][:80], "niche": body.get("niche"),
                               "notes": body.get("notes"), "followers": body.get("followers"), "avg_views": body.get("avg_views"),
@@ -448,7 +488,10 @@ def update_message(mid: str, body: dict = Body(...)):
 def add_metrics(body: dict = Body(...)):
     if not body.get("platform") or not body.get("date"):
         raise HTTPException(400, "platform et date requis")
-    row = {k: body.get(k) for k in ("content_id", "platform", "date", "views", "likes", "comments", "shares", "saves", "followers_delta")}
+    row = {k: body.get(k) for k in ("content_id", "platform", "date", "views", "likes", "comments", "shares", "saves", "followers_delta",
+                                     "avg_watch_s", "completion_rate")}
+    if row["completion_rate"] is not None and not 0 <= float(row["completion_rate"]) <= 1:
+        raise HTTPException(400, "completion_rate entre 0 et 1")
     db.insert("metrics", {**row, "provenance": "manual", "created_at": db.now()})
     if row["content_id"]:
         worker.run_now("analyst.analyze", "analyst", {}, content_id=row["content_id"])
@@ -541,6 +584,13 @@ def get_settings():
 
 @r.put("/settings")
 def put_settings(body: dict = Body(...)):
+    try:
+        return _put_settings(body)
+    except (TypeError, ValueError) as e:
+        raise HTTPException(400, f"valeur invalide : {e}")
+
+
+def _put_settings(body: dict):
     bad = set(body) & set(LOCKED_SETTINGS)
     if bad:
         raise HTTPException(403, f"réglages verrouillés : {sorted(bad)}")
@@ -559,6 +609,15 @@ def put_settings(body: dict = Body(...)):
             for v in body["posting_hours"].values())
         if not ok:
             raise HTTPException(400, "posting_hours : {plateforme: [\"HH:MM\", ...]}")
+    if "platforms" in body and (not body["platforms"] or set(body["platforms"]) - set(PLATFORMS)):
+        raise HTTPException(400, f"platforms ⊂ {sorted(PLATFORMS)}")
+    if "crosspost" in body and (not isinstance(body["crosspost"], dict)
+                                or any(set(v) - set(PLATFORMS) or k not in PLATFORMS for k, v in body["crosspost"].items())):
+        raise HTTPException(400, "crosspost : {plateforme: [plateformes]}")
+    if "double_down_index" in body and not 1.2 <= float(body["double_down_index"]) <= 10:
+        raise HTTPException(400, "double_down_index entre 1.2 et 10")
+    if "experiment_min_views" in body and not 100 <= int(body["experiment_min_views"]) <= 1_000_000:
+        raise HTTPException(400, "experiment_min_views entre 100 et 1 000 000")
     if "image_provider" in body and body["image_provider"] not in IMAGE_PROVIDERS:
         raise HTTPException(400, f"image_provider ∈ {sorted(IMAGE_PROVIDERS)}")
     for k in ("daily_budget_usd", "monthly_budget_usd"):
@@ -639,6 +698,191 @@ def cc_submit(task_id: str, body: dict = Body(...)):
     if not res["ok"]:
         raise HTTPException(422, res)
     return res
+
+
+# --- growth engine / accounts / series / collabs / targets --------------------------------
+@r.get("/growth/intel")
+def growth_intel():
+    return engine.summary()
+
+
+@r.get("/experiments/{eid}/evaluate")
+def experiment_evaluate(eid: str):
+    e = db.one("SELECT * FROM experiments WHERE id=?", (eid,)) or _404("expérience")
+    return {**e, "evaluation": engine.evaluate_experiment(e)}
+
+
+@r.get("/accounts")
+def accounts():
+    out = []
+    for a in db.rows("SELECT * FROM accounts ORDER BY platform, created_at"):
+        a["events"] = db.rows("SELECT * FROM account_events WHERE account_id=? ORDER BY at DESC LIMIT 20", (a["id"],))
+        a["published_7d"] = db.scalar("SELECT COUNT(*) FROM contents WHERE account_id=? AND status='published' AND published_at>=?", (a["id"], db.now(-7 * 86400)))
+        a["scheduled"] = db.scalar("SELECT COUNT(*) FROM contents WHERE account_id=? AND status IN ('scheduled','ready_to_publish')", (a["id"],))
+        a["last_published"] = db.scalar("SELECT MAX(published_at) FROM contents WHERE account_id=? AND status='published'", (a["id"],))
+        disc = active_character()["disclosure"]
+        a["bio_has_disclosure"] = bool(re.search(r"\b(ia|ai)\b|virtuel|🤖", (a["bio"] or "").lower()))
+        a["suggested_bio"] = disc["bio_line"]
+        out.append(a)
+    return out
+
+
+@r.post("/accounts")
+def add_account(body: dict = Body(...)):
+    if body.get("platform") not in PLATFORMS or not body.get("handle"):
+        raise HTTPException(400, f"platform ({'|'.join(PLATFORMS)}) et handle requis")
+    if compliance.check_text(f"{body.get('bio', '')} {body.get('handle')}"):
+        raise HTTPException(422, "bio / handle non conforme")
+    aid = db.new_id("ACC")
+    try:
+        db.insert("accounts", {"id": aid, "platform": body["platform"], "handle": body["handle"][:60], "display_name": body.get("display_name"),
+                               "bio": body.get("bio"), "url": body.get("url"), "status": "active",
+                               "daily_quota": max(0, min(_num(body.get("daily_quota", 1), "daily_quota", int) or 0, 5)),
+                               "followers": _num(body.get("followers"), "followers", int),
+                               "notes": body.get("notes"), "created_at": db.now(), "updated_at": db.now()})
+    except Exception:
+        raise HTTPException(409, "ce compte existe déjà")
+    if body.get("followers") is not None:
+        db.insert("account_events", {"account_id": aid, "at": db.now(), "kind": "followers",
+                                     "value": _num(body["followers"], "followers", int), "provenance": "manual"})
+    return {"id": aid}
+
+
+@r.patch("/accounts/{aid}")
+def update_account(aid: str, body: dict = Body(...)):
+    db.one("SELECT 1 FROM accounts WHERE id=?", (aid,)) or _404("compte")
+    fields = {k: body[k] for k in ("display_name", "bio", "url", "status", "daily_quota", "notes") if k in body}
+    if fields.get("status") and fields["status"] not in ("active", "paused", "restricted"):
+        raise HTTPException(400, "status ∈ active|paused|restricted")
+    if "daily_quota" in fields:
+        fields["daily_quota"] = max(0, min(_num(fields["daily_quota"], "daily_quota", int) or 0, 5))
+    _clean(fields.get("bio"), fields.get("display_name"), fields.get("notes"))
+    db.update("accounts", "id", aid, {**fields, "updated_at": db.now()})
+    activity("user", "account_updated", aid, fields)
+    return db.one("SELECT * FROM accounts WHERE id=?", (aid,))
+
+
+@r.post("/accounts/{aid}/events")
+def account_event(aid: str, body: dict = Body(...)):
+    db.one("SELECT 1 FROM accounts WHERE id=?", (aid,)) or _404("compte")
+    kind = body.get("kind")
+    if kind not in ("followers", "warning", "restriction", "milestone", "note"):
+        raise HTTPException(400, "kind ∈ followers|warning|restriction|milestone|note")
+    value = _num(body.get("value"), "value")
+    if kind == "followers" and value is None:
+        raise HTTPException(400, "value requis pour un relevé d'abonnés")
+    _clean(body.get("details"))
+    db.insert("account_events", {"account_id": aid, "at": _ts(body.get("at"), "at") or db.now(), "kind": kind, "value": value,
+                                 "details": body.get("details"), "provenance": "manual"})
+    if kind == "followers":
+        db.update("accounts", "id", aid, {"followers": int(value), "updated_at": db.now()})
+    if kind == "restriction":
+        db.update("accounts", "id", aid, {"status": "restricted", "updated_at": db.now()})
+    return {"ok": True}
+
+
+@r.delete("/accounts/{aid}")
+def delete_account(aid: str):
+    db.execute("UPDATE contents SET account_id=NULL WHERE account_id=?", (aid,))
+    db.execute("DELETE FROM account_events WHERE account_id=?", (aid,))
+    return {"ok": db.execute("DELETE FROM accounts WHERE id=?", (aid,)) > 0}
+
+
+@r.get("/series")
+def series_list():
+    return db.rows("SELECT * FROM series ORDER BY status, updated_at DESC")
+
+
+@r.post("/series")
+def add_series(body: dict = Body(...)):
+    if not body.get("name"):
+        raise HTTPException(400, "name requis")
+    if compliance.check_text(f"{body['name']} {body.get('premise', '')}"):
+        raise HTTPException(422, "série non conforme")
+    sid = db.new_id("SER")
+    db.insert("series", {"id": sid, "name": body["name"][:80], "pillar": body.get("pillar") or None, "format": body.get("format") or None,
+                         "platform": body.get("platform") or None, "premise": body.get("premise"), "status": "active",
+                         "created_at": db.now(), "updated_at": db.now()})
+    return {"id": sid}
+
+
+@r.patch("/series/{sid}")
+def update_series(sid: str, body: dict = Body(...)):
+    fields = {k: body[k] for k in ("status", "premise", "pillar", "format", "platform") if k in body}
+    _clean(fields.get("premise"))
+    if fields.get("status") and fields["status"] not in ("active", "paused", "ended"):
+        raise HTTPException(400, "status ∈ active|paused|ended")
+    db.update("series", "id", sid, {**fields, "updated_at": db.now()})
+    return db.one("SELECT * FROM series WHERE id=?", (sid,)) or _404("série")
+
+
+COLLAB_STAGES = ("prospect", "contacted", "discussion", "agreed", "done", "declined")
+
+
+@r.get("/collabs")
+def collabs():
+    return db.rows("SELECT * FROM collabs ORDER BY CASE stage WHEN 'discussion' THEN 0 WHEN 'agreed' THEN 1 WHEN 'contacted' THEN 2 "
+                   "WHEN 'prospect' THEN 3 ELSE 4 END, COALESCE(fit_score,0) DESC")
+
+
+@r.post("/collabs")
+def add_collab(body: dict = Body(...)):
+    if body.get("kind") not in ("creator", "brand", "media", "engage") or not body.get("name"):
+        raise HTTPException(400, "kind (creator|brand|media|engage) et name requis")
+    if compliance.check_text(f"{body['name']} {body.get('notes', '')}"):
+        raise HTTPException(422, "partenaire non conforme (aucun partenariat adulte)")
+    cid = db.new_id("COL")
+    db.insert("collabs", {"id": cid, "kind": body["kind"], "name": body["name"][:80], "platform": body.get("platform"), "handle": body.get("handle"),
+                          "audience_size": body.get("audience_size"), "stage": "prospect", "fit_score": body.get("fit_score"),
+                          "notes": body.get("notes"), "next_action_at": body.get("next_action_at"), "created_at": db.now(), "updated_at": db.now()})
+    return {"id": cid}
+
+
+@r.patch("/collabs/{cid}")
+def update_collab(cid: str, body: dict = Body(...)):
+    fields = {k: body[k] for k in ("stage", "fit_score", "notes", "next_action_at", "draft_message") if k in body}
+    _clean(fields.get("notes"), fields.get("draft_message"))
+    if "fit_score" in fields:
+        fields["fit_score"] = _num(fields["fit_score"], "fit_score", int)
+    if fields.get("stage") and fields["stage"] not in COLLAB_STAGES:
+        raise HTTPException(400, f"stage ∈ {COLLAB_STAGES}")
+    db.update("collabs", "id", cid, {**fields, "updated_at": db.now()})
+    return db.one("SELECT * FROM collabs WHERE id=?", (cid,)) or _404("partenariat")
+
+
+@r.post("/collabs/{cid}/draft")
+def collab_draft(cid: str):
+    db.one("SELECT 1 FROM collabs WHERE id=?", (cid,)) or _404("partenariat")
+    res = worker.run_now("community.outreach_draft", "community", {"collab_id": cid})
+    return {**res, "collab": db.one("SELECT * FROM collabs WHERE id=?", (cid,))}
+
+
+@r.get("/targets")
+def targets():
+    return engine.targets_progress()
+
+
+@r.post("/targets")
+def add_target(body: dict = Body(...)):
+    if body.get("metric") not in ("followers", "views_week", "er", "posts_week") or body.get("target") is None or not body.get("deadline"):
+        raise HTTPException(400, "metric (followers|views_week|er|posts_week), target et deadline requis")
+    if body["metric"] == "followers" and not body.get("account_id"):
+        raise HTTPException(400, "un objectif d'abonnés se fixe par compte")
+    tid = db.new_id("TGT")
+    db.insert("targets", {"id": tid, "account_id": body.get("account_id"), "metric": body["metric"],
+                          "target": _num(body["target"], "target"), "deadline": _ts(body["deadline"], "deadline", date_only=True),
+                          "created_at": db.now()})
+    return {"id": tid}
+
+
+@r.delete("/targets/{tid}")
+def del_target(tid: str):
+    return {"ok": db.execute("DELETE FROM targets WHERE id=?", (tid,)) > 0}
+
+
+@r.post("/reviews/weekly")
+def weekly_review():
+    return {"path": reports.write_weekly_review().name}
 
 
 @r.post("/work/once")

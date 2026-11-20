@@ -81,6 +81,7 @@ Remarques : six skills (social-media-skills) citent des skills frères absents (
 | Élément | Rôle | Chargement |
 |---|---|---|
 | `.claude/skills/agency-run-tasks` | Traiter les tâches des agents en mode `claude_code` (inbox → JSON validé → reprise du pipeline) | À la demande : `/agency-run-tasks` |
+| `.claude/skills/agency-growth-playbook` | Playbook croissance organique (hooks, rétention, séries, double-down, multi-plateforme, A/B, SEO social, partenariats, hygiène des comptes) | À la demande (agents Growth/Creative/Platform en mode claude_code) |
 | `.claude/agents/scout.md` (Haiku) | Recherches larges en lecture seule, réponse ≤ 15 lignes | Délégation explicite |
 | `.claude/agents/reviewer.md` (Sonnet) | Revue d'un diff : bugs, garde-fous, secrets, provenance, coût | Avant un commit important |
 

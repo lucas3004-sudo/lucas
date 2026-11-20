@@ -1,4 +1,4 @@
-import { api, act, assetUrl, badge, esc, fmt, go } from "../app.js";
+import { api, act, assetUrl, badge, esc, fmt, go, toast } from "../app.js";
 
 const COLS = [
   ["Production", ["in_progress", "waiting_assets"]], ["À revoir", ["needs_revision"]], ["À valider", ["awaiting_approval"]],
@@ -13,7 +13,9 @@ export function mediaGrid(assets) {
     <figcaption class="m">${esc(a.kind)} · ${esc(a.source)}</figcaption></figure>`).join("")}</div>`;
 }
 
-function detail(c) {
+const PL = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube Shorts", snapchat: "Snapchat Spotlight" };
+
+function detail(c, settings) {
   const qc = c.qc || {};
   const beats = (c.script && c.script.beats) || [];
   const audio = c.assets.filter((a) => a.kind === "audio");
@@ -39,7 +41,13 @@ function detail(c) {
         ${(qc.blockers || []).map((b) => `<div class="badge crit">✕ ${esc(b)}</div>`).join(" ")} ${(qc.warnings || []).map((w) => `<div class="badge warn">! ${esc(w)}</div>`).join(" ")}
         ${(qc.fixes || []).map((f) => `<div class="badge good">✓ ${esc(f)}</div>`).join(" ")}
         <h3 style="margin-top:16px">Décision</h3>
-        ${c.status === "awaiting_approval" ? `<label>Créneau (optionnel, sinon automatique)</label><input type="datetime-local" id="when">
+        ${c.parent_id ? `<p><span class="badge info">Variante de <a href="#/studio?c=${c.parent_id}">${esc(c.parent_id)}</a></span></p>` : ""}
+        ${c.episode ? `<p><span class="badge">Série · épisode ${c.episode}</span></p>` : ""}
+        ${c.meta && c.meta.follow_up_of ? `<p><span class="badge good">↻ Suite d'un gagnant (×${esc(c.meta.follow_up_of.perf_index)})</span></p>` : ""}
+        ${c.meta && c.meta.experiment ? `<p><span class="badge">A/B ${esc(c.meta.experiment.variable)} : variante ${esc(c.meta.experiment.variant)} (${esc(c.meta.experiment.value)})</span></p>` : ""}
+        ${c.status === "awaiting_approval" ? `<label>Diffuser aussi sur (même vidéo, légende adaptée)</label><div class="row">${Object.keys(PL).filter((p) => p !== c.platform).map((p) =>
+          `<label class="check"><input type="checkbox" data-xp="${p}" ${((settings.crosspost || {})[c.platform] || []).includes(p) ? "checked" : ""}> ${PL[p]}</label>`).join("")}</div>
+          <label>Créneau (optionnel, sinon automatique)</label><input type="datetime-local" id="when">
           <div class="row" style="margin-top:8px"><button class="btn primary" id="approve">✓ Approuver & planifier</button><button class="btn danger" id="reject">Rejeter</button></div>` : ""}
         ${["ready_to_publish", "scheduled"].includes(c.status) ? `<label>URL de la publication</label><input id="url" placeholder="https://…"><button class="btn primary" id="published" style="margin-top:8px">Marquer comme publié</button>` : ""}
         <label>Retour pour régénérer (script, ton, angle…)</label><input id="feedback" placeholder="ex. hook plus court, ton plus drôle">
@@ -79,9 +87,9 @@ export async function render(el, params) {
 }
 
 async function open(el, id) {
-  const c = await api(`/contents/${id}`);
+  const [c, st] = await Promise.all([api(`/contents/${id}`), api("/settings")]);
   const slot = el.querySelector("#slot");
-  slot.innerHTML = detail(c);
+  slot.innerHTML = detail(c, st.settings);
   slot.scrollIntoView({ behavior: "smooth", block: "start" });
   const $ = (s) => slot.querySelector(s);
   const reload = () => open(el, id);
@@ -89,7 +97,13 @@ async function open(el, id) {
   $("#save").onclick = async () => { await act(() => api(`/contents/${id}`, { method: "PATCH", body: { caption: $("#caption").value, hashtags: $("#tags").value.split(/\s+/).filter(Boolean) } }), "Enregistré"); reload(); };
   $("#requalify").onclick = async () => { await act(() => api(`/contents/${id}/requalify`, { method: "POST" }), "QC relancé"); reload(); };
   $("#regen").onclick = async () => { await act(() => api(`/contents/${id}/regenerate`, { method: "POST", body: { feedback: $("#feedback").value } }), "Régénéré"); reload(); };
-  if ($("#approve")) $("#approve").onclick = async () => { const w = $("#when").value; await act(() => api(`/contents/${id}/approve`, { method: "POST", body: w ? { scheduled_at: new Date(w).toISOString() } : {} }), "Approuvé et planifié ✓"); reload(); };
+  if ($("#approve")) $("#approve").onclick = async () => {
+    const w = $("#when").value;
+    const crosspost = [...slot.querySelectorAll("[data-xp]:checked")].map((x) => x.dataset.xp);
+    const r = await act(() => api(`/contents/${id}/approve`, { method: "POST", body: { crosspost, ...(w ? { scheduled_at: new Date(w).toISOString() } : {}) } }));
+    if (r) toast(`Approuvé et planifié ✓ ${r.variants.map((v) => `${v.platform} : ${v.status || v.skipped}`).join(" · ")}`, 6000);
+    reload();
+  };
   if ($("#reject")) $("#reject").onclick = async () => { const reason = prompt("Raison du rejet ?"); if (reason !== null) { await act(() => api(`/contents/${id}/reject`, { method: "POST", body: { reason } })); reload(); } };
   if ($("#published")) $("#published").onclick = async () => { await act(() => api(`/contents/${id}/mark-published`, { method: "POST", body: { url: $("#url").value } }), "Marqué publié"); reload(); };
   if ($("#metrics")) $("#metrics").onclick = async () => {

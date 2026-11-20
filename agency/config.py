@@ -83,6 +83,18 @@ def load_env(reload: bool = False) -> Env:
     return _env
 
 
+# Mainstream platforms only (adult platforms are out of scope by design).
+# Caption/hashtag limits are conservative working limits, not official maxima: verify on each platform.
+PLATFORMS: dict[str, dict] = {
+    "tiktok": {"label": "TikTok", "caption": 2200, "hashtags": 6, "tags": ["#pourtoi", "#fyp"],
+               "formats": ["talking_head", "tutorial", "storytime", "day_in_life", "pov", "trend_remix"]},
+    "instagram": {"label": "Instagram", "caption": 2200, "hashtags": 10, "tags": ["#reels", "#inspiration"],
+                  "formats": ["reel", "carousel", "photo", "reel"]},
+    "youtube": {"label": "YouTube Shorts", "caption": 100, "hashtags": 3, "tags": ["#shorts"], "formats": ["short"]},
+    "snapchat": {"label": "Snapchat Spotlight", "caption": 160, "hashtags": 3, "tags": ["#spotlight"], "formats": ["spotlight"]},
+}
+VIDEO_FORMATS = {"video", "reel", "talking_head", "storytime", "tutorial", "day_in_life", "trend_remix", "pov", "short", "spotlight"}
+
 # Default runtime settings (editable in the dashboard, stored in DB).
 DEFAULT_SETTINGS: dict = {
     "llm_mode": None,  # None -> use AGENCY_LLM_MODE
@@ -92,9 +104,13 @@ DEFAULT_SETTINGS: dict = {
     "monthly_budget_usd": 10.0,
     "model_routing": {"simple": "claude-haiku-5-5", "standard": "claude-sonnet-5-5", "complex": "claude-opus-5-5"},
     "contents_per_run": 3,
-    "platforms": ["tiktok", "instagram"],
+    "platforms": ["tiktok", "instagram"],          # platforms that get ORIGINAL content
+    "crosspost": {"tiktok": ["youtube", "snapchat"], "instagram": []},  # default variants proposed at approval
+    "auto_quota": True,                            # size each run from account quotas (deficit over 3 days)
+    "double_down_index": 2.0,                      # perf index (views / platform median) that triggers a follow-up
+    "experiment_min_views": 2000,                  # per arm, before a statistical conclusion
     "language": "fr",
-    "posting_hours": {"tiktok": ["12:30", "19:00"], "instagram": ["11:30", "18:30"]},
+    "posting_hours": {"tiktok": ["12:30", "19:00"], "instagram": ["11:30", "18:30"], "youtube": ["17:00"], "snapchat": ["20:00"]},
     "image_provider": "manual",  # manual | placeholder | alexya (alexya disabled until API verified)
     "voice_enabled": False,  # ElevenLabs generation consumes account credits -> explicit opt-in
     "voice_daily_char_cap": 5000,

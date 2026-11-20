@@ -11,3 +11,4 @@
 - Phase 3 : `CLAUDE.md` compact, `docs/RESUME.md`, permissions `.claude/settings.json`, sous-agents `scout` (Haiku) et `reviewer` (Sonnet), skill `agency-run-tasks`.
 - Tests : 20 tests pytest (file, scheduler, conformité, pipeline complet via API, garde-fous, budget, mode claude_code, appel API simulé).
 - Personnage : demande « 18-19 ans, cité, marocaine, étudiante » → Nour, 22 ans (plancher 21 codé, apparence clairement adulte), pas de symboles religieux ni de clichés ; règles anti-« tout juste majeure » ajoutées.
+- Demande « ultra poussé » : MYM/Telegram/plateformes adultes et tactiques de bannissement (bots, multi-comptes, faux engagement) refusés ; ajout d'un vrai moteur de croissance déterministe (bandit Thompson, A/B bayésien, double-down, quotas, séries, déclinaisons Shorts/Spotlight, veille, objectifs, revue hebdo), page Comptes, CRM partenariats, playbook. 35 tests, UI vérifiée desktop/mobile.

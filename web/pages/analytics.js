@@ -15,8 +15,10 @@ export async function render(el) {
   </div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h2>Saisir des statistiques</h2><div class="grid g2"><div><label>Contenu publié</label><select id="cid"><option value="">— compte global —</option>${contents.map((c) => `<option value="${c.id}" data-p="${c.platform}">${esc(c.title)}</option>`).join("")}</select></div>
-      <div><label>Plateforme</label><select id="pl"><option>instagram</option><option>tiktok</option></select></div></div>
-      <div class="grid g3"><div><label>Date</label><input type="date" id="date" value="${new Date().toISOString().slice(0, 10)}"></div>${["views", "likes", "comments", "shares", "saves", "followers_delta"].map((k) => `<div><label>${k}</label><input type="number" min="0" data-m="${k}"></div>`).join("")}</div>
+      <div><label>Plateforme</label><select id="pl"><option>instagram</option><option>tiktok</option><option>youtube</option><option>snapchat</option></select></div></div>
+      <div class="grid g3"><div><label>Date</label><input type="date" id="date" value="${new Date().toISOString().slice(0, 10)}"></div>${["views", "likes", "comments", "shares", "saves", "followers_delta", "avg_watch_s"].map((k) => `<div><label>${k}</label><input type="number" min="0" step="any" data-m="${k}"></div>`).join("")}
+      <div><label>Taux de complétion (%)</label><input type="number" min="0" max="100" step="any" id="compl"></div></div>
+      <p class="m">Durée moyenne de visionnage et complétion : dans les statistiques natives de chaque vidéo. Ce sont les signaux de rétention les plus prédictifs.</p>
       <button class="btn primary" id="add" style="margin-top:8px">Enregistrer</button></div>
     <div class="card"><h2>Apprentissages (Analyst)</h2>${a.insights.length ? `<div class="list">${a.insights.map((i) => `<div class="item"><div><div class="t">${esc(i.title)}</div><div class="m">${esc(i.body)}</div></div>${prov(i.provenance)}</div>`).join("")}</div>`
       : `<p class="empty">Il faut au moins 3 contenus mesurés pour tirer un enseignement (aucun chiffre inventé).</p>`}</div>
@@ -29,7 +31,8 @@ export async function render(el) {
   $("#cid").onchange = () => { const o = $("#cid").selectedOptions[0]; if (o.dataset.p) $("#pl").value = o.dataset.p; };
   $("#add").onclick = async () => {
     const body = { content_id: $("#cid").value || null, platform: $("#pl").value, date: $("#date").value };
-    el.querySelectorAll("[data-m]").forEach((i) => { if (i.value !== "") body[i.dataset.m] = parseInt(i.value, 10); });
+    el.querySelectorAll("[data-m]").forEach((i) => { if (i.value !== "") body[i.dataset.m] = parseFloat(i.value); });
+    if ($("#compl").value !== "") body.completion_rate = parseFloat($("#compl").value) / 100;
     if (await act(() => api("/metrics", { method: "POST", body }), "Enregistré")) render(el);
   };
 }

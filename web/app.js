@@ -1,7 +1,7 @@
 // AI Agency OS dashboard - no build step. Each page is an ES module in /static/pages/<id>.js exporting render(el, params).
 export const PAGES = [
   ["overview", "Overview", "◉"], ["daily", "Daily Board", "☑"], ["studio", "Content Studio", "▤"],
-  ["generator", "Generator", "✦"], ["calendar", "Calendar", "▦"], ["agents", "Agents", "⚙"],
+  ["generator", "Generator", "✦"], ["calendar", "Calendar", "▦"], ["accounts", "Comptes", "◎"], ["agents", "Agents", "⚙"],
   ["character", "Character Studio", "☺"], ["growth", "Growth Center", "↗"], ["community", "Community", "✉"],
   ["analytics", "Analytics", "▥"], ["finance", "Finance", "€"], ["integrations", "Integrations", "⇄"],
   ["usage", "Token & Usage", "Σ"], ["settings", "Settings", "☰"],

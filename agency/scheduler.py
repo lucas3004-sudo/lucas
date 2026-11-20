@@ -14,6 +14,8 @@ DEFAULT_SCHEDULES = [
     ("Tri des messages", "community.triage", "community", "every:3600", 1),
     ("Apprentissage performances", "analyst.learn", "analyst", "daily:06:30", 1),
     ("Autopilote : lancer l'agence", "orchestrator.autolaunch", "orchestrator", "daily:08:00", 0),
+    ("Veille santé des comptes", "analyst.watch", "analyst", "every:3600", 1),
+    ("Revue stratégique hebdo", "analyst.weekly_review", "analyst", "weekly:0:08:30", 1),
 ]
 
 
@@ -29,6 +31,15 @@ def next_run(spec: str, after: datetime | None = None) -> str:
         cand = local.replace(hour=hh, minute=mm, second=0, microsecond=0)
         if cand <= local:
             cand += timedelta(days=1)
+        return cand.astimezone(timezone.utc).isoformat(timespec="seconds")
+    if kind == "weekly":  # weekly:<0=Monday..6>:HH:MM (local tz)
+        dow, hhmm = arg.split(":", 1)
+        tz = ZoneInfo(load_env().timezone)
+        hh, mm = (int(x) for x in hhmm.split(":"))
+        local = after.astimezone(tz)
+        cand = (local + timedelta(days=(int(dow) - local.weekday()) % 7)).replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if cand <= local:
+            cand += timedelta(days=7)
         return cand.astimezone(timezone.utc).isoformat(timespec="seconds")
     raise ValueError(f"unknown schedule spec: {spec}")
 
@@ -50,7 +61,8 @@ def tick() -> dict:
         if claimed:
             queue.enqueue(s["job_type"], s["agent"], db.loads(s["payload"], {}))
             fired += 1
-    for c in db.rows("SELECT id, run_id FROM contents WHERE status='scheduled' AND scheduled_at<=?", (ts,)):
+    for c in db.rows("SELECT id, run_id FROM contents WHERE status='scheduled' AND scheduled_at<=? AND "
+                     "(account_id IS NULL OR account_id IN (SELECT id FROM accounts WHERE status='active'))", (ts,)):
         if db.execute("UPDATE contents SET status='ready_to_publish', stage='publication', updated_at=? WHERE id=? AND status='scheduled'",
                       (ts, c["id"])):
             queue.enqueue("publisher.prepare", "planner", {}, run_id=c["run_id"], content_id=c["id"], priority=5)

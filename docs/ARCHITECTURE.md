@@ -49,8 +49,18 @@ Chaque spec : mission, instructions (courtes, centralisées), outils, limites, c
 - `claude_code` : tâche JSON (instructions + entrée + schéma) dans `data/claude_code/inbox` ; la session Claude Code répond via le skill `agency-run-tasks` ; le job reprend.
 - `api` : SDK Anthropic, palier → modèle (`simple` Haiku 5.5, `standard` Sonnet 5.5, `complex` Opus 5.5), effort par palier, sorties JSON structurées, préfixe système partagé mis en cache, repli serveur en cas de refus (Sonnet/Opus), **plafonds jour/mois vérifiés avant chaque appel**, repli hors ligne.
 
+## Moteur de croissance (`agency/growth.py`, sans LLM)
+- **Indice de performance** = vues / médiane de la plateforme (≥ 3 contenus mesurés) ; « gagnant » ≥ seuil (×2 par défaut).
+- **Allocation par bandit (Thompson sampling)** sur piliers et formats : la donnée décide du mix, le LLM écrit angles et hooks.
+- **Double-down** : chaque gagnant reçoit une suite au run suivant (une seule fois).
+- **A/B bayésien** : une expérience à la fois (type de hook, durée), variantes alternées, P(B>A) par Monte-Carlo, conclusion à 95 % avec vues minimales, puis rotation.
+- **Quotas** : chaque run est dimensionné par le déficit de contenus des comptes actifs sur 3 jours.
+- **Séries** (un épisode par série active et par run), **déclinaisons** YouTube Shorts / Snapchat Spotlight validées avec le parent.
+- **Veille** (horaire) : chute de portée, absence de publication 48 h, compte restreint, file de validation ; **revue hebdo** `briefs/weekly-AAAA-Sxx.md`.
+- **Objectifs** par compte avec projection linéaire (provenance `forecast`) ; **partenariats** (CRM + brouillons de messages, envoi humain).
+
 ## Données & provenance
-Tables principales : `contents`, `content_history`, `assets`, `jobs`, `runs`, `schedules`, `characters`, `research_items`, `competitors`, `experiments`, `metrics`, `messages`, `finance_entries`, `llm_calls`, `cc_usage`, `api_usage`, `activity_log`, `notifications`, `integration_checks`.
+Tables principales : `accounts`, `account_events`, `series`, `collabs`, `targets`, `contents`, `content_history`, `assets`, `jobs`, `runs`, `schedules`, `characters`, `research_items`, `competitors`, `experiments`, `metrics`, `messages`, `finance_entries`, `llm_calls`, `cc_usage`, `api_usage`, `activity_log`, `notifications`, `integration_checks`.
 Provenance : `measured` (API/journaux), `manual` (saisi), `estimated` (calculé), `template`, `hypothesis`, `observed` (avec URL).
 
 ## Sécurité

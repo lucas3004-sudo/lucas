@@ -7,6 +7,7 @@
 | **Claude API** | Implémenté, testé avec un client simulé | Routage Haiku/Sonnet/Opus, effort, JSON structuré, cache du préfixe, repli serveur sur refus, plafonds bloquants, coûts estimés | Clé API (facturée à part de Claude Pro) + `allow_paid_calls` |
 | **ffmpeg** | **Vérifié** (local) | Vidéo 1080×1920 (zoom doux, textes, voix, mention IA), images 1080×1350 | — |
 | Webhook | Implémenté, non testé | Discord / Slack / JSON générique | URL dans `.env` |
+| YouTube Shorts / Snapchat Spotlight | Non intégré (déclinaisons) | Variantes générées à la validation (légende adaptée, mêmes médias), export manuel | APIs officielles de publication |
 | Instagram Graph API | Non intégré | Publication = export manuel + checklist | Compte pro + app Meta validée (Content Publishing) |
 | TikTok Content Posting API | Non intégré | Idem | App TikTok auditée (sinon publication privée seulement) |
 | Statistiques plateformes | Non intégré | Saisie manuelle avec provenance `manual` | APIs officielles ci-dessus |

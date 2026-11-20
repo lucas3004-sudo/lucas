@@ -9,8 +9,8 @@ import shutil
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from .. import control, db, queue, storage
-from ..config import load_env
+from .. import control, db, growth, queue, storage
+from ..config import PLATFORMS, VIDEO_FORMATS, load_env
 from ..events import activity, history, notify
 from ..integrations import elevenlabs, media
 from ..llm.gateway import Task, run as llm
@@ -20,7 +20,6 @@ from .character import active_character
 from .specs import AGENTS
 
 JSON_FIELDS = ("script", "prompts", "hashtags", "qc", "meta")
-VIDEO_FORMATS = {"video", "reel", "talking_head", "storytime", "tutorial", "day_in_life", "trend_remix", "pov"}
 MEDIA_EXT = (".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov")
 
 
@@ -47,6 +46,8 @@ def _task(agent: str, name: str, inp: dict, schema: dict, max_tokens: int) -> Ta
 
 def _research(kind: str, title: str, body: str, source: str, provenance: str, run_id: str | None,
               platform: str | None = None, url: str | None = None) -> None:
+    if kind == "insight" and db.one("SELECT 1 FROM research_items WHERE kind='insight' AND title=? AND body=?", (title[:300], body)):
+        return  # same learning already recorded: avoid crowding prompts with duplicates
     db.insert("research_items", {"id": db.new_id("RES"), "kind": kind, "platform": platform, "title": title[:300], "body": body,
                                  "url": url or None, "source": source, "provenance": provenance, "run_id": run_id, "created_at": db.now()})
 
@@ -57,12 +58,30 @@ def _src(data: dict) -> str:
 
 # --- orchestrator ---------------------------------------------------------------
 def orchestrator_plan(job: dict) -> dict:
+    """Sizes the run from account quotas (or settings), reserves slots for double-downs on winners."""
     s = db.get_settings()
-    n = max(1, min(int(job["payload"].get("contents") or s["contents_per_run"]), 10))
+    explicit = job["payload"].get("contents")
+    deficit = growth.quota_deficit() if s.get("auto_quota") and not explicit else None
+    if explicit:
+        n = max(1, min(int(explicit), 10))
+    elif deficit is not None:
+        n = min(sum(deficit.values()), 10)
+    else:
+        n = max(1, min(int(s["contents_per_run"]), 10))
+    platform_slots = ([p for p, d in sorted(deficit.items(), key=lambda x: -x[1]) for _ in range(d)] if deficit
+                      else [p for p in s["platforms"] if p in PLATFORMS]) or ["tiktok"]
+    follow_ups = []
+    for w in growth.winners()[: max(1, n // 3)] if n else []:  # flagged doubled_down only once the follow-up exists
+        follow_ups.append({k: w[k] for k in ("id", "title", "hook", "platform", "format", "pillar", "perf_index")})
     insights = [r["title"] for r in db.rows("SELECT title FROM research_items WHERE kind='insight' ORDER BY created_at DESC LIMIT 5")]
-    plan = {"contents": n, "platforms": s["platforms"], "language": s["language"], "focus_insights": insights, "llm_mode": s["llm_mode"]}
-    _research("plan", f"Plan du run : {n} contenus", db.dumps(plan), "orchestrator", "n/a", job["run_id"])
+    plan = {"contents": n, "platforms": s["platforms"], "platform_slots": platform_slots, "deficit": deficit,
+            "follow_ups": follow_ups, "language": s["language"], "focus_insights": insights, "llm_mode": s["llm_mode"]}
+    _research("plan", f"Plan du run : {n} contenus" + (f" (dont {len(follow_ups)} suite(s) de gagnants)" if follow_ups else ""),
+              db.dumps(plan), "orchestrator", "n/a", job["run_id"])
     db.update("runs", "id", job["run_id"], {"params": db.dumps(plan)})
+    if n == 0:
+        activity("orchestrator", "quotas_covered", job["run_id"], {"deficit": deficit})
+        return {**plan, "note": "quotas couverts sur 3 jours : rien à produire"}
     queue.enqueue("research.scan", "research", {"plan": plan}, run_id=job["run_id"], priority=9)
     return plan
 
@@ -73,7 +92,7 @@ def orchestrator_autolaunch(job: dict) -> dict:
 
 # --- research -------------------------------------------------------------------
 RESEARCH_SCHEMA = obj(
-    trends=arr(obj(title=S, why_relevant=S, platform=enum("tiktok", "instagram", "both"),
+    trends=arr(obj(title=S, why_relevant=S, platform=enum(*PLATFORMS, "all"),
                    confidence=enum("low", "medium", "high"), source_url=S), 6),
     competitor_patterns=arr(obj(pattern=S, takeaway=S), 6),
     opportunities=arr(obj(title=S, angle=S), 6),
@@ -89,7 +108,7 @@ def research_scan(job: dict) -> dict:
 
     def offline() -> dict:
         return {
-            "trends": [{"title": f, "why_relevant": d, "platform": "both", "confidence": "low", "source_url": ""}
+            "trends": [{"title": f, "why_relevant": d, "platform": "all", "confidence": "low", "source_url": ""}
                        for f, d, _ in library.EVERGREEN_FORMATS[:4]],
             "competitor_patterns": [{"pattern": f"{c['handle']} ({c['platform']})", "takeaway": (c["notes"] or "à analyser")[:200]} for c in comps[:5]],
             "opportunities": [{"title": p["name"], "angle": p["topics"][0]} for p in ch["pillars"]],
@@ -110,40 +129,46 @@ def research_scan(job: dict) -> dict:
 
 
 # --- growth ---------------------------------------------------------------------
-BRIEF = obj(platform=enum("tiktok", "instagram"), format=S, pillar=S, angle=S, hook_idea=S, hook_type=S,
-            objective=enum("portée", "engagement", "abonnés"))
-STRATEGY_SCHEMA = obj(briefs=arr(BRIEF, 10), experiment=obj(hypothesis=S, variable=S, variant_a=S, variant_b=S, metric=S))
+BRIEF = obj(angle=S, hook_idea=S, hook_type=S, objective=enum("portée", "engagement", "abonnés"))
+STRATEGY_SCHEMA = obj(briefs=arr(BRIEF, 10))
 
 
 def growth_strategy(job: dict) -> dict:
+    """Allocation (platform x pillar x format) comes from the bandit; the LLM only writes angles and hooks."""
     ch = active_character()
     plan = job["payload"]["plan"]
-    n = plan["contents"]
-    insights = [r["title"] for r in db.rows("SELECT title FROM research_items WHERE kind='insight' ORDER BY created_at DESC LIMIT 5")]
-    inp = {"n": n, "platforms": plan["platforms"], "pillars": ch["pillars"], "trends": job["payload"]["trends"],
-           "opportunities": job["payload"]["opportunities"], "insights": insights,
-           "formats": library.FORMATS}
-    fallback = library.pick_briefs(ch, plan["platforms"], n, [{"title": i} for i in insights], job["run_id"])
-
-    def offline() -> dict:
-        return {"briefs": fallback, "experiment": {
-            "hypothesis": "Un hook en question génère plus de commentaires qu'un hook « liste »", "variable": "type de hook",
-            "variant_a": "question", "variant_b": "liste", "metric": "commentaires / vues"}}
-
-    data = llm(_task("growth", "strategy", inp, STRATEGY_SCHEMA, 1500), job, offline)
-    briefs = [b for b in data["briefs"] if b["platform"] in plan["platforms"]][:n]
-    briefs += fallback[len(briefs):n]  # never fewer than planned
-    e = data["experiment"]
-    db.insert("experiments", {"id": db.new_id("EXP"), "hypothesis": e["hypothesis"], "variable": e["variable"],
-                              "variant_a": e["variant_a"], "variant_b": e["variant_b"], "metric": e["metric"],
-                              "status": "proposed", "run_id": job["run_id"], "created_at": db.now(), "updated_at": db.now()})
-    _research("strategy", f"Stratégie : {len(briefs)} briefs", db.dumps(briefs), _src(data), "n/a", job["run_id"])
+    follow_ups = plan.get("follow_ups", [])
+    n_new = max(plan["contents"] - len(follow_ups), 0)
+    slots = growth.allocate(n_new, plan.get("platform_slots") or plan["platforms"], [p["name"] for p in ch["pillars"]], job["run_id"])
+    exp = growth.current_experiment(job["run_id"])
+    fallback = library.briefs_for_slots(slots, ch, job["run_id"], exp)
+    inp = {"slots": slots, "pillars": ch["pillars"], "trends": job["payload"]["trends"], "opportunities": job["payload"]["opportunities"],
+           "experiment": {k: exp[k] for k in ("variable", "variant_a", "variant_b")},
+           "rule": "one brief per slot, same order; respect slot pillar/format/platform; strong, specific angle"}
+    data = llm(_task("growth", "strategy", inp, STRATEGY_SCHEMA, 1500), job, lambda: {"briefs": fallback}) if slots else {"briefs": []}
+    briefs = []
+    for i, slot in enumerate(slots):
+        b = {**fallback[i], **(data["briefs"][i] if i < len(data["briefs"]) else {}), **slot}
+        b["experiment"] = fallback[i]["experiment"]  # assignment is deterministic, never left to the LLM
+        if exp["variable"] == "hook_type":
+            b["hook_type"] = b["experiment"]["value"]
+        else:
+            b["duration"] = b["experiment"]["value"]
+        briefs.append(b)
+    for f in follow_ups:
+        briefs.append(library.follow_up_brief(f))
+    library.attach_series(briefs, db.rows("SELECT * FROM series WHERE status='active'"))
+    _research("strategy", f"Stratégie : {len(briefs)} briefs (bandit + {len(follow_ups)} suite(s))", db.dumps(briefs), _src(data), "n/a", job["run_id"])
     queue.enqueue("reviewer.challenge", "reviewer", {"briefs": briefs}, run_id=job["run_id"], priority=7)
-    return {"briefs": len(briefs), "source": _src(data)}
+    return {"briefs": len(briefs), "experiment": exp["id"], "source": _src(data)}
 
 
 # --- reviewer -------------------------------------------------------------------
 CHALLENGE_SCHEMA = obj(reviews=arr(obj(index=I, keep=B, risk=S, improvement=S), 10))
+
+
+def primary_account(platform: str) -> str | None:
+    return db.scalar("SELECT id FROM accounts WHERE platform=? AND status='active' ORDER BY created_at LIMIT 1", (platform,))
 
 
 def reviewer_challenge(job: dict) -> dict:
@@ -168,11 +193,20 @@ def reviewer_challenge(job: dict) -> dict:
             activity("reviewer", "brief_dropped", job["run_id"], {"brief": b, "risk": rev.get("risk")}, "warn")
             continue
         cid = db.new_id("CNT")
+        episode = None
+        if b.get("series_id"):
+            db.execute("UPDATE series SET episodes=episodes+1, updated_at=? WHERE id=?", (db.now(), b["series_id"]))
+            episode = db.scalar("SELECT episodes FROM series WHERE id=?", (b["series_id"],))
         db.insert("contents", {"id": cid, "run_id": job["run_id"], "title": f"{b['pillar']} · {b['angle']}"[:200],
                                "stage": "concept", "status": "in_progress", "platform": b["platform"], "format": b["format"],
-                               "pillar": b["pillar"], "meta": db.dumps({"brief": b, "review": rev}), "hashtags": "[]",
-                               "created_at": db.now(), "updated_at": db.now()})
+                               "pillar": b["pillar"], "meta": db.dumps({"brief": b, "review": rev, "experiment": b.get("experiment"),
+                                                                        "follow_up_of": b.get("follow_up_of")}),
+                               "hashtags": "[]", "account_id": primary_account(b["platform"]), "series_id": b.get("series_id"),
+                               "episode": episode, "created_at": db.now(), "updated_at": db.now()})
         history(cid, "reviewer", "created_from_brief", {"risk": rev.get("risk")})
+        if b.get("follow_up_of"):
+            orig = get_content(b["follow_up_of"]["id"])
+            save_content(orig["id"], "reviewer", "double_down_created", {"follow_up": cid}, meta={**orig["meta"], "doubled_down": True})
         queue.enqueue("creative.develop", "creative", {}, run_id=job["run_id"], content_id=cid, priority=6)
         created.append(cid)
     return {"created": created, "dropped": len(briefs) - len(created)}
@@ -202,10 +236,15 @@ def creative_develop(job: dict) -> dict:
     ch = active_character()
     brief = c["meta"].get("brief", {})
     fb = job["payload"].get("feedback", "")
+    series = db.one("SELECT name, premise FROM series WHERE id=?", (c["series_id"],)) if c.get("series_id") else None
+    dur = growth.DURATIONS.get(brief.get("duration", ""), (15, 35))
     inp = {"brief": brief, "platform": c["platform"], "format": c["format"], "language": db.setting("language"),
-           "feedback": fb, "hook_patterns": [h for _, h in library.HOOKS[:4]]}
+           "feedback": fb, "target_duration_s": f"{dur[0]}-{dur[1]}", "hook_type": brief.get("hook_type"),
+           "series": {**series, "episode": c.get("episode")} if series else None,
+           "follow_up_of": c["meta"].get("follow_up_of"),
+           "hook_patterns": [h for _, h in library.HOOKS[:4]]}
     data = llm(_task("creative", "develop", inp, CREATIVE_SCHEMA, 1800), job,
-               lambda: library.script_for(brief, ch, c["id"] + fb))
+               lambda: library.script_for({**brief, "series_name": series and series["name"], "episode": c.get("episode")}, ch, c["id"] + fb))
     blocks = compliance.check_text(" ".join([data["hook"], data["caption"], data["concept"]]))
     if blocks:
         save_content(c["id"], "creative", "blocked_by_rules", {"blockers": blocks}, status="needs_revision", stage="script",
@@ -226,13 +265,13 @@ def platform_optimize(job: dict) -> dict:
     tag = active_character()["disclosure"]["short"]
 
     def offline() -> dict:
-        return {"caption": c["caption"], "hashtags": library.hashtags_for(c["pillar"] or "", c["platform"]),
+        return {"caption": library.fit_caption(c["caption"], c["platform"], tag), "hashtags": library.hashtags_for(c["pillar"] or "", c["platform"]),
                 "keywords": [w for w in re.findall(r"\w{5,}", c["title"].lower())][:5], "notes": "heuristique hors ligne"}
 
     data = llm(_task("platform", "optimize", {"platform": c["platform"], "caption": c["caption"], "pillar": c["pillar"],
                                               "title": c["title"], "disclosure_tag": tag}, PLATFORM_SCHEMA, 600), job, offline)
-    caption, _ = compliance.ensure_disclosure(data["caption"], tag)
-    tags = [t if t.startswith("#") else f"#{t}" for t in data["hashtags"]]
+    caption, _ = compliance.ensure_disclosure(library.fit_caption(data["caption"], c["platform"], tag), tag)
+    tags = [t if t.startswith("#") else f"#{t}" for t in data["hashtags"]][: PLATFORMS[c["platform"]]["hashtags"] - 1]
     if "#IA" not in tags:
         tags.append("#IA")
     meta = {**c["meta"], "keywords": data["keywords"], "platform_notes": data["notes"]}
@@ -366,12 +405,19 @@ def planner_schedule(job: dict) -> dict:
     c = get_content(job["content_id"])
     if c["status"] != "approved":
         raise queue.PermanentError("seul un contenu approuvé par un humain peut être planifié")
+    acc = db.one("SELECT handle, status FROM accounts WHERE id=?", (c["account_id"],)) if c.get("account_id") else None
+    if acc and acc["status"] != "active":
+        history(c["id"], "planner", "schedule_held", {"account": acc["handle"], "status": acc["status"]})
+        notify("Planification suspendue", f"{c['title']} : compte {acc['handle']} {acc['status']}. Réactivez-le puis relancez.", "warn", "#/accounts")
+        return {"held": True, "account_status": acc["status"]}
     when = job["payload"].get("scheduled_at")
     if not when:
         tz = ZoneInfo(load_env().timezone)
         hours = (db.setting("posting_hours") or {}).get(c["platform"], ["12:00"])
         taken = {r["scheduled_at"] for r in db.rows("SELECT scheduled_at FROM contents WHERE platform=? AND scheduled_at IS NOT NULL", (c["platform"],))}
         start = datetime.now(timezone.utc).astimezone(tz) + timedelta(hours=1)
+        if job["payload"].get("not_before"):
+            start = max(start, datetime.fromisoformat(job["payload"]["not_before"]).astimezone(tz))
         for day in range(0, 60):
             for h in sorted(hours):
                 hh, mm = map(int, h.split(":"))
@@ -384,6 +430,43 @@ def planner_schedule(job: dict) -> dict:
                 break
     save_content(c["id"], "planner", "scheduled", {"scheduled_at": when}, scheduled_at=when, status="scheduled", stage="publication")
     return {"scheduled_at": when}
+
+
+def create_variant(parent_id: str, platform: str, actor: str = "user") -> dict:
+    """Cross-post an APPROVED video to another mainstream platform: same media, platform-fitted caption/hashtags,
+    deterministic QC. The human approval of the parent explicitly listed this platform."""
+    c = get_content(parent_id)
+    if platform not in PLATFORMS or platform == c["platform"]:
+        return {"platform": platform, "skipped": "plateforme invalide"}
+    if c["format"] not in VIDEO_FORMATS:
+        return {"platform": platform, "skipped": "format non vidéo (carrousel/photo) : pas de déclinaison"}
+    if db.one("SELECT 1 FROM contents WHERE parent_id=? AND platform=?", (parent_id, platform)):
+        return {"platform": platform, "skipped": "variante déjà créée"}
+    if not primary_account(platform) and db.one("SELECT 1 FROM accounts WHERE platform=?", (platform,)):
+        return {"platform": platform, "skipped": "compte en pause ou restreint"}
+    tag = active_character()["disclosure"]["short"]
+    vid = db.new_id("CNT")
+    caption, _ = compliance.ensure_disclosure(library.fit_caption(c["caption"] or "", platform, tag), tag)
+    db.insert("contents", {
+        "id": vid, "run_id": c["run_id"], "parent_id": parent_id, "title": f"{c['title']} [{PLATFORMS[platform]['label']}]"[:200],
+        "stage": "approval", "status": "in_progress", "platform": platform, "format": PLATFORMS[platform]["formats"][0],
+        "pillar": c["pillar"], "concept": c["concept"], "hook": c["hook"], "script": db.dumps(c["script"]),
+        "prompts": db.dumps(c["prompts"]), "caption": caption, "hashtags": db.dumps(library.hashtags_for(c["pillar"] or "", platform)),
+        "meta": db.dumps({**{k: v for k, v in c["meta"].items() if k not in ("experiment", "follow_up_of")},
+                          "variant_of": parent_id, "doubled_down": True}), "account_id": primary_account(platform),
+        "series_id": c.get("series_id"), "episode": c.get("episode"), "created_at": db.now(), "updated_at": db.now()})
+    for a in storage.content_assets(parent_id):
+        if a["kind"] == "final":
+            db.insert("assets", {**a, "id": db.new_id("AST"), "content_id": vid, "created_at": db.now()})
+    history(vid, actor, "variant_created", {"parent": parent_id, "platform": platform})
+    v = get_content(vid)
+    res = compliance.check_content(v, storage.content_assets(vid), tag)
+    qc = {k: res[k] for k in ("passed", "score", "blockers", "warnings", "fixes")} | {"checked_at": db.now(), "by": "rules"}
+    if not res["passed"]:
+        save_content(vid, "reviewer", "qc_failed", qc, qc=qc, caption=res["caption"], status="needs_revision", stage="qc")
+        return {"platform": platform, "id": vid, "status": "needs_revision"}
+    save_content(vid, actor, "approved_with_parent", {"parent": parent_id}, qc=qc, caption=res["caption"], status="approved")
+    return {"platform": platform, "id": vid, "status": "approved"}
 
 
 def publisher_prepare(job: dict) -> dict:
@@ -424,6 +507,27 @@ def analyst_analyze(job: dict) -> dict:
 
 
 def analyst_learn(job: dict) -> dict:
+    out: dict = {"experiments": [], "slots": {}}
+    for exp in db.rows("SELECT * FROM experiments WHERE status IN ('running','proposed')"):
+        ev = growth.evaluate_experiment(exp)
+        out["experiments"].append({"id": exp["id"], **ev})
+        if ev["p_b_better"] is not None and not ev["decision"].startswith(("données", "collecte")):
+            txt = (f"{ev['decision']} · P(B>A)={ev['p_b_better']:.0%} · lift {ev['lift']:+.0%} · ER A {ev['A']['er']:.2%} "
+                   f"({ev['A']['views']} vues) vs B {ev['B']['er']:.2%} ({ev['B']['views']} vues)") if ev["lift"] is not None else ev["decision"]
+            db.update("experiments", "id", exp["id"], {"status": "concluded", "result": txt, "updated_at": db.now()})
+            _research("insight", f"Expérience conclue: {exp['variable']}", txt, "analyst", "manual", None)
+            notify("Expérience A/B conclue", f"{exp['hypothesis']} → {ev['decision']}", "info", "#/growth")
+    for platform in PLATFORMS:
+        sl = growth.best_slots(platform)
+        if sl:
+            out["slots"][platform] = sl[:3]
+            _research("insight", f"Créneau gagnant {platform}: {sl[0]['slot']}",
+                      f"indice moyen {sl[0]['avg_index']} sur {sl[0]['n']} contenus (heure locale)", "analyst", "manual", None)
+    out["learn"] = _learn_formats()
+    return out
+
+
+def _learn_formats() -> dict:
     data = db.rows("SELECT c.format, c.pillar, c.meta, m.* FROM metrics m JOIN contents c ON c.id=m.content_id "
                    "WHERE m.id IN (SELECT MAX(id) FROM metrics GROUP BY content_id)")
     if len(data) < 3:
@@ -443,6 +547,23 @@ def analyst_learn(job: dict) -> dict:
             _research("insight", f"{label}: {k}", f"ER moyen {avg:.2%} sur {n} contenu(s) (données {prov})", "analyst", prov, None)
             out[dim] = {"best": k, "avg_er": round(avg, 4), "n": n}
     return out
+
+
+def analyst_watch(job: dict) -> dict:
+    """Hourly: account health anomalies -> notifications (each alert once per key)."""
+    sent = 0
+    for a in growth.anomalies():
+        if db.one("SELECT 1 FROM alerts_seen WHERE key=?", (a["key"],)):
+            continue
+        db.insert("alerts_seen", {"key": a["key"], "at": db.now()})
+        notify(a["title"], a["body"], a["level"], a["link"])
+        sent += 1
+    return {"alerts": sent}
+
+
+def analyst_weekly_review(job: dict) -> dict:
+    from ..reports import write_weekly_review
+    return {"path": str(write_weekly_review())}
 
 
 def analyst_daily_brief(job: dict) -> dict:
@@ -528,6 +649,37 @@ def community_triage(job: dict) -> dict:
     return {"triaged": len(msgs), **counts, "source": _src(data)}
 
 
+OUTREACH_SCHEMA = obj(subject=S, message=S, value_proposition=S)
+
+
+def community_outreach_draft(job: dict) -> dict:
+    """Draft (never sends) a collaboration message. Transparent: the creator is an AI character run by a team."""
+    col = db.one("SELECT * FROM collabs WHERE id=?", (job["payload"]["collab_id"],))
+    if not col:
+        raise queue.PermanentError("collab introuvable")
+    ch = active_character()
+
+    def offline() -> dict:
+        idea = {"creator": "un duo / une vidéo croisée sur un thème commun", "brand": "une intégration produit non explicite et sincère",
+                "media": "une interview sur la création d'une influenceuse IA transparente", "engage": "un échange en commentaires"}[col["kind"]]
+        return {"subject": f"Idée de collab avec {ch['name']} ({ch['disclosure']['bio_line']})",
+                "message": f"Salut {col['name']} ! On gère {ch['name']}, une créatrice virtuelle générée par IA (et on le dit clairement). "
+                           f"On adore ce que tu fais sur {col['platform'] or 'les réseaux'} et on pense à {idea}. "
+                           "Ça te dirait d'en parler ? L'équipe de " + ch["name"],
+                "value_proposition": idea}
+
+    data = llm(_task("community", "outreach", {"collab": {k: col[k] for k in ("kind", "name", "platform", "handle", "notes")},
+                                               "character": ch["name"], "disclosure": ch["disclosure"]["bio_line"]},
+                     OUTREACH_SCHEMA, 600), job, offline)
+    msg = data["message"]
+    if compliance.check_text(f"{data['subject']} {msg}"):
+        raise queue.PermanentError("brouillon non conforme")
+    if not re.search(r"\b(ia|ai)\b|virtuel", msg.lower()):
+        msg += f"\n\n({ch['disclosure']['bio_line']})"
+    db.update("collabs", "id", col["id"], {"draft_message": f"{data['subject']}\n\n{msg}", "updated_at": db.now()})
+    return {"collab": col["id"], "source": _src(data)}
+
+
 HANDLERS = {
     "orchestrator.plan": orchestrator_plan, "orchestrator.autolaunch": orchestrator_autolaunch,
     "research.scan": research_scan, "growth.strategy": growth_strategy,
@@ -536,5 +688,6 @@ HANDLERS = {
     "producer.generate": producer_generate, "producer.edit": producer_edit,
     "planner.schedule": planner_schedule, "publisher.prepare": publisher_prepare,
     "analyst.analyze": analyst_analyze, "analyst.learn": analyst_learn, "analyst.daily_brief": analyst_daily_brief,
-    "community.triage": community_triage,
+    "community.triage": community_triage, "community.outreach_draft": community_outreach_draft,
+    "analyst.watch": analyst_watch, "analyst.weekly_review": analyst_weekly_review,
 }

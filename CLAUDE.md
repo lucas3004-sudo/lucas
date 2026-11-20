@@ -12,6 +12,7 @@ Backend Python/FastAPI + SQLite, dashboard web sans build. Langue de travail : f
 - `agency/llm/gateway.py` : modes `offline|claude_code|api`, règles communes (CORE_RULES) · `anthropic_api.py` : routage, cache, budget
 - `agency/queue.py`, `scheduler.py`, `worker.py`, `control.py` : file, planification, workers, cycle de vie
 - `agency/api/routes.py` : API REST · `web/pages/<page>.js` : une page = un fichier
+- `agency/growth.py` : moteur de croissance (indice de perf, bandit, A/B bayésien, créneaux, alertes, objectifs)
 - `agency/agents/compliance.py` : garde-fous déterministes · `agency/migrations/*.sql` : schéma
 - Docs : `docs/ARCHITECTURE.md`, `DECISIONS.md`, `INTEGRATIONS.md`, `SKILLS.md`, `TOKEN_OPTIMIZATION.md`, `DEPLOYMENT.md`, `DEVLOG.md`
 

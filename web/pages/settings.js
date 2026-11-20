@@ -1,5 +1,7 @@
 import { api, act, esc, fmt } from "../app.js";
 
+const PLS = ["tiktok", "instagram", "youtube", "snapchat"];
+
 export async function render(el) {
   const [{ settings: s, locked, schedules }, logs] = await Promise.all([api("/settings"), api("/logs?limit=80")]);
   const r = s.model_routing, ph = s.posting_hours;
@@ -15,8 +17,14 @@ export async function render(el) {
       <label>Routage des modèles (palier → modèle)</label><div class="grid g3">${["simple", "standard", "complex"].map((k) => `<div><span class="m">${k}</span><input id="r_${k}" value="${esc(r[k])}"></div>`).join("")}</div></div>
     <div class="card"><h2>Production</h2><div class="grid g2"><div><label>Contenus par run</label><input type="number" min="1" max="10" id="contents_per_run" value="${s.contents_per_run}"></div>
       <div><label>Langue</label><input id="language" value="${esc(s.language)}"></div></div>
-      <label>Plateformes</label><div class="row">${["tiktok", "instagram"].map((p) => `<label class="check"><input type="checkbox" data-pf="${p}" ${s.platforms.includes(p) ? "checked" : ""}> ${p}</label>`).join("")}</div>
-      <div class="grid g2"><div><label>Créneaux TikTok (HH:MM, virgules)</label><input id="ph_tiktok" value="${esc((ph.tiktok || []).join(", "))}"></div><div><label>Créneaux Instagram</label><input id="ph_instagram" value="${esc((ph.instagram || []).join(", "))}"></div></div>
+      <label>Plateformes recevant des contenus originaux</label><div class="row">${PLS.map((p) => `<label class="check"><input type="checkbox" data-pf="${p}" ${s.platforms.includes(p) ? "checked" : ""}> ${p}</label>`).join("")}</div>
+      <label>Déclinaisons proposées par défaut à la validation</label>${["tiktok", "instagram"].map((src) => `<div class="row"><span class="m" style="width:80px">${src} →</span>${PLS.filter((p) => p !== src).map((p) =>
+        `<label class="check"><input type="checkbox" data-xp="${src}:${p}" ${((s.crosspost || {})[src] || []).includes(p) ? "checked" : ""}> ${p}</label>`).join("")}</div>`).join("")}
+      <div class="grid g2">${PLS.map((p) => `<div><label>Créneaux ${p} (HH:MM, virgules)</label><input id="ph_${p}" value="${esc((ph[p] || []).join(", "))}"></div>`).join("")}</div>
+      <h3 style="margin-top:12px">Moteur de croissance</h3>
+      <label class="check"><input type="checkbox" id="auto_quota" ${s.auto_quota ? "checked" : ""}> Dimensionner chaque run d'après les quotas des comptes (déficit sur 3 jours)</label>
+      <div class="grid g2"><div><label>Seuil « gagnant » (× la médiane) → suite automatique</label><input type="number" step="0.1" min="1.2" max="10" id="double_down_index" value="${s.double_down_index}"></div>
+        <div><label>Vues minimales par variante A/B avant conclusion</label><input type="number" min="100" id="experiment_min_views" value="${s.experiment_min_views}"></div></div>
       <label>Fournisseur de visuels</label><select id="image_provider">${[["manual", "manual — prompts → Alexya → Drop (recommandé)"], ["placeholder", "placeholder — visuels de test (jamais publiables)"], ["alexya", "alexya — API non vérifiée (désactivé)"]]
         .map(([v, l]) => `<option value="${v}" ${s.image_provider === v ? "selected" : ""}>${l}</option>`).join("")}</select>
       <label class="check" style="margin-top:12px"><input type="checkbox" id="voice_enabled" ${s.voice_enabled ? "checked" : ""}> Générer la voix off (ElevenLabs, consomme vos crédits)</label>
@@ -44,10 +52,13 @@ export async function render(el) {
       model_routing: { simple: $("r_simple").value, standard: $("r_standard").value, complex: $("r_complex").value },
       contents_per_run: +$("contents_per_run").value, language: $("language").value,
       platforms: [...el.querySelectorAll("[data-pf]:checked")].map((c) => c.dataset.pf),
-      posting_hours: { tiktok: hours($("ph_tiktok").value), instagram: hours($("ph_instagram").value) },
+      posting_hours: Object.fromEntries(PLS.map((p) => [p, hours($(`ph_${p}`).value)]).filter(([, v]) => v.length)),
+      crosspost: { tiktok: [], instagram: [] },
+      auto_quota: $("auto_quota").checked, double_down_index: +$("double_down_index").value, experiment_min_views: +$("experiment_min_views").value,
       image_provider: $("image_provider").value, voice_enabled: $("voice_enabled").checked,
       voice_daily_char_cap: +$("voice_daily_char_cap").value, max_upload_mb: +$("max_upload_mb").value,
     };
+    el.querySelectorAll("[data-xp]:checked").forEach((c) => { const [src, dst] = c.dataset.xp.split(":"); body.crosspost[src].push(dst); });
     if (!body.platforms.length) return alert("Choisissez au moins une plateforme.");
     if (await act(() => api("/settings", { method: "PUT", body }), "Réglages enregistrés")) render(el);
   };

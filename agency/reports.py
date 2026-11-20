@@ -63,3 +63,62 @@ def write_daily_brief(day: str | None = None) -> Path:
     path = BRIEFS_DIR / f"{d}.md"
     path.write_text(md, encoding="utf-8")
     return path
+
+
+def build_weekly_review() -> tuple[str, str]:
+    """Weekly strategy review (deterministic): winners, losers, allocation, experiments, slots, accounts, targets, collabs."""
+    from . import growth
+    tz = ZoneInfo(load_env().timezone)
+    now = datetime.now(timezone.utc).astimezone(tz)
+    week = f"{now.isocalendar().year}-W{now.isocalendar().week:02d}"
+    perf = [p for p in growth.performance() if p["perf_index"] is not None]
+    top = sorted(perf, key=lambda p: -p["perf_index"])[:5]
+    flop = sorted(perf, key=lambda p: p["perf_index"])[:3]
+    arms = growth.arm_stats()
+    L = [f"# Revue stratégique — semaine {week}", "",
+         "_Analyst, sans LLM. Indice = vues / médiane de la plateforme. Statistiques saisies = [manuel] ; projections = [prévision]._", "",
+         "## Gagnants (à décliner)"]
+    thr = float(db.setting("double_down_index") or 2.0)
+    L += [f"- ×{p['perf_index']} — {p['title']} ({p['platform']}/{p['format']}, hook {p['hook_type'] or '?'}) "
+          + ("→ suite déjà créée" if p["doubled_down"] else "→ suite au prochain run" if p["perf_index"] >= thr else "")
+          for p in top] or ["- pas encore assez de données (≥ 3 contenus mesurés par plateforme)"]
+    L += ["", "## À retravailler ou arrêter"]
+    L += [f"- ×{p['perf_index']} — {p['title']} ({p['platform']}/{p['format']})" for p in flop] or ["- —"]
+    L += ["", "## Allocation (bandit : probabilité moyenne de dépasser la médiane)"]
+    for dim, label in (("pillars", "Piliers"), ("formats", "Formats")):
+        ranked = sorted(arms[dim].items(), key=lambda kv: -kv[1]["posterior_mean"])
+        L.append(f"- {label} : " + (", ".join(f"{k} {v['posterior_mean']:.0%} ({v['wins']}/{v['wins'] + v['losses']})" for k, v in ranked) or "exploration (aucune donnée)"))
+    L += ["", "## Expériences A/B"]
+    for e in db.rows("SELECT * FROM experiments ORDER BY created_at DESC LIMIT 5"):
+        ev = growth.evaluate_experiment(e) if e["status"] == "running" else None
+        L.append(f"- [{e['status']}] {e['hypothesis']} — " + (e["result"] or (ev and ev["decision"]) or "—"))
+    L += ["", "## Meilleurs créneaux"]
+    for platform in ("tiktok", "instagram", "youtube", "snapchat"):
+        sl = growth.best_slots(platform)
+        L.append(f"- {platform} : " + (", ".join(f"{s['slot']} (×{s['avg_index']}, n={s['n']})" for s in sl[:3]) if sl else "données insuffisantes"))
+    L += ["", "## Comptes"]
+    for a in db.rows("SELECT * FROM accounts ORDER BY platform"):
+        posts = db.scalar("SELECT COUNT(*) FROM contents WHERE account_id=? AND status='published' AND published_at>=?", (a["id"], db.now(-7 * 86400)))
+        warn = db.scalar("SELECT COUNT(*) FROM account_events WHERE account_id=? AND kind IN ('warning','restriction') AND at>=?", (a["id"], db.now(-30 * 86400)))
+        L.append(f"- {a['platform']} {a['handle']} — {a['status']} — {posts} publication(s)/7 j (quota {a['daily_quota']}/j) — avertissements 30 j : {warn}")
+    if not db.scalar("SELECT COUNT(*) FROM accounts"):
+        L.append("- aucun compte enregistré (page Comptes)")
+    L += ["", "## Objectifs"]
+    for t in growth.targets_progress():
+        fc = t["forecast"]
+        L.append(f"- {t['metric']} {t['handle'] or 'global'} : {t['current']} / {t['target']} avant {t['deadline']} [{t['current_provenance']}]"
+                 + (f" — projection {fc['projected']} ({'en route' if t['on_track'] else 'en retard'}) [prévision]" if fc else ""))
+    L += ["", "## Partenariats"]
+    L += [f"- {r['stage']} : {r['n']}" for r in db.rows("SELECT stage, COUNT(*) n FROM collabs GROUP BY stage")] or ["- aucun"]
+    cost = db.scalar("SELECT COALESCE(SUM(cost_usd),0) FROM llm_calls WHERE at>=?", (db.now(-7 * 86400),))
+    L += ["", "## Coûts", f"- API Claude 7 j : {cost:.4f} USD [estimé]", "", "## Alertes ouvertes"]
+    L += [f"- {a['title']} — {a['body']}" for a in growth.anomalies()] or ["- aucune"]
+    return week, "\n".join(L) + "\n"
+
+
+def write_weekly_review() -> Path:
+    week, md = build_weekly_review()
+    BRIEFS_DIR.mkdir(exist_ok=True)
+    path = BRIEFS_DIR / f"weekly-{week}.md"
+    path.write_text(md, encoding="utf-8")
+    return path

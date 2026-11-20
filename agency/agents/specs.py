@@ -7,7 +7,7 @@ AGENTS: dict[str, dict] = {
     "orchestrator": {
         "name": "Orchestrator", "roles": ["CEO", "Project Manager"],
         "mission": "Planifier chaque run, répartir le travail, suivre l'avancement et clôturer.",
-        "instructions": "Plan the run from settings and recent insights. Deterministic: no LLM needed.",
+        "instructions": "Deterministic: size the run from account quotas (3-day deficit), reserve slots to double down on winners.",
         "tools": ["db.read", "queue.enqueue"], "tier": "none", "skills": [],
         "limits": {"llm_calls_per_run": 0}, "jobs": ["orchestrator.plan", "orchestrator.autolaunch"],
         "success": ["run créé avec N briefs", "aucune tâche orpheline", "run clôturé avec résumé"],
@@ -26,11 +26,14 @@ AGENTS: dict[str, dict] = {
     "growth": {
         "name": "Growth", "roles": ["Growth Director", "Virality Analyst", "Experimentation"],
         "mission": "Transformer la recherche en stratégie : briefs de contenus et une expérience mesurable par run.",
-        "instructions": "Produce exactly n content briefs (diverse pillars/formats/platforms) and one A/B experiment "
-                        "with a single variable and a measurable metric.",
-        "tools": ["db.read", "experiments.write"], "tier": "standard", "skills": ["hook-anatomy", "analytics-and-reporting"],
+        "instructions": "For each given slot (platform/pillar/format fixed by the bandit), write one brief: a specific, "
+                        "searchable angle and a scroll-stopping hook idea (<12 words, curiosity or tension, no clickbait lie). "
+                        "Respect the running A/B experiment variable. Favour series-able ideas and saves/shares-driving value.",
+        "tools": ["db.read", "experiments.write", "growth.bandit", "growth.winners"], "tier": "standard",
+        "skills": ["agency-growth-playbook", "hook-anatomy", "trend-radar"],
         "limits": {"llm_calls_per_run": 1, "max_output_tokens": 1500}, "jobs": ["growth.strategy"],
-        "success": ["n briefs variés", "1 expérience avec métrique"], "handoff": ["reviewer"],
+        "success": ["1 brief par slot du bandit", "expérience A/B en cours alimentée (A et B alternés)", "suites des gagnants planifiées"],
+        "handoff": ["reviewer"],
     },
     "reviewer": {
         "name": "Reviewer", "roles": ["Devil's Advocate", "Compliance", "Quality Control"],
@@ -44,16 +47,19 @@ AGENTS: dict[str, dict] = {
     "creative": {
         "name": "Creative", "roles": ["Content Director", "Concept Creator", "Scriptwriter"],
         "mission": "Écrire concept, hook, script séquencé et légende fidèles au personnage.",
-        "instructions": "Write the concept, a hook under 12 words, a timed script (beats with visual, on-screen text, voiceover), "
-                        "caption and CTA in the character's tone. Language: settings.language. 15-35 s for video.",
-        "tools": ["db.read"], "tier": "standard", "skills": ["tiktok-script", "storytelling-and-narrative", "hook-anatomy"],
+        "instructions": "Write concept, hook (<12 words, payoff promised in the first 2 s, matches hook_type), a timed script "
+                        "(beats: visual, on-screen text, voiceover) within target_duration_s with a pattern interrupt every 3-5 s "
+                        "and a loopable ending, caption with one clear CTA (comment/save/share). Series: keep the recurring "
+                        "intro and episode number. follow_up_of: a real part 2 that references the original. Character's tone.",
+        "tools": ["db.read"], "tier": "standard", "skills": ["tiktok-script", "storytelling-and-narrative", "hook-anatomy", "agency-growth-playbook"],
         "limits": {"llm_calls_per_content": 2, "max_output_tokens": 1800}, "jobs": ["creative.develop"],
         "success": ["hook < 12 mots", "script complet", "ton du personnage respecté"], "handoff": ["platform"],
     },
     "platform": {
         "name": "Platform", "roles": ["TikTok Strategist", "Instagram Strategist", "Hashtag & SEO"],
         "mission": "Adapter légende, hashtags et mots-clés à chaque plateforme.",
-        "instructions": "Optimise caption for the platform (keep AI disclosure), 3-6 relevant hashtags incl. #IA, search keywords.",
+        "instructions": "Optimise caption for the platform (keep AI disclosure; first line = searchable keyword phrase), "
+                        "niche hashtags within the platform limit incl. #IA, 3-5 social-search keywords.",
         "tools": ["db.read"], "tier": "simple", "skills": ["platform-fluency"],
         "limits": {"llm_calls_per_content": 1, "max_output_tokens": 600}, "jobs": ["platform.optimize"],
         "success": ["hashtags pertinents ≤ limite", "mention IA présente"], "handoff": ["prompt"],
@@ -77,7 +83,8 @@ AGENTS: dict[str, dict] = {
     },
     "planner": {
         "name": "Planner", "roles": ["Social Media Manager", "Content Calendar"],
-        "mission": "Planifier les contenus validés et préparer les publications (export manuel tant qu'aucune API n'est vérifiée).",
+        "mission": "Planifier les contenus validés sur chaque compte, décliner les vidéos vers YouTube Shorts / Snapchat Spotlight "
+                   "(validées avec le parent) et préparer les publications (export manuel tant qu'aucune API n'est vérifiée).",
         "instructions": "Deterministic slotting from settings.posting_hours. No LLM.",
         "tools": ["db.write", "storage.export"], "tier": "none", "skills": [],
         "limits": {}, "jobs": ["planner.schedule", "publisher.prepare"],
@@ -90,16 +97,18 @@ AGENTS: dict[str, dict] = {
                         "(never claim to be human; say you're an AI creator if asked), or escalate with a reason.",
         "tools": ["messages.read", "messages.write"], "tier": "simple",
         "skills": ["read-the-room", "reply-and-comment-writer", "crisis-and-moderation", "objection-handling"],
-        "limits": {"batch_size": 20, "max_output_tokens": 1500}, "jobs": ["community.triage"],
+        "limits": {"batch_size": 20, "max_output_tokens": 1500}, "jobs": ["community.triage", "community.outreach_draft"],
         "success": ["100 % des messages classés", "sensible → humain"], "handoff": [],
     },
     "analyst": {
         "name": "Analyst", "roles": ["Analytics", "Finance", "Token Optimization", "Daily Reporting"],
-        "mission": "Mesurer, apprendre, suivre coûts et tokens, et écrire le rapport quotidien.",
+        "mission": "Mesurer, apprendre (indice de performance, bandit, A/B bayésien, créneaux), surveiller la santé des comptes, "
+                   "suivre coûts et tokens, écrire le rapport quotidien et la revue hebdo.",
         "instructions": "Deterministic aggregation from DB. No LLM.",
         "tools": ["db.read", "briefs.write"], "tier": "none", "skills": ["analytics-and-reporting"],
-        "limits": {}, "jobs": ["analyst.analyze", "analyst.learn", "analyst.daily_brief"],
-        "success": ["rapport quotidien écrit", "chaque chiffre avec provenance"], "handoff": ["orchestrator"],
+        "limits": {}, "jobs": ["analyst.analyze", "analyst.learn", "analyst.daily_brief", "analyst.watch", "analyst.weekly_review"],
+        "success": ["rapport quotidien + revue hebdo écrits", "expériences conclues avec statistiques", "alertes de santé des comptes",
+                    "chaque chiffre avec provenance"], "handoff": ["orchestrator"],
     },
 }
 

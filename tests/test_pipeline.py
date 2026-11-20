@@ -89,7 +89,7 @@ def test_claude_code_mode_roundtrip(client):
     t = client.get(f"/api/cc/tasks/{tasks[0]['task_id']}").json()
     assert t["schema"]["type"] == "object"
     assert client.post(f"/api/cc/tasks/{t['task_id']}/result", json={"trends": "nope"}).status_code == 422
-    good = {"trends": [{"title": "Routines 5 minutes", "why_relevant": "format court", "platform": "both", "confidence": "low", "source_url": ""}],
+    good = {"trends": [{"title": "Routines 5 minutes", "why_relevant": "format court", "platform": "all", "confidence": "low", "source_url": ""}],
             "competitor_patterns": [], "opportunities": [{"title": "Coulisses IA", "angle": "transparence"}]}
     assert client.post(f"/api/cc/tasks/{t['task_id']}/result", json=good).status_code == 200
     worker.run_once()

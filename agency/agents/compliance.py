@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import re
 
+from ..config import PLATFORMS, VIDEO_FORMATS
+
 BLOCK_PATTERNS = {
     "explicit": r"\b(nude|nudes|nu(e|es)?\s+int[ée]gral|porn\w*|xxx|nsfw|sex(e|uel|uelle)?\b|[ée]rotique|fetish|f[ée]tich\w*|strip[- ]?tease|seins nus|topless|lingerie sexy)",
     "adult_platform": r"\b(onlyfans|only\s*fans|fanvue|mym\.fans|\bmym\b|fansly|patreon\s*18|18\+|contenu (priv[ée]|exclusif) payant)",
@@ -15,7 +17,6 @@ WARN_PATTERNS = {
     "unsourced_stat": r"\b\d{1,3}\s?%|\b\d+\s?(millions?|milliards?)\b",
     "absolute_claim": r"\b(garanti|100\s?% efficace|miracle|jamais rat[ée])",
 }
-LIMITS = {"tiktok": {"caption": 2200, "hashtags": 8}, "instagram": {"caption": 2200, "hashtags": 15}}
 SFW_NEGATIVE = ("nudity, nsfw, cleavage focus, lingerie, suggestive pose, minor, childlike features, "
                 "real celebrity likeness, logo, watermark, text artifacts, extra fingers")
 
@@ -51,7 +52,7 @@ def check_content(c: dict, assets: list[dict], disclosure_tag: str) -> dict:
     caption, fixed = ensure_disclosure(c.get("caption") or "", disclosure_tag)
     if fixed:
         fixes.append("mention IA ajoutée à la légende")
-    lim = LIMITS.get(c["platform"], LIMITS["instagram"])
+    lim = PLATFORMS.get(c["platform"], PLATFORMS["instagram"])
     if len(caption) > lim["caption"]:
         blockers.append(f"légende trop longue ({len(caption)}>{lim['caption']})")
     tags = c.get("hashtags") or []
@@ -61,7 +62,7 @@ def check_content(c: dict, assets: list[dict], disclosure_tag: str) -> dict:
         blockers.append("hook manquant")
     elif len(c["hook"].split()) > 14:
         warnings.append("hook long (>14 mots) : risque de perte d'attention")
-    is_video = c["format"] in ("video", "reel", "talking_head", "storytime", "tutorial", "day_in_life", "trend_remix", "pov")
+    is_video = c["format"] in VIDEO_FORMATS
     if is_video and not beats:
         blockers.append("script vidéo sans séquences")
     if is_video and script.get("duration_s", 0) > 90:
