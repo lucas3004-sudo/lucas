@@ -16,9 +16,10 @@ jobs:
     steps:
       - name: Tester les deux hôtes possibles (région eu-west-3)
         run: |
-          for h in aws-0-eu-west-3.pooler.supabase.com aws-1-eu-west-3.pooler.supabase.com; do
-            echo "== $h"
+          # Étape 2 : l'hôte aws-1 est identifié ; on vérifie qu'il reconnaît les rôles applicatifs.
+          for u in app_user app_auth; do
+            echo "== $u"
             PGPASSWORD=faux-mot-de-passe-volontaire PGCONNECT_TIMEOUT=10 \
-              psql "host=$h port=6543 user=postgres.kverrkvuhzuuoudvnndw dbname=postgres sslmode=require" \
+              psql "host=aws-1-eu-west-3.pooler.supabase.com port=6543 user=$u.kverrkvuhzuuoudvnndw dbname=postgres sslmode=require" \
               -c 'select 1' 2>&1 | head -3 || true
           done
