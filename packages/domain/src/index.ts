@@ -2,3 +2,5 @@ export * from "./stats";
 export * from "./csv";
 export * from "./dvf/clean";
 export * from "./valuation/estimate";
+export * from "./matching/match";
+export * from "./crm/duplicates";
