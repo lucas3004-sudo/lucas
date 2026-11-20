@@ -348,16 +348,19 @@ export async function createTaskAction(_prev: CrmState, form: FormData): Promise
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Valeurs invalides." };
   const d = parsed.data;
+  let taskId: string;
   try {
-    await withTenant(getTenantPool(), tenant(ctx), (_db, c) =>
-      c.query(
-        `INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title, details, due_on, contact_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    taskId = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) =>
+      (await c.query<{ id: string }>(
+        `INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title, details, due_on, contact_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
         [ctx.org.id, d.assigneeUserId, ctx.user.id, d.title, d.details, d.dueOn, d.contactId],
-      ));
+      )).rows[0]!.id);
   } catch (e) {
     if (isDenied(e)) return { error: "Création de tâche refusée." };
     throw e;
   }
+  await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "tache.creee", targetType: "tache", targetId: taskId });
   revalidatePath("/app/taches");
   if (d.contactId) revalidatePath(`/app/contacts/${d.contactId}`);
   return { success: "Tâche créée." };
