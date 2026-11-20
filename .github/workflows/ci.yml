@@ -60,4 +60,8 @@ jobs:
         run: pnpm --filter @immopilot/web exec playwright install --with-deps chromium
       - name: Tests de bout en bout
         working-directory: apps/web
+        # Une seule IP crée une douzaine de comptes en quelques secondes : seuils relevés pour les tests.
+        env:
+          AUTH_RATE_LIMIT_SIGNUP: "50"
+          AUTH_RATE_LIMIT_SIGNIN: "100"
         run: pnpm exec playwright test --trace off

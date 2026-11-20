@@ -11,7 +11,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Seuls les modules réellement construits apparaissent (aucun lien vers une page vide).
   const items: NavItem[] = [
     { href: "/app", label: "Tableau de bord", icon: "home" },
+    { href: "/app/contacts", label: "Contacts", icon: "contacts" },
+    { href: "/app/proprietes", label: "Biens de l'agence", icon: "key" },
     { href: "/app/biens", label: "Dossiers de biens", icon: "building" },
+    { href: "/app/taches", label: "Tâches", icon: "check" },
     { href: "/app/equipe", label: "Équipe", icon: "team" },
     { href: "/app/parametres", label: "Paramètres", icon: "settings" },
     ...(canReadAuditLog(role) ? [{ href: "/app/journal", label: "Journal d'audit", icon: "journal" as const }] : []),

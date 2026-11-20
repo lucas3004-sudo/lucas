@@ -20,6 +20,13 @@ const SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60;
  * le rôle de l'auteur (rules.ts) et journalisent l'action. Les appels serveur (auth.api.*)
  * ne sont pas concernés par disabledPaths.
  */
+/** Seuil de limitation lu dans l'environnement (entier de 1 à 1000), sinon valeur par défaut. */
+export function limitFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  const value = raw && /^\d{1,4}$/.test(raw) ? Number(raw) : NaN;
+  return value >= 1 && value <= 1000 ? value : fallback;
+}
+
 export const DISABLED_ORGANIZATION_PATHS = [
   "accept-invitation", "add-team-member", "cancel-invitation", "check-slug", "create", "create-role",
   "create-team", "delete", "delete-role", "get-active-member", "get-active-member-role",
@@ -70,9 +77,11 @@ export function authOptions(pool: Pool) {
       // Le compteur est par adresse IP : toute une agence partage souvent la même IP de bureau.
       // 10 connexions par minute laissent arriver une équipe le matin, tout en freinant la force
       // brute (mots de passe de 12 caractères minimum). Constaté en test le 2026-11-20.
+      // Seuils réglables par variable d'environnement (tests de bout en bout : nombreux comptes
+      // créés depuis une seule IP) ; sans variable, les valeurs de production s'appliquent.
       customRules: {
-        "/sign-in/email": { window: 60, max: 10 },
-        "/sign-up/email": { window: 60, max: 5 },
+        "/sign-in/email": { window: 60, max: limitFromEnv("AUTH_RATE_LIMIT_SIGNIN", 10) },
+        "/sign-up/email": { window: 60, max: limitFromEnv("AUTH_RATE_LIMIT_SIGNUP", 5) },
       },
     },
     plugins: [

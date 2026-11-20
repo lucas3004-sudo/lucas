@@ -6,3 +6,4 @@ export * from "./zonage";
 export * from "./ban";
 export * from "./dpe";
 export * from "./georisques";
+export * from "./communes";

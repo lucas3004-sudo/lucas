@@ -289,6 +289,35 @@ describe("CRM : contacts, consentements, profils, biens, tâches (migration 0007
       c.query(`INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title) VALUES ($1, $2, $2, 'Lecteur')`, [A, users.lectureA])));
   });
 
+  it("réattribution : le gérant transfère un contact et ses profils ; le nouveau responsable prend la main, l'ancien la perd", async () => {
+    const contactId = await withTenant(pool, A1(), (_db, c) => newContact(c, users.negoA, users.negoA, "private", "À transférer"));
+    const profileId = await withTenant(pool, A1(), async (_db, c) =>
+      (await c.query(
+        `INSERT INTO app.buyer_profiles (org_id, contact_id, owner_user_id, types, created_by) VALUES ($1, $2, $3, '{Maison}', $3) RETURNING id`,
+        [A, contactId, users.negoA],
+      )).rows[0].id as string);
+    // Même transaction, comme l'action « Modifier le contact » de l'application.
+    await withTenant(pool, GA(), async (_db, c) => {
+      expect((await c.query(`UPDATE app.contacts SET owner_user_id = $2 WHERE id = $1`, [contactId, users.nego2A])).rowCount).toBe(1);
+      expect((await c.query(`UPDATE app.buyer_profiles SET owner_user_id = $2 WHERE contact_id = $1`, [contactId, users.nego2A])).rowCount).toBe(1);
+    });
+    await withTenant(pool, A2(), async (_db, c) => {
+      expect(await count(c, "app.contacts", "id = $1", [contactId])).toBe(1);
+      expect((await c.query(`UPDATE app.buyer_profiles SET status = 'en_pause' WHERE id = $1`, [profileId])).rowCount).toBe(1);
+    });
+    await withTenant(pool, A1(), async (_db, c) => {
+      expect(await count(c, "app.contacts", "id = $1", [contactId])).toBe(0);
+      expect((await c.query(`UPDATE app.buyer_profiles SET status = 'actif' WHERE id = $1`, [profileId])).rowCount).toBe(0);
+    });
+    // Un profil ne peut pas être rattaché à un autre responsable que celui du contact.
+    await expectDenied(withTenant(pool, GA(), (_db, c) =>
+      c.query(`UPDATE app.buyer_profiles SET owner_user_id = $2 WHERE id = $1`, [profileId, users.negoA])));
+    const insertProfile = (owner: string) => (_db: unknown, c: pg.PoolClient) =>
+      c.query(`INSERT INTO app.buyer_profiles (org_id, contact_id, owner_user_id, created_by) VALUES ($1, $2, $3, $4)`, [A, contactId, owner, users.nego2A]);
+    await expectDenied(withTenant(pool, A2(), insertProfile(users.negoA)));
+    await withTenant(pool, A2(), insertProfile(users.nego2A)); // contrôle positif
+  });
+
   it("suppression d'un contact : refusée au négociateur (0 ligne), possible pour le gérant", async () => {
     await withTenant(pool, A1(), async (_db, c) =>
       expect((await c.query(`DELETE FROM app.contacts WHERE id = $1`, [sharedId])).rowCount).toBe(0));

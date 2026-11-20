@@ -9,6 +9,9 @@ const ICONS = {
   team: "M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.5 4.6a3 3 0 0 1 0 5.8",
   settings: "M4 7h10M18 7h2M4 17h4M12 17h8M14 4.5v5M8 14.5v5",
   journal: "M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7",
+  contacts: "M5 4h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5zM5 4v17M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5M8.5 17a3.5 3.5 0 0 1 7 0M21 8v2M21 13v2",
+  key: "M14.5 9.5a4 4 0 1 0-3.9 3.1L3 20v1h3v-2h2v-2h2l2.3-2.3A4 4 0 0 0 14.5 9.5M16 7.5h.01",
+  check: "M4 6h16v14H4zM8 3v5M16 3v5M8.5 13.5l2.5 2.5 4.5-5",
 } as const;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
