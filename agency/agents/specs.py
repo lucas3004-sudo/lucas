@@ -20,7 +20,7 @@ AGENTS: dict[str, dict] = {
                         "Use only the provided competitor notes and insights; mark anything else as hypothesis with confidence.",
         "tools": ["db.read", "research_items.write", "web_search (claude_code mode only)"], "tier": "standard",
         "skills": ["trend-radar", "competitor-analysis", "platform-fluency"],
-        "limits": {"llm_calls_per_run": 1, "max_output_tokens": 1500}, "jobs": ["research.scan"],
+        "limits": {"llm_calls_per_run": 1, "max_output_tokens": 1500}, "jobs": ["research.scan", "research.niche_lab"],
         "success": ["≥3 tendances sourcées ou marquées hypothèse", "0 chiffre inventé"], "handoff": ["growth"],
     },
     "growth": {

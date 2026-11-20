@@ -8,3 +8,4 @@ storage/
 *.db
 *.db-*
 *.egg-info/
+/*.png

@@ -911,6 +911,34 @@ def media_kit_export():
     return {"path": path.name, "markdown": path.read_text(encoding="utf-8")}
 
 
+@r.post("/niches/analyze")
+def niches_analyze():
+    return worker.run_now("research.niche_lab", "research")
+
+
+@r.get("/niches")
+def niches():
+    out = []
+    for r_ in db.rows("SELECT * FROM research_items WHERE kind='niche' ORDER BY created_at DESC LIMIT 30"):
+        n = db.loads(r_["body"], {})
+        out.append({"id": r_["id"], "created_at": r_["created_at"], "provenance": r_["provenance"], "source": r_["source"], **n})
+    return out
+
+
+@r.post("/niches/{rid}/apply")
+def niche_apply(rid: str):
+    r_ = db.one("SELECT * FROM research_items WHERE id=? AND kind='niche'", (rid,)) or _404("niche")
+    n = db.loads(r_["body"], {})
+    pillars = [p for p in n.get("pillars", []) if p.get("name") and p.get("topics")]
+    if not pillars:
+        raise HTTPException(409, "cette niche n'a pas de piliers exploitables")
+    _clean(n.get("name"), db.dumps(pillars))
+    ch = active_character()
+    data = save_character({**ch, "niche": n["name"].replace("Actuelle : ", "")[:200], "pillars": pillars})
+    activity("user", "niche_applied", rid, {"niche": data["niche"], "pillars": [p["name"] for p in pillars]})
+    return {"niche": data["niche"], "pillars": [p["name"] for p in pillars]}
+
+
 @r.get("/targets")
 def targets():
     return engine.targets_progress()

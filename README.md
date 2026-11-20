@@ -3,13 +3,11 @@
 Agence de contenu pilotée par 11 agents IA (37 rôles), pour une créatrice virtuelle **présentée comme IA**, sur TikTok et Instagram.
 **Contenus non explicites uniquement.** Un tableau de bord unique, un bouton « LANCER L'AGENCE », vous validez avant toute publication.
 
-## Démarrer (5 minutes)
-```bash
-python3 -m venv .venv && .venv/bin/pip install -e ".[api,dev]"
-cp .env.example .env
-.venv/bin/python -m agency serve         # → http://127.0.0.1:8000
-```
-Windows : `py -m venv .venv` puis `.venv\Scripts\pip install -e ".[api,dev]"` et `.venv\Scripts\python -m agency serve`. ffmpeg requis pour le montage.
+## Installer et lancer
+- **Windows** : `powershell -ExecutionPolicy Bypass -File scripts\install.ps1` (installe tout, y compris ffmpeg via winget, puis lance le diagnostic) → double-clic sur `scripts\start.bat`.
+- **macOS / Linux** : `bash scripts/install.sh` → `bash scripts/start.sh`.
+- Diagnostic à tout moment : `python -m agency doctor` (`--network` pour tester l'accès aux API). Rien n'est facturé.
+- Dashboard : http://127.0.0.1:8000
 
 ## Ce que fait l'agence
 1. **Recherche** tendances / concurrents (données légales) → 2. **Stratégie** (briefs + 1 expérience A/B) → 3. **Contestation** (Devil's Advocate + conformité)

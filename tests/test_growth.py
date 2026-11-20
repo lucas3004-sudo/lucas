@@ -167,3 +167,30 @@ def test_review_fixes_dates_restricted_accounts_and_variant_samples(client):
     db.execute("UPDATE contents SET meta=? WHERE id=?", (db.dumps({**meta, "variant_of": parent}), v))
     assert growth.evaluate_experiment(exp)["A"]["contents"] == 1
     assert v not in [w["id"] for w in growth.winners(1.5)]
+
+
+def test_acquisition_ranking_and_benchmark(client):
+    for views, fol, series in ((1000, 30, True), (1000, 20, True), (1000, 2, False), (1000, 4, False)):
+        cid = _published(views=views)
+        db.execute("UPDATE metrics SET followers_delta=? WHERE content_id=?", (fol, cid))
+        if series:
+            db.execute("UPDATE contents SET series_id='SER-x' WHERE id=?", (cid,))
+    acq = {(a["lever"], a["value"]): a for a in growth.acquisition()}
+    assert acq[("série", "oui")]["followers_per_1k_views"] == 25.0 and acq[("série", "non")]["followers_per_1k_views"] == 3.0
+    client.post("/api/competitors", json={"platform": "tiktok", "handle": "@rival", "avg_views": 2000})
+    b = client.get("/api/growth/intel").json()["benchmark"][0]
+    assert b["own_avg_views"] == 1000 and b["ratio"] == 0.5
+
+
+def test_niche_lab_offline_is_honest_and_apply(client):
+    r = client.post("/api/niches/analyze").json()
+    assert r["status"] == "done" and "hors ligne" in r["result"]["recommendation"]
+    n = client.get("/api/niches").json()[0]
+    assert n["score"] is None and n["provenance"] == "template"  # no market data -> no fake score
+    assert growth.niche_score({"audience_demand": "high", "competition": "low", "brand_monetization": "high",
+                               "persona_fit": "high", "content_sustainability": "high"}) == 100
+    db.insert("research_items", {"id": "RES-n1", "kind": "niche", "title": "Cuisine étudiante", "source": "claude-code", "provenance": "observed",
+                                 "body": db.dumps({"name": "Cuisine étudiante", "pillars": [{"name": "Recettes à 2 €", "topics": ["les pâtes au four"]}]}),
+                                 "created_at": db.now()})
+    applied = client.post("/api/niches/RES-n1/apply").json()
+    assert applied["pillars"] == ["Recettes à 2 €"] and client.get("/api/character").json()["niche"] == "Cuisine étudiante"

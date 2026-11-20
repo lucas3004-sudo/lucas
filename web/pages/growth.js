@@ -9,7 +9,8 @@ export async function render(el) {
   const intel = tab === "intel" ? await api("/growth/intel") : null;
   const series = tab === "series" ? await api("/series") : [];
   const collabs = tab === "collabs" ? await api("/collabs") : [];
-  const tabs = [["intel", "Intelligence"], ["research", "Tendances & opportunités"], ["competitors", "Concurrents"], ["hooks", "Hooks & formats"],
+  const niches = tab === "niches" ? await api("/niches") : [];
+  const tabs = [["intel", "Intelligence"], ["niches", "Niches"], ["research", "Tendances & opportunités"], ["competitors", "Concurrents"], ["hooks", "Hooks & formats"],
     ["experiments", "Expériences A/B"], ["series", "Séries"], ["collabs", "Partenariats"]];
   const arms = (d) => hbars(Object.entries(d).sort((a, b) => b[1].posterior_mean - a[1].posterior_mean)
     .map(([k, v]) => ({ label: k, value: v.posterior_mean, display: `${Math.round(v.posterior_mean * 100)} % · ${v.wins}/${v.wins + v.losses}` })));
@@ -22,12 +23,24 @@ export async function render(el) {
         <div class="card"><h2>Bandit : piliers</h2>${arms(intel.arms.pillars) || ""}<h2 style="margin-top:16px">Bandit : formats</h2>${arms(intel.arms.formats) || ""}
           <p class="m">% = probabilité moyenne de dépasser la médiane de la plateforme (a priori 50 % sans donnée).</p></div>
         <div class="card"><h2>Meilleurs créneaux</h2>${Object.entries(intel.slots).map(([p, sl]) => `<p><b>${esc(p)}</b> : ${sl.length ? sl.slice(0, 3).map((x) => `${x.slot} (×${x.avg_index}, n=${x.n})`).join(" · ") : `<span class="m">données insuffisantes (≥ 3 contenus par tranche)</span>`}</p>`).join("")}</div>
+        <div class="card"><h2>Meilleures techniques d'acquisition</h2>${intel.acquisition.length ? `<table><tr><th>Levier</th><th>Abonnés / 1 000 vues</th><th>n</th></tr>${intel.acquisition.slice(0, 10).map((a) => `<tr><td>${esc(a.lever)} : <b>${esc(a.value)}</b></td><td>${a.followers_per_1k_views} ${prov("manual")}</td><td>${a.contents}</td></tr>`).join("")}</table>`
+          : `<p class="empty">Saisissez « followers_delta » (abonnés gagnés) dans les stats : le classement apparaît dès 2 contenus par levier.</p>`}</div>
+        <div class="card"><h2>Vous vs concurrents</h2>${intel.benchmark.length ? `<table><tr><th>Concurrent</th><th>Leurs vues moy.</th><th>Les vôtres</th><th>Ratio</th></tr>${intel.benchmark.map((b) => `<tr><td>${esc(b.handle)} (${esc(b.platform)})</td><td>${fmt.num(b.avg_views)} ${prov("manual")}</td><td>${fmt.num(b.own_avg_views)}</td><td>${b.ratio != null ? `×${b.ratio}` : "—"}</td></tr>`).join("")}</table>`
+          : `<p class="empty">Ajoutez des concurrents avec leurs vues moyennes (onglet Concurrents).</p>`}</div>
         <div class="card"><h2>Objectifs</h2>${intel.targets.length ? intel.targets.map((t) => `<p>${esc(t.metric)} ${esc(t.handle || "global")} : ${fmt.num(t.current)} / ${fmt.num(t.target)} ${t.forecast ? `→ projection ${fmt.num(t.forecast.projected)} ${prov("forecast")}` : ""}</p>`).join("") : `<p class="empty"><a href="#/accounts">Fixer des objectifs</a></p>`}</div>
       </div>
       <div class="card" style="margin-top:16px"><h2>Performance par contenu</h2>${intel.performance.length ? `<div class="scroll"><table><tr><th>Contenu</th><th>Plateforme</th><th>Format</th><th>Hook</th><th>Vues</th><th>ER</th><th>Indice</th><th>Rétention</th></tr>
         ${intel.performance.map((p) => `<tr><td><a href="#/studio?c=${p.id}">${esc(p.title)}</a></td><td>${esc(p.platform)}</td><td>${esc(p.format)}</td><td>${esc(p.hook_type || "—")}</td><td>${fmt.num(p.views)} ${prov(p.provenance)}</td>
           <td>${fmt.pct(p.er)}</td><td>${p.perf_index != null ? `<b>×${p.perf_index}</b>` : "—"}</td><td class="m">${p.avg_watch_s != null ? `${p.avg_watch_s} s` : ""} ${p.completion_rate != null ? fmt.pct(p.completion_rate) : ""}</td></tr>`).join("")}</table></div>`
         : `<p class="empty">Saisissez les statistiques de vos contenus publiés (Content Studio ou Analytics).</p>`}</div>`,
+    niches: () => `<div class="card"><div class="row between"><p class="m" style="margin:0">L'agent Recherche note la niche actuelle et jusqu'à 5 alternatives (demande, concurrence, monétisation par les marques, adéquation au personnage, durabilité) avec des sources.
+        Le score est calculé par le code (pas par l'IA). En mode hors ligne, pas d'étude de marché : passez en <b>claude_code</b> pour une analyse sourcée.</p>
+        <button class="btn primary" id="nlab">Analyser les niches</button></div></div>
+      ${niches.length ? `<div class="card" style="margin-top:12px"><div class="scroll"><table><tr><th>Niche</th><th>Score</th><th>Demande</th><th>Concurrence</th><th>Monétisation</th><th>Adéquation</th><th>Preuves</th><th></th></tr>
+        ${niches.map((n) => `<tr><td><b>${esc(n.name)}</b><div class="m">${esc(n.description || "")}</div><div class="m">Piliers : ${esc((n.pillars || []).map((p) => p.name).join(", "))}</div>${n.risks ? `<div class="m">Risques : ${esc(n.risks)}</div>` : ""}</td>
+          <td>${n.score != null ? `<b>${n.score}</b>/100` : "—"} ${prov(n.provenance)}</td><td>${esc(n.audience_demand)}</td><td>${esc(n.competition)}</td><td>${esc(n.brand_monetization)}</td><td>${esc(n.persona_fit)}</td>
+          <td>${(n.evidence || []).map((e) => e.source_url ? `<a href="${safeUrl(e.source_url)}" target="_blank" rel="noopener">${esc(e.claim.slice(0, 40))}</a>` : esc(e.claim.slice(0, 40))).join("<br>") || "—"}</td>
+          <td><button class="btn sm" data-napply="${n.id}">Appliquer</button></td></tr>`).join("")}</table></div></div>` : ""}`,
     series: () => `<div class="card"><p class="m">Les séries fidélisent (les gens reviennent pour l'épisode suivant). L'agence place au plus un épisode par série active à chaque run.</p>
       <div class="grid g4"><div><label>Nom</label><input id="sn" placeholder="Les galères de Nour"></div><div><label>Pilier (optionnel)</label><input id="sp"></div>
         <div><label>Plateforme (optionnel)</label><select id="spl"><option value="">toutes</option><option>tiktok</option><option>instagram</option></select></div><div><label>Concept</label><input id="spr" placeholder="une galère étudiante par épisode"></div></div>
@@ -76,6 +89,16 @@ export async function render(el) {
   el.querySelectorAll("[data-cdel]").forEach((b) => (b.onclick = async () => { await act(() => api(`/competitors/${b.dataset.cdel}`, { method: "DELETE" })); render(el); }));
   el.querySelectorAll("[data-exp]").forEach((s) => (s.onchange = () => act(() => api(`/experiments/${s.dataset.exp}`, { method: "PATCH", body: { status: s.value } }), "Statut mis à jour")));
   el.querySelectorAll("[data-res]").forEach((i) => (i.onchange = () => act(() => api(`/experiments/${i.dataset.res}`, { method: "PATCH", body: { result: i.value } }), "Résultat enregistré")));
+  if ($("#nlab")) $("#nlab").onclick = async () => {
+    $("#nlab").disabled = true; $("#nlab").textContent = "Analyse…";
+    const r = await act(() => api("/niches/analyze", { method: "POST" }));
+    if (r) toast(r.status === "waiting" ? "Tâche envoyée à Claude Code : lancez /agency-run-tasks puis revenez ici" : (r.result && r.result.recommendation) || "Analyse terminée", 7000);
+    render(el);
+  };
+  el.querySelectorAll("[data-napply]").forEach((b) => (b.onclick = async () => {
+    if (!confirm("Appliquer cette niche ? Les piliers du personnage seront remplacés (le reste de la fiche ne change pas).")) return;
+    if (await act(() => api(`/niches/${b.dataset.napply}/apply`, { method: "POST" }), "Niche appliquée : piliers mis à jour")) render(el);
+  }));
   el.querySelectorAll("[data-eval]").forEach((b) => (b.onclick = async () => {
     const r = await act(() => api(`/experiments/${b.dataset.eval}/evaluate`));
     if (r) { const e = r.evaluation; el.querySelector(`#ev-${b.dataset.eval}`).textContent = `${e.decision} · A ${fmt.pct(e.A.er)} (${e.A.views} vues) · B ${fmt.pct(e.B.er)} (${e.B.views} vues)${e.p_b_better != null ? ` · P(B>A) ${fmt.pct(e.p_b_better)}` : ""}`; }

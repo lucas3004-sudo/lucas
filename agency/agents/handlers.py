@@ -128,6 +128,46 @@ def research_scan(job: dict) -> dict:
     return {"trends": len(data["trends"]), "opportunities": len(data["opportunities"]), "source": src}
 
 
+# --- niche lab --------------------------------------------------------------------
+RATING = enum("low", "medium", "high", "unknown")
+NICHE_SCHEMA = obj(
+    niches=arr(obj(name=S, description=S, pillars=arr(obj(name=S, topics=arr(S, 4)), 5), audience_demand=RATING, competition=RATING,
+                   brand_monetization=RATING, persona_fit=RATING, content_sustainability=RATING, risks=S,
+                   evidence=arr(obj(claim=S, source_url=S), 5), confidence=enum("low", "medium", "high")), 6),
+    recommendation=S,
+)
+
+
+def research_niche_lab(job: dict) -> dict:
+    """Rate the current niche and up to 5 alternatives (French market, non-explicit, mainstream brands).
+    The agent rates with evidence; the code scores; the human applies."""
+    ch = active_character()
+    inp = {"persona": {k: ch[k] for k in ("name", "age", "tagline", "niche", "personality", "values")},
+           "current_pillars": [p["name"] for p in ch["pillars"]], "internal_data": growth.arm_stats()["pillars"],
+           "competitor_notes": db.rows("SELECT platform, handle, niche, notes, avg_views FROM competitors LIMIT 15"),
+           "market": "France, francophones 18-30, TikTok/Instagram/Shorts, monetisation = mainstream brand deals only",
+           "rule": "first niche = current niche; ratings must be justified by evidence (URL) or set to 'unknown'"}
+
+    def offline() -> dict:
+        return {"niches": [{"name": f"Actuelle : {ch['niche']}", "description": ch["tagline"],
+                            "pillars": [{"name": p["name"], "topics": p["topics"][:4]} for p in ch["pillars"]],
+                            "audience_demand": "unknown", "competition": "unknown", "brand_monetization": "unknown",
+                            "persona_fit": "high", "content_sustainability": "unknown", "risks": "aucune étude de marché en mode hors ligne",
+                            "evidence": [], "confidence": "low"}],
+                "recommendation": "Mode hors ligne : aucune recherche de marché possible. Passez en mode claude_code (recherche web sourcée) "
+                                  "pour comparer des niches ; en attendant, le bandit optimise les piliers actuels avec vos données."}
+
+    data = llm(_task("research", "niche_lab", inp, NICHE_SCHEMA, 3000), job, offline)
+    src = _src(data)
+    for n in data["niches"]:
+        n["score"] = growth.niche_score(n)
+        sourced = [e for e in n.get("evidence", []) if e.get("source_url", "").startswith("http")]
+        prov = "observed" if sourced else ("template" if src == "offline-template" else "hypothesis")
+        _research("niche", n["name"][:200], db.dumps(n), src, prov, job.get("run_id"))
+    best = max((n for n in data["niches"] if n["score"] is not None), key=lambda n: n["score"], default=None)
+    return {"niches": len(data["niches"]), "best": best and best["name"], "recommendation": data["recommendation"], "source": src}
+
+
 # --- growth ---------------------------------------------------------------------
 BRIEF = obj(angle=S, hook_idea=S, hook_type=S, objective=enum("portée", "engagement", "abonnés"))
 STRATEGY_SCHEMA = obj(briefs=arr(BRIEF, 10))
@@ -704,7 +744,7 @@ def community_outreach_draft(job: dict) -> dict:
 
 HANDLERS = {
     "orchestrator.plan": orchestrator_plan, "orchestrator.autolaunch": orchestrator_autolaunch,
-    "research.scan": research_scan, "growth.strategy": growth_strategy,
+    "research.scan": research_scan, "research.niche_lab": research_niche_lab, "growth.strategy": growth_strategy,
     "reviewer.challenge": reviewer_challenge, "reviewer.qc": reviewer_qc,
     "creative.develop": creative_develop, "platform.optimize": platform_optimize, "prompt.build": prompt_build,
     "producer.generate": producer_generate, "producer.edit": producer_edit,

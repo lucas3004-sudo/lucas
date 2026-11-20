@@ -13,6 +13,11 @@ def _print(obj) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):  # Windows consoles default to cp1252
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     p = argparse.ArgumentParser(prog="agency", description="AI Agency OS")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("serve", help="API + dashboard + worker + scheduler in one process")
@@ -33,7 +38,12 @@ def main(argv: list[str] | None = None) -> int:
     bp = sub.add_parser("brief", help="write today's brief to briefs/")
     bp.add_argument("--date")
     sub.add_parser("usage-import", help="import local Claude Code transcripts usage")
+    dp = sub.add_parser("doctor", help="check that everything is ready (no paid call)")
+    dp.add_argument("--network", action="store_true", help="also test reachability of integration hosts")
     a = p.parse_args(argv)
+    if a.cmd == "doctor":
+        from .doctor import run
+        return run(network=a.network)
 
     from . import worker
     worker.boot()

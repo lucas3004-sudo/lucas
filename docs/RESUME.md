@@ -1,7 +1,7 @@
 # Reprise — état au 2026-11-20 (fin de session 1)
 
 ## État
-- **Fonctionnel et testé** (41 tests, ≈ 15 s) : backend complet, 11 agents, pipeline RECHERCHE → ANALYSE avec approbation humaine, dashboard 14 pages (testé Chromium desktop + mobile), suivi tokens, rapport quotidien, garde-fous.
+- **Fonctionnel et testé** (43 tests, ≈ 16 s) : backend complet, 11 agents, pipeline RECHERCHE → ANALYSE avec approbation humaine, dashboard 14 pages (testé Chromium desktop + mobile), suivi tokens, rapport quotidien, garde-fous.
 - Mode LLM par défaut : `offline` (gratuit, brouillons à base de modèles). Aucune dépense possible sans `allow_paid_calls` + clé.
 - Branche : `claude/ai-agency-os-build-t1od41`.
 
@@ -11,6 +11,9 @@ Moteur de croissance (bandit, double-down, A/B bayésien, quotas, séries, décl
 Business : mentions légales FR automatiques, deals de marques → contenus sponsorisés → revenus, rentabilité, kit média + grille tarifaire (Finance). 40 tests.
 
 To-do du matin (07:45, Daily Board + notification + `briefs/todo-AAAA-MM-JJ.md`). 41 tests.
+
+Installation : `scripts/install.ps1` (Windows, testé par relecture seulement) / `scripts/install.sh` (testé sur une copie propre : OK), `python -m agency doctor`.
+Correctifs Windows : tzdata, échappement du chemin de police ffmpeg, encodage console. Niche Lab, classement des techniques d'acquisition, benchmark concurrents. 43 tests.
 
 ## Chantier suivant proposé : version SaaS (partie non explicite uniquement), à faire dans une NOUVELLE session
 1. Espaces de travail (workspace_id sur toutes les tables), comptes utilisateurs (mots de passe hachés, sessions), rôles owner/editor/viewer.
@@ -30,7 +33,7 @@ Décisions utilisateur requises : société/statut, compte Stripe, hébergeur, p
 7. **Faire valider par un juriste** la conformité à la loi influenceurs (mentions, catégories interdites, contrat d'agent si gestion pour tiers).
 
 ## Prochaines étapes (ordre conseillé)
-1. Sur le PC de l'utilisateur : `pip install -e ".[api,dev]"`, `cp .env.example .env`, `python -m agency serve`, vérifier ffmpeg.
+1. Sur le PC de l'utilisateur : `scripts\\install.ps1` puis `python -m agency doctor --network` et `scripts\\start.bat`.
 2. Personnage par défaut : **Nour**, 22 ans, franco-marocaine, cité de banlieue, étudiante en marketing digital (âge plancher 21, cf. DECISIONS #14). Affiner dans Character Studio puis enregistrer.
 3. Ajouter `ELEVENLABS_API_KEY` → tester → choisir `voice_id` → activer `voice_enabled` (avec accord sur les crédits).
 4. **Priorité : génération automatique dans Alexya.** Vérifier l'API Alexya (docs officielles + compte) ; si elle existe : module `agency/integrations/alexya.py` + branche `image_provider=alexya` dans `producer_generate`, avec test réel.

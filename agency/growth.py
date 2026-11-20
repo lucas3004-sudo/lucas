@@ -35,7 +35,7 @@ def _tz() -> ZoneInfo:
 def performance() -> list[dict]:
     rows = db.rows(
         "SELECT c.id, c.title, c.hook, c.platform, c.format, c.pillar, c.meta, c.series_id, c.account_id, c.published_at, "
-        "m.views, m.likes, m.comments, m.shares, m.saves, m.avg_watch_s, m.completion_rate, m.provenance, m.date "
+        "m.views, m.likes, m.comments, m.shares, m.saves, m.avg_watch_s, m.completion_rate, m.followers_delta, m.provenance, m.date, c.deal_id "
         "FROM contents c JOIN metrics m ON m.content_id = c.id "
         "WHERE m.id IN (SELECT MAX(id) FROM metrics WHERE content_id IS NOT NULL GROUP BY content_id)")
     views_by_platform: dict[str, list[int]] = {}
@@ -51,7 +51,7 @@ def performance() -> list[dict]:
         out.append({**r, "interactions": inter, "er": round(inter / v, 4) if v else None,
                     "perf_index": round(v / med[r["platform"]], 2) if med.get(r["platform"]) else None,
                     "sample": len(views_by_platform[r["platform"]]),
-                    "hook_type": brief.get("hook_type"), "experiment": meta.get("experiment"), "variant_of": meta.get("variant_of"),
+                    "hook_type": brief.get("hook_type"), "experiment": meta.get("experiment"), "variant_of": meta.get("variant_of"), "follow_up": bool(meta.get("follow_up_of")),
                     "doubled_down": bool(meta.get("doubled_down"))})
     return out
 
@@ -261,6 +261,53 @@ def targets_progress() -> list[dict]:
     return out
 
 
+def acquisition(min_contents: int = 2) -> list[dict]:
+    """Which technique brings followers: followers gained per 1,000 views, by lever (needs followers_delta entered)."""
+    groups: dict[tuple[str, str], list[int]] = {}
+    for p in performance():
+        if p["followers_delta"] is None or not p["views"]:
+            continue
+        levers = {"plateforme": p["platform"], "format": p["format"], "type de hook": p["hook_type"] or "?",
+                  "série": "oui" if p["series_id"] else "non", "suite d'un gagnant": "oui" if p["follow_up"] else "non",
+                  "déclinaison multi-plateforme": "oui" if p["variant_of"] else "non", "sponsorisé": "oui" if p["deal_id"] else "non"}
+        for dim, val in levers.items():
+            g = groups.setdefault((dim, str(val)), [0, 0, 0])
+            g[0] += p["followers_delta"]
+            g[1] += p["views"]
+            g[2] += 1
+    out = [{"lever": d, "value": v, "contents": n, "followers": f, "views": vw, "followers_per_1k_views": round(f / vw * 1000, 2)}
+           for (d, v), (f, vw, n) in groups.items() if n >= min_contents and vw]
+    return sorted(out, key=lambda x: -x["followers_per_1k_views"])
+
+
+def benchmark() -> list[dict]:
+    """Own average views (last 10 originals per platform) vs competitors' public averages you entered."""
+    own: dict[str, list[int]] = {}
+    for p in sorted(performance(), key=lambda p: p["published_at"] or ""):
+        if not p["variant_of"]:
+            own.setdefault(p["platform"], []).append(p["views"] or 0)
+    out = []
+    for c in db.rows("SELECT handle, platform, avg_views, followers FROM competitors WHERE avg_views IS NOT NULL"):
+        mine = own.get(c["platform"], [])[-10:]
+        avg = round(sum(mine) / len(mine)) if mine else None
+        out.append({**c, "own_avg_views": avg, "ratio": round(avg / c["avg_views"], 2) if avg and c["avg_views"] else None,
+                    "provenance": "manual"})
+    return sorted(out, key=lambda x: -(x["avg_views"] or 0))
+
+
+NICHE_SCALE = {"low": 1, "medium": 2, "high": 3}
+
+
+def niche_score(n: dict) -> int | None:
+    """Deterministic score 0-100 from the agent's ratings (the LLM rates, the code weighs)."""
+    keys = ("audience_demand", "competition", "brand_monetization", "persona_fit", "content_sustainability")
+    if any(n.get(k) not in NICHE_SCALE for k in keys):
+        return None
+    v = {k: NICHE_SCALE[n[k]] for k in keys}
+    raw = 0.3 * v["audience_demand"] + 0.2 * (4 - v["competition"]) + 0.2 * v["brand_monetization"] + 0.2 * v["persona_fit"] + 0.1 * v["content_sustainability"]
+    return round((raw - 1) / 2 * 100)
+
+
 def summary() -> dict:
     perf = performance()
     platforms = sorted({p["platform"] for p in perf} | set(db.setting("platforms") or []))
@@ -269,5 +316,6 @@ def summary() -> dict:
         "winners": winners(), "arms": arm_stats(),
         "slots": {p: best_slots(p) for p in platforms},
         "anomalies": anomalies(), "deficit": quota_deficit(), "targets": targets_progress(),
+        "acquisition": acquisition(), "benchmark": benchmark(),
         "note": "Indice de performance = vues / médiane de la plateforme (≥ 3 contenus mesurés). Données saisies = provenance manuelle.",
     }

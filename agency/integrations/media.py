@@ -28,20 +28,20 @@ def available() -> bool:
 def _font() -> str:
     for f in FONT_CANDIDATES:
         if Path(f).is_file():
-            return f":fontfile='{f}'"
+            return ":fontfile='" + f.replace("\\", "/").replace(":", "\\:") + "'"  # "C:" must be escaped in filters
     return ""
 
 
 def _run(args: list[str]) -> None:
-    p = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y", *args],
-                       capture_output=True, text=True, timeout=600, stdin=subprocess.DEVNULL)
+    p = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y", *args], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace", timeout=600, stdin=subprocess.DEVNULL)
     if p.returncode != 0:
         raise MediaError(p.stderr.strip()[-800:])
 
 
 def duration(path: Path) -> float:
     p = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
-                       capture_output=True, text=True, timeout=60)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
     try:
         return float(p.stdout.strip())
     except ValueError as e:
