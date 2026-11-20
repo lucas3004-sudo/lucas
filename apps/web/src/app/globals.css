@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+/*
+ * ImmoPilot AI — jetons du design system (docs/design-system.md).
+ * Les couleurs sont des variables CSS redéfinies en thème sombre ; les composants
+ * n'utilisent QUE ces jetons (bg-surface, text-ink, border-line…), jamais de couleurs en dur.
+ */
+:root {
+  --canvas: #f4f5f8;
+  --surface: #ffffff;
+  --surface-muted: #f0f2f6;
+  --line: #e2e6ec;
+  --line-strong: #c9d0da;
+  --ink: #111827;
+  --ink-muted: #556074;
+  --ink-subtle: #8791a3;
+
+  --brand: #17325c;
+  --brand-hover: #0f2548;
+  --brand-soft: #e7eef8;
+  --brand-ink: #ffffff;
+  --brand-text: #1d4380;
+
+  --success: #0f7258;
+  --success-soft: #e3f3ec;
+  --warning: #8f5b00;
+  --warning-soft: #fbf0d9;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --focus: #3b6fd8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0b0f17;
+    --surface: #121826;
+    --surface-muted: #182033;
+    --line: #232c3d;
+    --line-strong: #344057;
+    --ink: #e8ecf3;
+    --ink-muted: #a3adbf;
+    --ink-subtle: #77829a;
+
+    --brand: #3d6fc4;
+    --brand-hover: #4b7dd2;
+    --brand-soft: #1a2741;
+    --brand-ink: #ffffff;
+    --brand-text: #9dbcf0;
+
+    --success: #4cc59c;
+    --success-soft: #11291f;
+    --warning: #e8b35a;
+    --warning-soft: #2c2210;
+    --danger: #f2877e;
+    --danger-soft: #2f1513;
+    --focus: #7aa2f0;
+  }
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-text: var(--brand-text);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-focus: var(--focus);
+
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
+  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.18);
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Données chiffrées : chiffres de largeur fixe pour l'alignement en colonnes. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
