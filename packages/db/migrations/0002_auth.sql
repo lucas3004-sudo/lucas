@@ -2,7 +2,7 @@
 -- Générées par apps/web/scripts/generate-auth-schema.ts à partir de apps/web/src/lib/auth/options.ts,
 -- puis relues. Ne pas modifier : toute évolution passe par une nouvelle migration.
 -- Pas de RLS sur ce schéma : seul le rôle app_auth y accède (droits par défaut, migration 0001).
-SET LOCAL search_path TO auth;
+SET LOCAL search_path TO iam;
 
 create table "user" ("id" uuid default pg_catalog.gen_random_uuid() not null primary key, "name" text not null, "email" text not null unique, "emailVerified" boolean not null, "image" text, "createdAt" timestamptz default CURRENT_TIMESTAMP not null, "updatedAt" timestamptz default CURRENT_TIMESTAMP not null);
 

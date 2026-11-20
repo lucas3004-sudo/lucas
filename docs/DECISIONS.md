@@ -169,7 +169,7 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 
 ## D-022 — Limitation des tentatives stockée en base, 10 connexions par minute et par adresse IP
 - **Date** : 2026-11-20 · **Statut** : Acceptée, **testée** (réponse 429 constatée)
-- **Décision** : le compteur de Better Auth est stocké en base (table `auth.rateLimit`), donc valable avec plusieurs instances. La connexion est limitée à 10 tentatives par minute et par IP, l'inscription à 5.
+- **Décision** : le compteur de Better Auth est stocké en base (table `iam.rateLimit`), donc valable avec plusieurs instances. La connexion est limitée à 10 tentatives par minute et par IP, l'inscription à 5.
 - **Raison du seuil** : avec 5 tentatives, le blocage est arrivé dès la 3e tentative pendant les tests. Une équipe d'agence partage souvent la même IP de bureau.
 
 ## D-023 — Invitations par lien, vérification d'e-mail reportée (lacune connue)

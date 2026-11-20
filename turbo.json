@@ -3,14 +3,16 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "passThroughEnv": ["DATABASE_URL", "DATABASE_URL_AUTH", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "NEXT_TELEMETRY_DISABLED"]
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
     "test": {},
     "test:integration": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["TEST_DATABASE_URL", "TEST_DATABASE_URL_OWNER"]
     },
     "dev": {
       "cache": false,

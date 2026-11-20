@@ -3,7 +3,7 @@
  */
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { requireEnv } from "../server/env";
+import { appUrl, requireEnv } from "../server/env";
 import { authOptions, createAuthPool } from "./options";
 
 function createAuth() {
@@ -11,7 +11,7 @@ function createAuth() {
   return betterAuth({
     ...options,
     secret: requireEnv("BETTER_AUTH_SECRET"),
-    baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    baseURL: appUrl(),
     // nextCookies doit rester le dernier plugin : il pose les cookies depuis les actions serveur.
     plugins: [...options.plugins, nextCookies()],
   });

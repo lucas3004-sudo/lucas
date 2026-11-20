@@ -34,12 +34,12 @@ beforeAll(async () => {
   const now = new Date();
   for (const [key, id] of Object.entries(users)) {
     await owner.query(
-      `INSERT INTO auth."user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, true)`,
+      `INSERT INTO iam."user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, true)`,
       [id, key, `${key}-${id}@test.invalid`],
     );
   }
   for (const [id, name] of [[A, "Agence A"], [B, "Agence B"]] as const) {
-    await owner.query(`INSERT INTO auth.organization (id, name, slug, "createdAt") VALUES ($1, $2, $3, $4)`, [
+    await owner.query(`INSERT INTO iam.organization (id, name, slug, "createdAt") VALUES ($1, $2, $3, $4)`, [
       id, name, `${name.toLowerCase().replace(" ", "-")}-${id}`, now,
     ]);
   }
@@ -49,7 +49,7 @@ beforeAll(async () => {
     [users.gerantB, B, "gerant"],
   ] as const) {
     await owner.query(
-      `INSERT INTO auth.member ("organizationId", "userId", role, "createdAt") VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO iam.member ("organizationId", "userId", role, "createdAt") VALUES ($1, $2, $3, $4)`,
       [orgId, userId, role, now],
     );
   }
@@ -63,8 +63,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await owner.query(`DELETE FROM auth.organization WHERE id = ANY($1)`, [[A, B]]);
-  await owner.query(`DELETE FROM auth."user" WHERE id = ANY($1)`, [Object.values(users)]);
+  await owner.query(`DELETE FROM iam.organization WHERE id = ANY($1)`, [[A, B]]);
+  await owner.query(`DELETE FROM iam."user" WHERE id = ANY($1)`, [Object.values(users)]);
   await pool.end();
   await owner.end();
 });
@@ -154,7 +154,7 @@ describe("isolation entre agences (RLS)", () => {
   it("le rôle applicatif n'accède pas au schéma d'authentification", async () => {
     const c = await pool.connect();
     try {
-      await expectDenied(c.query(`SELECT count(*) FROM auth."user"`));
+      await expectDenied(c.query(`SELECT count(*) FROM iam."user"`));
     } finally {
       c.release();
     }

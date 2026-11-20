@@ -1,7 +1,7 @@
 /**
  * Configuration Better Auth partagée entre l'application et le script de génération du schéma.
  *
- * La bibliothèque se connecte avec le rôle app_auth, limité au schéma « auth »
+ * La bibliothèque se connecte avec le rôle app_auth, limité au schéma « iam »
  * (docs/phase-2/architecture.md, section 3). Les données des agences ne sont jamais
  * lues par cette connexion.
  */
@@ -30,8 +30,14 @@ export const DISABLED_ORGANIZATION_PATHS = [
   "update-team",
 ].map((path) => `/organization/${path}`);
 
-export function createAuthPool(connectionString: string) {
-  return new Pool({ connectionString, options: "-c search_path=auth", max: 5 });
+/**
+ * Le schéma « iam » est le chemin de recherche du rôle app_auth, fixé en base
+ * (ALTER ROLE … SET search_path, voir scripts/db-bootstrap*.sql) : les répartiteurs de
+ * connexions (Supabase, PgBouncer) n'acceptent pas toujours l'option de démarrage.
+ * forceSearchPath sert seulement au script de génération, qui se connecte en app_owner.
+ */
+export function createAuthPool(connectionString: string, forceSearchPath = false) {
+  return new Pool({ connectionString, max: 5, ...(forceSearchPath ? { options: "-c search_path=iam" } : {}) });
 }
 
 export function authOptions(pool: Pool) {

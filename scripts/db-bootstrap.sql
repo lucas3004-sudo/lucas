@@ -5,7 +5,7 @@
 -- Rôles (docs/phase-2/architecture.md, section 3 ; décision D-016) :
 --   app_owner  : propriétaire des schémas et des tables, utilisé UNIQUEMENT pour les migrations
 --   app_user   : connexions de l'application pour les données des agences (soumis à la RLS)
---   app_auth   : connexions de la bibliothèque d'authentification (schéma auth uniquement)
+--   app_auth   : connexions de la bibliothèque d'authentification (schéma iam uniquement)
 --   app_ingest : écriture des données publiques (schéma ref uniquement)
 \set ON_ERROR_STOP 1
 
@@ -19,6 +19,9 @@ ALTER ROLE app_ingest LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB PASS
 
 SELECT format('CREATE DATABASE %I OWNER app_owner', :'dbname')
 WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'dbname') \gexec
+
+-- Chemin de recherche de la bibliothèque d'authentification (indépendant du répartiteur de connexions).
+SELECT format('ALTER ROLE app_auth IN DATABASE %I SET search_path = iam', :'dbname') \gexec
 
 \connect :dbname
 CREATE EXTENSION IF NOT EXISTS postgis;
