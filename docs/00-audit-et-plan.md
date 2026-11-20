@@ -78,7 +78,14 @@ Chaque agent : mission, instructions (Skill chargé à la demande), outils autor
 | 9 | Dashboard | 14 pages, bouton « LANCER L'AGENCE », pause/arrêt/relance | Parcours testé au navigateur (Playwright) |
 | 10 | Tests, sécurité, déploiement | Tests, revue sécurité, guide de déploiement cloud, rapport `/briefs/YYYY-MM-DD.md` | Checklist sécurité verte |
 
-## 4. Garde-fous non négociables (codés, pas seulement documentés)
+## 4. Périmètre (précisé le 2026-11-20)
+Contexte business : agence de créatrice virtuelle IA ; l'utilisateur gère lui-même, hors de l'OS, la partie explicite et sa monétisation.
+- **Dans l'OS** : tout le non explicite — personnage, contenus TikTok/Instagram, prompts SFW, voix, montage, QC, calendrier, croissance, statistiques, finances (chiffres saisis), rapports.
+- **Hors OS, jamais pris en charge** : prompts ou contenus explicites, conversations automatisées ou vente sur plateformes adultes, contournement des règles des plateformes.
+- Personnage : visage original (aucune ressemblance avec une personne réelle), clairement adulte, présenté comme IA.
+- Architecture pensée pour devenir un SaaS plus tard (multi-comptes possible), sans complexité ajoutée maintenant.
+
+## 5. Garde-fous non négociables (codés, pas seulement documentés)
 - Aucune dépense : `ALLOW_PAID_CALLS=false` par défaut + plafond budgétaire vérifié avant chaque appel payant.
 - Aucune publication externe sans approbation humaine (statut `approved` posé uniquement par l'utilisateur).
 - Contenu explicite/adulte : désactivé en dur (pas d'option dans l'interface).
