@@ -6,6 +6,9 @@ import { parseCsv } from "@immopilot/domain";
 import { getDataset } from "./datagouv";
 import { request, type Fetcher } from "./http";
 
+/** Marque d'ordre d'octets (BOM) éventuelle en tête de fichier UTF-8. */
+const BOM = new RegExp("^\\uFEFF");
+
 export const ZONAGE_DATASET = "liste-des-communes-selon-le-zonage-abc";
 
 export interface ZonageRow {
@@ -26,7 +29,7 @@ export function parseInForceDate(header: string): string | null {
 }
 
 export function parseZonageCsv(text: string): { rows: ZonageRow[]; inForceFrom: string | null } {
-  const [header, ...lines] = parseCsv(text.replace(/^﻿/, ""), ";");
+  const [header, ...lines] = parseCsv(text.replace(BOM, ""), ";");
   if (!header || header[0] !== "CODGEO") throw new Error("Zonage ABC : format inattendu.");
   return {
     inForceFrom: parseInForceDate(header[3] ?? ""),
