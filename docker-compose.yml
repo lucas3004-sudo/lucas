@@ -1,0 +1,26 @@
+# api + worker + scheduler share ./data (SQLite WAL) and ./briefs. Secrets come from .env (never committed).
+x-agency: &agency
+  build: .
+  env_file: .env
+  environment:
+    AGENCY_DATA_DIR: /app/data
+  volumes:
+    - ./data:/app/data
+    - ./briefs:/app/briefs
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *agency
+    command: ["python", "-m", "agency", "api"]
+    environment:
+      AGENCY_DATA_DIR: /app/data
+      AGENCY_HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:8000:8000"   # put an HTTPS reverse proxy in front before exposing publicly
+  worker:
+    <<: *agency
+    command: ["python", "-m", "agency", "worker"]
+  scheduler:
+    <<: *agency
+    command: ["python", "-m", "agency", "scheduler"]
