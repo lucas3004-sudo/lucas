@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Tableau de bord" };
 // Feuille de route affichée telle quelle : ce sont des étapes prévues, pas des boutons.
 const ROADMAP = [
   { title: "Équipe d'agents IA", detail: "Missions, approbations, coûts mesurés dans l'Agent Center.", phase: "Phase 5" },
-  { title: "Investment Studio", detail: "Simulations de rendement et de financement, hypothèses sourcées.", phase: "Phase 6" },
+  { title: "Tableau de bord du gérant", detail: "Activité de l'équipe, biens sans acquéreur, relances en retard : chiffres mesurés uniquement.", phase: "Phase 6" },
 ];
 
 export default async function DashboardPage() {

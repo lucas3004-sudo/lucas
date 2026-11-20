@@ -66,6 +66,11 @@ export default async function PropertyPage({ params, searchParams }: { params: P
     ...(property.rooms !== null ? { rooms: String(property.rooms) } : {}),
   })}`;
 
+  const simulationLink = `/app/investissement?${new URLSearchParams({
+    bien: property.address_label,
+    ...(property.price !== null ? { price: String(property.price) } : {}),
+  })}`;
+
   return (
     <>
       <PageHeader
@@ -73,6 +78,9 @@ export default async function PropertyPage({ params, searchParams }: { params: P
         description={<>Responsable : {memberName(members, property.owner_user_id)} · ajouté le {fmt.date(property.created_at)}</>}
         actions={
           <>
+            <LinkButton href={simulationLink} variant="secondary">
+              Simuler un investissement
+            </LinkButton>
             {ctx.role !== "lecture" ? (
               <LinkButton href={dossierLink} variant="secondary">
                 Créer un dossier de bien
