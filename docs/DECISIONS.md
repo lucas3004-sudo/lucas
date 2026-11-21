@@ -360,3 +360,12 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Raison** : la sécurité des agents se joue dans la passerelle et les approbations, pas dans le modèle. Les tester sans IA permet de brancher l'IA ensuite sur un socle déjà vérifié.
 - **Objection du Devil's Advocate** : sans worker, une mission s'exécute pendant la requête : un gros volume rendrait la page lente.
 - **Réponse** : c'est vrai. Les budgets d'étapes plafonnent chaque mission (au plus 120 étapes) et les agents actuels sont rapides. Le worker, prévu avec l'IA, prendra le relais.
+
+## D-045 — CSP stricte à nonce par requête
+- **Date** : 2026-11-21 · **Statut** : Acceptée (durcissement prévu en phase 9, avancé)
+- **Décision** :
+  - chaque page reçoit une politique de sécurité du contenu avec un nonce aléatoire par requête (`src/proxy.ts`) : `script-src 'self' 'nonce-…' 'strict-dynamic'`, sans `unsafe-inline` pour les scripts ;
+  - les routes d'API reçoivent une politique fixe totalement fermée (`default-src 'none'; sandbox`) ;
+  - les styles en ligne restent autorisés (Tailwind et attributs `style` de React).
+- **Vérification** : un test de bout en bout injecte un gestionnaire d'événement HTML (XSS typique). Il est bloqué. Un contrôle montre que la même injection s'exécute sans CSP. Les 21 autres scénarios passent : l'application fonctionne normalement.
+- **Limite** : `strict-dynamic` fait confiance aux scripts créés par un script déjà autorisé. C'est le compromis standard : la protection porte sur l'injection de HTML, la forme la plus courante d'attaque.
