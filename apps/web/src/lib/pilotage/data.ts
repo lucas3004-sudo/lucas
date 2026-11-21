@@ -30,6 +30,8 @@ export interface MemberActivity {
   counts: Record<ActivityKey, number>;
   /** Rendez-vous non annulés dont la date tombe dans la période (organisateur). */
   appointments: number;
+  /** Actes signés dans la période (négociateur en charge de l'affaire). */
+  deedsSigned: number;
   tasksDone: number;
   tasksOverdue: number;
 }
@@ -57,6 +59,7 @@ export interface Pilotage {
 const empty = (): MemberActivity => ({
   counts: Object.fromEntries(ACTIVITY_COLUMNS.map((c) => [c.key, 0])) as Record<ActivityKey, number>,
   appointments: 0,
+  deedsSigned: 0,
   tasksDone: 0,
   tasksOverdue: 0,
 });
@@ -81,6 +84,14 @@ export async function loadPilotage(ctx: AgencyContext, days: Period): Promise<Pi
        WHERE status = 'prevu' AND starts_at >= $1 AND starts_at <= $2 GROUP BY 1`, [from, to],
     );
     for (const r of rdv.rows) row(r.user_id).appointments = r.n;
+
+    const deeds = await c.query<{ user_id: string; n: number }>(
+      `SELECT owner_user_id AS user_id, count(*)::int AS n FROM app.deals
+       WHERE stage = 'acte' AND deed_signed_on >= ($1::timestamptz AT TIME ZONE 'Europe/Paris')::date
+         AND deed_signed_on <= ($2::timestamptz AT TIME ZONE 'Europe/Paris')::date GROUP BY 1`,
+      [from, to],
+    );
+    for (const r of deeds.rows) row(r.user_id).deedsSigned = r.n;
 
     const done = await c.query<{ user_id: string; n: number }>(
       `SELECT assignee_user_id AS user_id, count(*)::int AS n FROM app.tasks WHERE status = 'faite' AND done_at >= $1 GROUP BY 1`, [from],

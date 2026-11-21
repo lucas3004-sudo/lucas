@@ -38,6 +38,14 @@ export async function exportContact(ctx: AgencyContext, contactId: string): Prom
       [contactId],
     )).rows;
 
+    const deals = (await c.query(
+      `SELECT d.stage, d.price, d.offer_accepted_on::text, d.compromis_signed_on::text, d.deed_signed_on::text, p.address_label,
+              CASE WHEN d.buyer_contact_id = $1 THEN 'acquéreur' ELSE 'vendeur' END AS role
+       FROM app.deals d JOIN app.properties p ON p.id = d.property_id
+       WHERE d.buyer_contact_id = $1 OR d.seller_contact_id = $1 ORDER BY d.created_at`,
+      [contactId],
+    )).rows;
+
     return {
       status: "ok",
       data: {
@@ -83,6 +91,15 @@ export async function exportContact(ctx: AgencyContext, contactId: string): Prom
           lieu: a.location,
           notes: a.notes,
           statut: a.status === "annule" ? "annulé" : "prévu",
+        })),
+        affaires: deals.map((d) => ({
+          role: d.role,
+          bien: d.address_label,
+          etape: d.stage,
+          prix: d.price === null ? null : Number(d.price),
+          offre_acceptee_le: d.offer_accepted_on,
+          compromis_signe_le: d.compromis_signed_on,
+          acte_signe_le: d.deed_signed_on,
         })),
         taches: tasks.map((t) => ({
           titre: t.title,

@@ -366,6 +366,45 @@ describe("rendez-vous (migration 0009)", () => {
   });
 });
 
+describe("affaires (migration 0010)", () => {
+  const A1 = () => ({ orgId: A, userId: users.negoA });
+  const A2 = () => ({ orgId: A, userId: users.nego2A });
+  const GA = () => ({ orgId: A, userId: users.gerantA });
+  const newProperty = (visibility: "private" | "agency") => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.properties (org_id, owner_user_id, visibility, type, address_label, ban_id, insee_code, created_by)
+       VALUES ($1, $2, $3, 'Appartement', 'Adresse test', 'ban-test', '80021', $2) RETURNING id`,
+      [A, users.negoA, visibility],
+    ).then((r) => r.rows[0].id as string);
+  const newDeal = (propertyId: string, owner: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(`INSERT INTO app.deals (org_id, property_id, owner_user_id, created_by) VALUES ($1, $2, $3, $3) RETURNING id`, [A, propertyId, owner])
+      .then((r) => r.rows[0].id as string);
+
+  it("une affaire suit la visibilité de son bien (contrôle positif, collègue, autre agence)", async () => {
+    const privateProp = await withTenant(pool, A1(), newProperty("private"));
+    const dealId = await withTenant(pool, A1(), newDeal(privateProp, users.negoA));
+    await withTenant(pool, A1(), async (_db, c) => expect(await count(c, "app.deals", "id = $1", [dealId])).toBe(1));
+    await withTenant(pool, GA(), async (_db, c) => expect(await count(c, "app.deals", "id = $1", [dealId])).toBe(1));
+    await withTenant(pool, A2(), async (_db, c) => expect(await count(c, "app.deals", "id = $1", [dealId])).toBe(0));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.deals")).toBe(0));
+    // Un collègue ne peut pas ouvrir d'affaire sur un bien qu'il ne voit pas.
+    await expectDenied(withTenant(pool, A2(), newDeal(privateProp, users.nego2A)));
+  });
+
+  it("bien partagé : un collègue lit l'affaire mais ne la modifie pas ; le gérant peut", async () => {
+    const sharedProp = await withTenant(pool, A1(), newProperty("agency"));
+    const dealId = await withTenant(pool, A1(), newDeal(sharedProp, users.negoA));
+    await withTenant(pool, A2(), async (_db, c) => {
+      expect(await count(c, "app.deals", "id = $1", [dealId])).toBe(1);
+      expect((await c.query(`UPDATE app.deals SET stage = 'abandon' WHERE id = $1`, [dealId])).rowCount).toBe(0);
+    });
+    await withTenant(pool, GA(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.deals SET stage = 'compromis' WHERE id = $1`, [dealId])).rowCount).toBe(1));
+    await expectDenied(withTenant(pool, A1(), newDeal(sharedProp, users.nego2A))); // au nom d'un collègue
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.lectureA }, newDeal(sharedProp, users.lectureA)));
+  });
+});
+
 describe("garde-fou : aucune table d'agence n'échappe à la RLS", () => {
   it("chaque table du schéma app a la RLS activée, forcée, et une politique restrictive d'isolation", async () => {
     const { rows } = await owner.query<{ table: string; enabled: boolean; forced: boolean; restrictive: number }>(`
