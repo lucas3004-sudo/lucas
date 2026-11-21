@@ -13,3 +13,4 @@ export * from "./listing/mentions";
 export * from "./media/images";
 export * from "./crm/quality";
 export * from "./billing/plans";
+export * from "./visits/report";

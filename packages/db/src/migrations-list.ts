@@ -21,6 +21,7 @@ export const EXPECTED_MIGRATIONS = [
   "0015_schema_version_check.sql",
   "0016_agency_plans.sql",
   "0017_agency_usage.sql",
+  "0018_visit_reports.sql",
 ] as const;
 
 /** Migrations attendues mais absentes de la base, dans l'ordre. */

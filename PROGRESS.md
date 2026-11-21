@@ -40,9 +40,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 148 tests unitaires (domaine, formules et quotas, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
-- 36 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation) ;
-- 25 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, et les formules et quotas ;
+- 151 tests unitaires (domaine, formules et quotas, comptes rendus de visite, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 39 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite) ;
+- 26 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, et le compte rendu de visite ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -69,6 +69,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
 - qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
+- compte rendu de visite : texte prêt à envoyer au vendeur, sans IA et sans le nom des visiteurs, synthèse des visites sur la fiche du bien ([détails](docs/compte-rendu-visite.md)) ;
 - fiche annonce : contrôle des mentions obligatoires (DPE, dépenses d'énergie, copropriété, honoraires, barème, Géorisques), copie bloquée s'il en manque une, texte produit sans IA.
 
 **Investment Studio** : rendement brut et net, cash-flow, mensualité, intérêts, sensibilité au prix et au loyer ; toutes les hypothèses modifiables ; accessible depuis un bien ou un dossier ; mention « simulation, pas un conseil ».
@@ -107,7 +108,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
    - puis redéployer ;
    - déconnecter le second projet Vercel relié au dépôt (« saas »), pour éviter des constructions en double.
 
-   La base de préproduction est à jour (15 migrations, schéma identique à celui des tests).
+   La base de préproduction est à jour (17 migrations, schéma identique à celui des tests).
 2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
 3. **Valider trois hypothèses de quotas** (D-048) : Investisseur avec 100 contacts et 1 membre, quotas de l'Essai, « 1 utilisateur » en Solo et Pro. Ces valeurs sont modifiables en une ligne.
 4. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
@@ -119,7 +120,8 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
-- **2026-11-21, formules et quotas** : grille D-014 appliquée par le logiciel, sans paiement. Formule de l'agence (Essai par défaut), compteurs calculés par la base sans révéler les éléments privés, refus au quota pour les dossiers, les contacts, l'import et les invitations, page « Formule et consommation » (migrations 0016 et 0017, D-048). CSP et contrôle de version fusionnés ([PR n° 17](https://github.com/lucas3004-sudo/lucas/pull/17)).
+- **2026-11-21, compte rendu de visite (F9, sans IA)** : migration 0018 (comptes rendus sous RLS, lisibles par le responsable du bien), texte pour le vendeur sans le nom des visiteurs, visites à rendre compte en tête de l'agenda, synthèse sur la fiche du bien, inclusion dans l'export RGPD ; décision D-049.
+- **2026-11-21, formules et quotas** : grille D-014 appliquée par le logiciel, sans paiement. Formule de l'agence (Essai par défaut), compteurs calculés par la base sans révéler les éléments privés, refus au quota pour les dossiers, les contacts, l'import et les invitations, page « Formule et consommation » (migrations 0016 et 0017, D-048). CSP et contrôle de version fusionnés ([PR n° 17](https://github.com/lucas3004-sudo/lucas/pull/17)). Fusionné ([PR n° 18](https://github.com/lucas3004-sudo/lucas/pull/18)) ; migrations 0016 et 0017 appliquées en préproduction (17 migrations, 67 règles d'accès, même empreinte qu'en local).
 - **2026-11-21, contrôle de version de la base** : liste des migrations attendues avec un garde-fou, refus de servir l'application sur une base en retard, état de santé public `/api/health` (D-046, migration 0015).
 - **2026-11-21, sécurité** : politique de sécurité du contenu stricte, avec un nonce par requête, et politique fermée pour les API (D-045) ; une injection XSS typique est bloquée (test de bout en bout et contrôle sans CSP). Socle des agents fusionné ([PR n° 16](https://github.com/lucas3004-sudo/lucas/pull/16)) ; migration 0014 appliquée en préproduction (14 migrations, schéma identique).
 - **2026-11-21, socle des agents (sans IA)** : package `@immopilot/agents` (passerelle, missions), migration 0014 (missions, étapes, approbations sous RLS), Agent Center, boîte d'approbations, fusion de doublons approuvée ; décision D-044. Qualité des données fusionnée ([PR n° 15](https://github.com/lucas3004-sudo/lucas/pull/15)).

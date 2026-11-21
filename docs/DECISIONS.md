@@ -412,3 +412,14 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Limite** : le contrôle est souple (deux créations simultanées peuvent dépasser d'une unité). Il sera strict pour l'IA, avec une réservation avant l'appel au modèle.
 - **Non construit** : le paiement en ligne. Il demandera un compte externe (Stripe ou équivalent), donc l'accord du fondateur.
 - Détails : `docs/formules-et-quotas.md`.
+
+## D-049 — Compte rendu de visite : texte au vendeur sans IA, sans l'identité des visiteurs, visible du responsable du bien
+- **Date** : 2026-11-21 · **Statut** : Acceptée (décision technique réversible)
+- **Décision** :
+  - un compte rendu par visite (`app.visit_reports`, migration 0018), rédigé après la visite ;
+  - le texte destiné au vendeur est assemblé à partir de réponses fermées (intérêt, avis sur le prix, suite) et de deux champs libres, sans IA ;
+  - il ne contient jamais l'identité des visiteurs ;
+  - lecture par l'auteur, l'organisateur, le responsable du bien, le gérant et les managers. Le responsable du bien en a besoin pour rendre compte au vendeur, même quand un collègue a fait la visite.
+- **Pourquoi** : rendre compte au vendeur après chaque visite est une attente forte des mandants. Le faire sans IA coûte 0 € et reste disponible tant que l'IA n'est pas ouverte.
+- **Prudence** : les champs libres peuvent contenir des données personnelles. Le formulaire le rappelle, et l'export RGPD d'un contact inclut les comptes rendus de ses visites.
+- Détails : `docs/compte-rendu-visite.md`.

@@ -4,6 +4,7 @@
  * chaque export est journalisé (identifiant seulement).
  */
 import { withTenant } from "@immopilot/db";
+import { INTEREST_LABELS, NEXT_STEP_LABELS, PRICE_OPINION_LABELS, type PriceOpinion, type VisitInterest, type VisitNextStep } from "@immopilot/domain";
 import type { AgencyContext } from "../agency/context";
 import { audit } from "../audit";
 import { getTenantPool } from "../server/db";
@@ -34,7 +35,10 @@ export async function exportContact(ctx: AgencyContext, contactId: string): Prom
     )).rows;
 
     const appointments = (await c.query(
-      `SELECT kind, title, starts_at, ends_at, location, notes, status FROM app.appointments WHERE contact_id = $1 ORDER BY starts_at`,
+      `SELECT a.kind, a.title, a.starts_at, a.ends_at, a.location, a.notes, a.status,
+              vr.interest, vr.price_opinion, vr.next_step, vr.positives, vr.objections
+       FROM app.appointments a LEFT JOIN app.visit_reports vr ON vr.appointment_id = a.id
+       WHERE a.contact_id = $1 ORDER BY a.starts_at`,
       [contactId],
     )).rows;
 
@@ -91,6 +95,15 @@ export async function exportContact(ctx: AgencyContext, contactId: string): Prom
           lieu: a.location,
           notes: a.notes,
           statut: a.status === "annule" ? "annulé" : "prévu",
+          compte_rendu: a.interest
+            ? {
+                interet: INTEREST_LABELS[a.interest as VisitInterest],
+                avis_prix: a.price_opinion ? PRICE_OPINION_LABELS[a.price_opinion as PriceOpinion] : null,
+                suite: NEXT_STEP_LABELS[a.next_step as VisitNextStep],
+                points_apprecies: a.positives,
+                reserves: a.objections,
+              }
+            : null,
         })),
         affaires: deals.map((d) => ({
           role: d.role,

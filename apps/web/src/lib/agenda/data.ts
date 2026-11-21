@@ -23,6 +23,8 @@ export interface Appointment {
   updated_at: Date;
   contact_name: string | null;
   property_label: string | null;
+  /** Un compte rendu de visite existe (et m'est visible). */
+  has_report: boolean;
 }
 
 export async function listAppointments(
@@ -32,7 +34,8 @@ export async function listAppointments(
   const { scope = "team", from = null, to = null, contactId = null, propertyId = null, id = null, limit = 200 } = options;
   return withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) =>
     (await c.query<Appointment>(
-      `SELECT a.*, NULLIF(concat_ws(' ', ct.first_name, ct.last_name), '') AS contact_name, p.address_label AS property_label
+      `SELECT a.*, NULLIF(concat_ws(' ', ct.first_name, ct.last_name), '') AS contact_name, p.address_label AS property_label,
+              EXISTS (SELECT 1 FROM app.visit_reports vr WHERE vr.appointment_id = a.id) AS has_report
        FROM app.appointments a
        LEFT JOIN app.contacts ct ON ct.id = a.contact_id
        LEFT JOIN app.properties p ON p.id = a.property_id

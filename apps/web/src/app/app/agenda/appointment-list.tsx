@@ -22,6 +22,7 @@ export function AppointmentList({
   /** Peut annuler ou rétablir (organisateur, auteur, gérant, manager, assistant). */
   canManage: (a: Appointment) => boolean;
 }) {
+  const now = Date.now();
   const days = new Map<string, Appointment[]>();
   for (const a of appointments) {
     const day = dayFmt.format(a.starts_at);
@@ -72,6 +73,15 @@ export function AppointmentList({
                   >
                     .ics
                   </a>
+                  {a.kind === "visite" && !cancelled && a.starts_at.getTime() <= now ? (
+                    <Link
+                      href={`/app/agenda/${a.id}/compte-rendu`}
+                      className={buttonClass(a.has_report ? "ghost" : "secondary", "sm")}
+                      aria-label={`${a.has_report ? "Voir le compte rendu" : "Rédiger le compte rendu"} de « ${a.title} »`}
+                    >
+                      {a.has_report ? "Compte rendu" : "Rédiger le compte rendu"}
+                    </Link>
+                  ) : null}
                   {canManage(a) ? (
                     <form action={setAppointmentStatusAction}>
                       <input type="hidden" name="id" value={a.id} />
