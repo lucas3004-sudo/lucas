@@ -65,7 +65,8 @@ export default async function PlanPage() {
                         <Badge>IA non activée</Badge>
                       ) : (
                         <>
-                          <span className="font-medium text-ink">{fmt.number(check.used)}</span> sur {limitLabel(check.limit)}
+                          <span className="font-medium text-ink">{fmt.number(check.used)}</span>
+                          {check.limit === null ? " (illimité)" : ` sur ${limitLabel(check.limit)}`}
                         </>
                       )}
                     </span>
