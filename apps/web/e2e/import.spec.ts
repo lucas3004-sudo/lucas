@@ -70,6 +70,12 @@ test("un gérant importe ses contacts puis ses biens depuis des fichiers CSV", a
   await page.getByRole("link", { name: "Voir les biens" }).click();
   await expect(page.getByRole("link", { name: /8 Boulevard du Port 80000 Amiens/ })).toBeVisible();
 
+  // Qualité des données : l'acquéreur importé n'a pas de consentement (jamais importé) ; l'annonce est incomplète.
+  await page.getByRole("link", { name: "Qualité des données" }).click();
+  await expect(page.getByRole("heading", { name: "Contacts sans consentement de prospection" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Élodie Dupré/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /8 Boulevard du Port 80000 Amiens.*mention\(s\) manquante\(s\)/ })).toBeVisible();
+
   await page.goto("/app/journal");
   await expect(page.getByRole("cell", { name: "Contacts importés (CSV)", exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Biens importés (CSV)", exact: true })).toBeVisible();

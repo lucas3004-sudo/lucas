@@ -36,7 +36,7 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-20) :
-- 130 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 132 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 31 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos) ;
 - 20 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
 - lint, types, build de production.
@@ -63,6 +63,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - alertes automatiques : un nouveau bien prévient les collègues dont un acquéreur correspond à 75 % ou plus (Opportunity Finder v1) ;
 - affaires de l'offre à l'acte : étapes, échéances (délai de rétractation calculé), pièces par étape, statut du bien synchronisé ;
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
+- qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
 - fiche annonce : contrôle des mentions obligatoires (DPE, dépenses d'énergie, copropriété, honoraires, barème, Géorisques), copie bloquée s'il en manque une, texte produit sans IA.
 
@@ -94,22 +95,26 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - CSP sans nonces (`unsafe-inline`) : durcissement prévu en phase 9.
 
 ## Décisions en attente du fondateur
-1. **Réglage du projet Vercel « lucas »** (à faire depuis un ordinateur, la page ne s'ouvre pas sur l'appareil du fondateur) :
+Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui suit demande une action ou un accord du fondateur, du plus urgent au moins urgent.
+
+1. **Mise en ligne (Vercel)** — à faire depuis un ordinateur, la page ne s'ouvre pas sur son téléphone. C'est elle qui permettra d'essayer tout ce qui a été construit :
    - [Root Directory](https://vercel.com/lucasblaevoet30-7777s-projects/lucas/settings/build-and-deployment) = `apps/web` ;
    - [variables d'environnement](https://vercel.com/lucasblaevoet30-7777s-projects/lucas/settings/environment-variables) : coller le fichier `vercel-variables.env` transmis le 2026-11-20 ;
-   - puis redéployer.
+   - puis redéployer ;
+   - déconnecter le second projet Vercel relié au dépôt (« saas »), pour éviter des constructions en double.
 
-   Le second projet Vercel relié au dépôt (« saas ») est à déconnecter, pour éviter des constructions en double. **Base Supabase prête et testée. Code fusionné dans `main` (PR n° 2).**
-2. **Création du compte Brevo** (e-mails), choisi le 2026-11-20 : à guider après la mise en ligne.
-2. Clé API Anthropic avec plafond de dépense, avant la phase 5.
-3. Demandes de devis aux fournisseurs d'annonces : **reportées** avant la phase 6 (choix du fondateur).
-4. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`, avec les questions pour gérant).
-5. Consultation d'un avocat avant la commercialisation (10 questions prêtes dans `docs/legal/fiche-juridique.md`).
-6. Projet Vercel relié au dépôt : à vérifier en phase 3 (D-009).
+   La base de préproduction est à jour (13 migrations, schéma identique à celui des tests).
+2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
+3. **Clé API Anthropic avec plafond de dépense** : elle débloque la phase 5 (agents IA, Copilot, rédaction d'annonces par IA).
+4. **Stockage des photos avant la production** (D-042) : un stockage d'objets sera nécessaire au-delà d'environ 100 à 150 biens illustrés (compte ou offre selon le volume).
+5. Demandes de devis aux fournisseurs d'annonces : **reportées** (choix du fondateur).
+6. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`).
+7. Consultation d'un avocat avant la commercialisation (questions prêtes dans `docs/legal/fiche-juridique.md`, dont la liste des mentions d'annonce et l'information des salariés sur le pilotage).
 
-Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
+Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-21, qualité des données** : premier agent déterministe (sans IA), qui signale sans corriger. Double authentification fusionnée ([PR n° 14](https://github.com/lucas3004-sudo/lucas/pull/14)) ; migration 0013 appliquée en préproduction (13 migrations, schéma identique au local).
 - **2026-11-21, double authentification** : extension TOTP de Better Auth (migration 0013), page « Sécurité du compte », étape de vérification à la connexion, codes de secours, rappel au gérant ; décision D-043. Photos fusionnées ([PR n° 13](https://github.com/lucas3004-sudo/lucas/pull/13)) ; migration 0012 appliquée en préproduction.
 - **2026-11-21, photos des biens** : migration 0012 (photos sous RLS), contrôle du format par les octets et suppression des métadonnées (EXIF, GPS), galerie et affichage protégé ; décision D-042. Annonce et « Ma journée » fusionnées ([PR n° 11](https://github.com/lucas3004-sudo/lucas/pull/11), [PR n° 12](https://github.com/lucas3004-sudo/lucas/pull/12)) ; migration 0011 appliquée en préproduction.
 - **2026-11-21, accueil « Ma journée »** : les éléments du jour de chaque utilisateur, sans comparaison entre collègues.
