@@ -360,3 +360,36 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Raison** : la sécurité des agents se joue dans la passerelle et les approbations, pas dans le modèle. Les tester sans IA permet de brancher l'IA ensuite sur un socle déjà vérifié.
 - **Objection du Devil's Advocate** : sans worker, une mission s'exécute pendant la requête : un gros volume rendrait la page lente.
 - **Réponse** : c'est vrai. Les budgets d'étapes plafonnent chaque mission (au plus 120 étapes) et les agents actuels sont rapides. Le worker, prévu avec l'IA, prendra le relais.
+
+## D-045 — CSP stricte à nonce par requête
+- **Date** : 2026-11-21 · **Statut** : Acceptée (durcissement prévu en phase 9, avancé)
+- **Décision** :
+  - chaque page reçoit une politique de sécurité du contenu avec un nonce aléatoire par requête (`src/proxy.ts`) : `script-src 'self' 'nonce-…' 'strict-dynamic'`, sans `unsafe-inline` pour les scripts ;
+  - les routes d'API reçoivent une politique fixe totalement fermée (`default-src 'none'; sandbox`) ;
+  - les styles en ligne restent autorisés (Tailwind et attributs `style` de React).
+- **Vérification** : un test de bout en bout injecte un gestionnaire d'événement HTML (XSS typique). Il est bloqué. Un contrôle montre que la même injection s'exécute sans CSP. Les 21 autres scénarios passent : l'application fonctionne normalement.
+- **Limite** : `strict-dynamic` fait confiance aux scripts créés par un script déjà autorisé. C'est le compromis standard : la protection porte sur l'injection de HTML, la forme la plus courante d'attaque.
+
+## D-046 — Contrôle de version de la base au démarrage et état de santé public
+- **Date** : 2026-11-21 · **Statut** : Acceptée (répond à l'objection de D-027)
+- **Décision** :
+  - le code connaît la liste exacte des migrations attendues (`EXPECTED_MIGRATIONS`), et un garde-fou de test vérifie qu'elle correspond aux fichiers ;
+  - au premier accès à l'application, le site compare cette liste à `ops.schema_migrations`. Le rôle applicatif lit seulement les noms et les dates, pas les empreintes (migration 0015) ;
+  - si une migration manque, l'application affiche « Mise à jour en cours » au lieu de fonctionner sur une base en retard ;
+  - `/api/health` (public) renvoie l'état, avec des nombres seulement : 200 si à jour, 503 sinon.
+- **Vérification** : la base de développement a été rendue volontairement « en retard », puis remise en état. `/api/health` a renvoyé 503, puis 200.
+
+## D-047 — Aucune dépense d'IA pour l'instant ; l'abonnement Claude Pro ne peut pas servir aux agences
+- **Date** : 2026-11-21 · **Statut** : Acceptée (choix du fondateur : « rien dépenser pour l'instant »)
+- **Décision** :
+  - pas de compte API Anthropic pour l'instant : les fonctions d'IA (Copilot, rédaction par IA, agents assistés) attendent ;
+  - tout ce qui fonctionne sans IA continue d'avancer (coût 0 €).
+- **Pourquoi l'abonnement Claude Pro ne convient pas** :
+  - il sert à l'usage personnel de Claude, et c'est lui qui finance le travail de développement fait avec Claude Code ;
+  - il ne fournit pas de clé d'API ;
+  - les conditions d'Anthropic réservent l'abonnement à l'usage de son titulaire : un service rendu à des clients (les agences) doit passer par l'API, facturée à l'usage.
+- **Quand le fondateur le décidera** :
+  - le compte API est gratuit à créer, et les nouveaux comptes reçoivent des crédits d'essai (documentation officielle consultée le 2026-11-21) ;
+  - sans carte bancaire enregistrée, aucun paiement n'est possible ;
+  - un plafond mensuel réglable par le fondateur arrête l'IA quand il est atteint.
+- **Rentabilité** : quotas par formule (grille de la phase 1 : coût IA maximal d'environ un tiers du prix), modèles économiques pour les tâches simples, cache et traitement différé. Le logiciel mesurera le coût réel par agence et arrêtera l'IA au quota.

@@ -38,9 +38,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-20) :
-- 140 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 141 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 34 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents) ;
-- 21 scénarios de bout en bout (Playwright), dont 1 pour les agents et les approbations, dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
+- 24 scénarios de bout en bout (Playwright), dont 1 pour les agents et les approbations, 3 pour les en-têtes de sécurité et l'état de santé, dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -94,7 +94,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - **Photos stockées en base** (D-042) : environ 100 à 150 biens illustrés dans l'offre gratuite de Supabase. Il faudra un stockage d'objets avant la production (accord du fondateur nécessaire).
 - **Vérification de l'adresse e-mail** et envoi des invitations par e-mail : nécessitent un service d'e-mail, donc un compte externe (D-023).
 - **Double authentification** : construite et testée (D-043), mais seulement rappelée au gérant et aux managers. Elle devra devenir obligatoire avant la production, avec une procédure de récupération par e-mail (Brevo).
-- CSP sans nonces (`unsafe-inline`) : durcissement prévu en phase 9.
+- ~~CSP sans nonces~~ : **corrigé le 2026-11-21** (CSP à nonce par requête, D-045).
 
 ## Décisions en attente du fondateur
 Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui suit demande une action ou un accord du fondateur, du plus urgent au moins urgent.
@@ -107,7 +107,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 
    La base de préproduction est à jour (13 migrations, schéma identique à celui des tests).
 2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
-3. **Clé API Anthropic avec plafond de dépense** : elle débloque la phase 5 (agents IA, Copilot, rédaction d'annonces par IA).
+3. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
 4. **Stockage des photos avant la production** (D-042) : un stockage d'objets sera nécessaire au-delà d'environ 100 à 150 biens illustrés (compte ou offre selon le volume).
 5. Demandes de devis aux fournisseurs d'annonces : **reportées** (choix du fondateur).
 6. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`).
@@ -116,6 +116,8 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-21, contrôle de version de la base** : liste des migrations attendues avec un garde-fou, refus de servir l'application sur une base en retard, état de santé public `/api/health` (D-046, migration 0015).
+- **2026-11-21, sécurité** : politique de sécurité du contenu stricte, avec un nonce par requête, et politique fermée pour les API (D-045) ; une injection XSS typique est bloquée (test de bout en bout et contrôle sans CSP). Socle des agents fusionné ([PR n° 16](https://github.com/lucas3004-sudo/lucas/pull/16)) ; migration 0014 appliquée en préproduction (14 migrations, schéma identique).
 - **2026-11-21, socle des agents (sans IA)** : package `@immopilot/agents` (passerelle, missions), migration 0014 (missions, étapes, approbations sous RLS), Agent Center, boîte d'approbations, fusion de doublons approuvée ; décision D-044. Qualité des données fusionnée ([PR n° 15](https://github.com/lucas3004-sudo/lucas/pull/15)).
 - **2026-11-21, qualité des données** : premier agent déterministe (sans IA), qui signale sans corriger. Double authentification fusionnée ([PR n° 14](https://github.com/lucas3004-sudo/lucas/pull/14)) ; migration 0013 appliquée en préproduction (13 migrations, schéma identique au local).
 - **2026-11-21, double authentification** : extension TOTP de Better Auth (migration 0013), page « Sécurité du compte », étape de vérification à la connexion, codes de secours, rappel au gérant ; décision D-043. Photos fusionnées ([PR n° 13](https://github.com/lucas3004-sudo/lucas/pull/13)) ; migration 0012 appliquée en préproduction.

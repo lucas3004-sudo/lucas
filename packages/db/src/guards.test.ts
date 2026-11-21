@@ -48,3 +48,13 @@ describe("garde-fous du contexte d'agence", () => {
     expect(FORBIDDEN[0]!.pattern.test("SELECT set_config('app.org_id', $1, true)")).toBe(false);
   });
 });
+
+describe("garde-fou : liste des migrations attendues", () => {
+  it("EXPECTED_MIGRATIONS correspond exactement aux fichiers de packages/db/migrations", async () => {
+    const { EXPECTED_MIGRATIONS, missingMigrations } = await import("./migrations-list");
+    const onDisk = (await readdir(join(REPO, "packages/db/migrations"))).filter((f) => f.endsWith(".sql")).sort();
+    expect([...EXPECTED_MIGRATIONS]).toEqual(onDisk);
+    expect(missingMigrations(onDisk)).toEqual([]);
+    expect(missingMigrations(onDisk.slice(0, -1))).toEqual([onDisk.at(-1)]);
+  });
+});

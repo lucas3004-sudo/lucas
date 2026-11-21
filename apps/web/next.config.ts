@@ -2,24 +2,9 @@ import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
-// En-têtes de sécurité (docs/phase-2/architecture.md, section 7).
-// La CSP autorise encore les scripts en ligne générés par Next.js : elle sera durcie avec des
-// nonces lors de l'audit de sécurité (phase 9).
+// En-têtes de sécurité (docs/phase-2/architecture.md, section 7). La CSP des pages, avec un nonce
+// par requête, est posée par src/proxy.ts. Les routes d'API reçoivent une CSP fixe très fermée.
 const securityHeaders = [
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
-      "font-src 'self' data:",
-      "connect-src 'self'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join("; "),
-  },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -34,7 +19,10 @@ const config: NextConfig = {
   // Import CSV : fichier de 1 Mo au plus, renvoyé une fois pour la confirmation.
   experimental: { serverActions: { bodySizeLimit: "3mb" } },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/api/:path*", headers: [{ key: "Content-Security-Policy", value: "default-src 'none'; frame-ancestors 'none'; sandbox" }] },
+    ];
   },
 };
 
