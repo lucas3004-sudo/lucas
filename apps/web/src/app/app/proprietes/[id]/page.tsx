@@ -25,6 +25,11 @@ import {
   VisibilityBadge,
 } from "../../_crm/parts";
 import { TaskList } from "../../taches/task-list";
+import { withTenant } from "@immopilot/db";
+import { MAX_PHOTOS } from "@/lib/crm/photo-limits";
+import { deletePhotoAction } from "@/lib/crm/photos";
+import { getTenantPool } from "@/lib/server/db";
+import { PhotoUpload } from "./photo-upload";
 import { AppointmentList } from "../../agenda/appointment-list";
 import { listAppointments } from "@/lib/agenda/data";
 import { listDeals } from "@/lib/deals/data";
@@ -43,12 +48,16 @@ export default async function PropertyPage({ params, searchParams }: { params: P
 
   const { weights, custom } = parseWeights(await searchParams);
   const matchable = MATCHABLE_STATUSES.includes(property.status);
-  const [members, profiles, tasks, appointments, deals] = await Promise.all([
+  const [members, profiles, tasks, appointments, deals, photos] = await Promise.all([
     agencyMembers(ctx.org.id),
     matchable ? activeProfiles(ctx) : Promise.resolve([]),
     listTasks(ctx, "team", { propertyId: property.id }),
     listAppointments(ctx, { propertyId: property.id, from: new Date(Date.now() - 86_400_000) }),
     listDeals(ctx, { propertyId: property.id }),
+    withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) =>
+      (await c.query<{ id: string; width: number; height: number }>(
+        "SELECT id, width, height FROM app.property_photos WHERE property_id = $1 ORDER BY position, created_at", [property.id],
+      )).rows),
   ]);
   const memberIds = new Set(members.map((m) => m.userId));
   const canEdit = canEditRecord(ctx, property.owner_user_id);
@@ -121,6 +130,35 @@ export default async function PropertyPage({ params, searchParams }: { params: P
         <VisibilityBadge visibility={property.visibility} />
         {property.mandate_type ? <Badge>Mandat {property.mandate_type}</Badge> : null}
       </div>
+
+      <Card className="mb-4">
+        <CardHeader title={`Photos (${photos.length})`} />
+        {photos.length ? (
+          <ul className="grid grid-cols-2 gap-3 px-5 py-4 sm:grid-cols-4 lg:grid-cols-6">
+            {photos.map((ph, i) => (
+              <li key={ph.id} className="space-y-1.5">
+                <a href={`/api/v1/photos/${ph.id}`} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-[var(--radius-control)] border border-line bg-surface-muted">
+                  <img src={`/api/v1/photos/${ph.id}`} alt={`Photo ${i + 1} du bien`} width={ph.width} height={ph.height} loading="lazy" className="aspect-[4/3] w-full object-cover" />
+                </a>
+                {canEdit ? (
+                  <form action={deletePhotoAction}>
+                    <input type="hidden" name="id" value={ph.id} />
+                    <input type="hidden" name="propertyId" value={property.id} />
+                    <ConfirmSubmit message="Supprimer cette photo ?" ariaLabel={`Supprimer la photo ${i + 1}`}>Supprimer</ConfirmSubmit>
+                  </form>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="px-5 py-4 text-sm text-ink-muted">Aucune photo pour le moment.</p>
+        )}
+        {canEdit ? (
+          <div className="border-t border-line">
+            <PhotoUpload propertyId={property.id} remaining={MAX_PHOTOS - photos.length} />
+          </div>
+        ) : null}
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card>

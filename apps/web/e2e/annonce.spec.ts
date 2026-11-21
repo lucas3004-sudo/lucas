@@ -2,6 +2,7 @@
  * Fiche annonce de bout en bout : contrôle des mentions obligatoires, copie bloquée tant qu'il
  * en manque, texte produit sans IA à partir des données du bien.
  */
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 const run = Date.now().toString(36);
@@ -26,6 +27,28 @@ test("un gérant complète l'annonce d'un bien jusqu'à ce que toutes les mentio
   await page.getByLabel("Classe DPE").selectOption("F");
   await page.getByRole("button", { name: "Créer le bien" }).click();
   await expect(page.getByRole("heading", { name: "8 Boulevard du Port 80000 Amiens" })).toBeVisible({ timeout: 20_000 });
+
+  // Photos : une vraie image PNG, réduite et convertie en JPEG par le navigateur, revérifiée par le serveur.
+  const propertyPath = new URL(page.url()).pathname;
+  await page.getByLabel("Ajouter des photos").setInputFiles(path.join(process.cwd(), "../../docs/captures/01-connexion.png"));
+  await expect(page.getByText("Photo ajoutée.")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Photos (1)" })).toBeVisible();
+  const img = page.getByRole("img", { name: "Photo 1 du bien" });
+  await expect(img).toBeVisible();
+  expect(await img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBeGreaterThan(0);
+  const photo = await page.request.get((await img.getAttribute("src"))!);
+  expect(photo.headers()["content-type"]).toBe("image/jpeg");
+  expect(photo.headers()["x-content-type-options"]).toBe("nosniff");
+  expect((await photo.body()).includes(Buffer.from("Exif"))).toBe(false);
+  // Un visiteur non connecté n'obtient pas la photo.
+  const anonymous = await page.context().browser()!.newContext();
+  const denied = await anonymous.request.get(new URL((await img.getAttribute("src"))!, page.url()).toString(), { maxRedirects: 0 });
+  expect(denied.status()).not.toBe(200);
+  await anonymous.close();
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Supprimer la photo 1" }).click();
+  await expect(page.getByRole("heading", { name: "Photos (0)" })).toBeVisible();
+  await page.goto(propertyPath);
 
   await page.getByRole("link", { name: "Annonce", exact: true }).click();
   await expect(page.getByText("5 manquante(s)")).toBeVisible();
