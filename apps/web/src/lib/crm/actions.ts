@@ -14,7 +14,7 @@ import type { ActionState } from "../agency/actions";
 import { requireAgency, type AgencyContext } from "../agency/context";
 import { audit } from "../audit";
 import { getTenantPool } from "../server/db";
-import { contactName, listContacts } from "./data";
+import { duplicateCandidates } from "./data";
 
 export type CrmState = ActionState & { duplicates?: Array<{ id: string; label: string; reasons: string[] }> };
 
@@ -60,13 +60,10 @@ export async function createContactAction(_prev: CrmState, form: FormData): Prom
 
   // Doublons parmi les contacts visibles (signalés, jamais fusionnés automatiquement).
   if (form.get("confirmDuplicate") !== "1") {
-    const visible = await listContacts(ctx);
-    const dups = findDuplicates(
-      { firstName: d.firstName, lastName: d.lastName, email: d.email, phone: d.phone },
-      visible.map((c) => ({ id: c.id, firstName: c.first_name, lastName: c.last_name, email: c.email, phone: c.phone })),
-    );
+    const visible = await duplicateCandidates(ctx);
+    const dups = findDuplicates({ firstName: d.firstName, lastName: d.lastName, email: d.email, phone: d.phone }, visible);
     if (dups.length) {
-      const names = new Map(visible.map((c) => [c.id, contactName(c)]));
+      const names = new Map(visible.map((c) => [c.id, c.label]));
       return {
         error: "Ce contact ressemble à un contact existant. Vérifiez avant de créer un doublon.",
         duplicates: dups.map((x) => ({ id: x.id, label: names.get(x.id) ?? "", reasons: x.reasons })),

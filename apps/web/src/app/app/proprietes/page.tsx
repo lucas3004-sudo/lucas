@@ -17,7 +17,14 @@ export default async function PropertiesPage() {
       <PageHeader
         title="Biens de l'agence"
         description="Les biens en portefeuille. Chaque bien proposé est rapproché automatiquement des profils de recherche de toute l'agence."
-        actions={ctx.role !== "lecture" ? <LinkButton href="/app/proprietes/nouveau">Nouveau bien</LinkButton> : null}
+        actions={
+          ctx.role !== "lecture" ? (
+            <>
+              <LinkButton href="/app/proprietes/import" variant="secondary">Importer (CSV)</LinkButton>
+              <LinkButton href="/app/proprietes/nouveau">Nouveau bien</LinkButton>
+            </>
+          ) : null
+        }
       />
       <Card>
         {properties.length === 0 ? (

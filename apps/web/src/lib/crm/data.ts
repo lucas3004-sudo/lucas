@@ -111,6 +111,15 @@ export async function listContacts(ctx: AgencyContext, q?: string): Promise<Cont
   );
 }
 
+/** Tous les contacts visibles, réduits aux champs utiles à la détection des doublons (sans limite). */
+export async function duplicateCandidates(ctx: AgencyContext) {
+  return withTenant(getTenantPool(), tenant(ctx), async (_db, c) =>
+    (await c.query<{ id: string; first_name: string | null; last_name: string; email: string | null; phone: string | null }>(
+      "SELECT id, first_name, last_name, email, phone FROM app.contacts",
+    )).rows.map((r) => ({ id: r.id, firstName: r.first_name, lastName: r.last_name, email: r.email, phone: r.phone, label: contactName(r) })),
+  );
+}
+
 export async function getContact(ctx: AgencyContext, id: string) {
   return withTenant(getTenantPool(), tenant(ctx), async (_db, c) => {
     const contact = (await c.query<Contact>("SELECT * FROM app.contacts WHERE id = $1", [id])).rows[0];
