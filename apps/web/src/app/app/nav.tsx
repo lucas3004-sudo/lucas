@@ -13,6 +13,7 @@ const ICONS = {
   key: "M14.5 9.5a4 4 0 1 0-3.9 3.1L3 20v1h3v-2h2v-2h2l2.3-2.3A4 4 0 0 0 14.5 9.5M16 7.5h.01",
   gauge: "M4 18a8 8 0 1 1 16 0M12 18l4-6M4 18h16",
   calendar: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5",
+  deal: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
   chart: "M4 20V10M10 20V4M16 20v-8M22 20H2",
   check: "M4 6h16v14H4zM8 3v5M16 3v5M8.5 13.5l2.5 2.5 4.5-5",
 } as const;

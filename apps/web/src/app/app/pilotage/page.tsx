@@ -55,7 +55,7 @@ export default async function PilotagePage({ searchParams }: { searchParams: Pro
       </nav>
 
       <Card className="mb-4">
-        <CardHeader title="Activité de l'équipe" description={`Période ${period}. Source : journal d'audit (les éléments supprimés depuis restent comptés), agenda (rendez-vous non annulés, déjà passés) et tâches.`} />
+        <CardHeader title="Activité de l'équipe" description={`Période ${period}. Source : journal d'audit (les éléments supprimés depuis restent comptés), agenda (rendez-vous non annulés, déjà passés), affaires (actes signés) et tâches.`} />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
@@ -65,6 +65,7 @@ export default async function PilotagePage({ searchParams }: { searchParams: Pro
                   <th key={col.key} scope="col" className="px-3 py-2.5 text-right font-medium">{col.label}</th>
                 ))}
                 <th scope="col" className="px-3 py-2.5 text-right font-medium">Rendez-vous passés</th>
+                <th scope="col" className="px-3 py-2.5 text-right font-medium">Actes signés</th>
                 <th scope="col" className="px-3 py-2.5 text-right font-medium">Tâches terminées</th>
                 <th scope="col" className="px-5 py-2.5 text-right font-medium">En retard aujourd&apos;hui</th>
               </tr>
@@ -79,6 +80,7 @@ export default async function PilotagePage({ searchParams }: { searchParams: Pro
                       <td key={col.key} className="tabular px-3 py-2.5 text-right text-ink">{a?.counts[col.key] ?? 0}</td>
                     ))}
                     <td className="tabular px-3 py-2.5 text-right text-ink">{a?.appointments ?? 0}</td>
+                    <td className="tabular px-3 py-2.5 text-right text-ink">{a?.deedsSigned ?? 0}</td>
                     <td className="tabular px-3 py-2.5 text-right text-ink">{a?.tasksDone ?? 0}</td>
                     <td className={cn("tabular px-5 py-2.5 text-right", a?.tasksOverdue ? "font-medium text-danger" : "text-ink")}>{a?.tasksOverdue ?? 0}</td>
                   </tr>

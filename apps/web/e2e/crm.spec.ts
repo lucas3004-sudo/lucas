@@ -232,15 +232,15 @@ test.describe.serial("CRM et matching", () => {
     await page.getByRole("link", { name: "Pilotage" }).click();
     await expect(page.getByRole("heading", { name: "Pilotage de l'agence" })).toBeVisible();
     await expect(page.getByText(/Période du .* au /)).toBeVisible();
-    // Colonnes : contacts, consentements, biens, dossiers, tâches créées, rendez-vous passés, tâches terminées, en retard.
+    // Colonnes : contacts, consentements, biens, dossiers, tâches créées, rendez-vous passés, actes signés, tâches terminées, en retard.
     const cells = (name: string) => page.getByRole("row", { name: new RegExp(name) }).getByRole("cell");
     await expect(cells(ines.name).nth(0)).toHaveText("1");
     await expect(cells(ines.name).nth(1)).toHaveText("1");
     await expect(cells(ines.name).nth(5)).toHaveText("0"); // rendez-vous à venir : pas encore « passé »
-    await expect(cells(ines.name).nth(6)).toHaveText("1");
+    await expect(cells(ines.name).nth(7)).toHaveText("1");
     await expect(cells(hugo.name).nth(2)).toHaveText("1");
     await expect(cells(hugo.name).nth(4)).toHaveText("1");
-    await expect(cells(hugo.name).nth(7)).toHaveText("1");
+    await expect(cells(hugo.name).nth(8)).toHaveText("1");
     await expect(cells(gerant.name).nth(4)).toHaveText("1");
     await expect(page.getByText("Chaque bien proposé a au moins un acquéreur correspondant.")).toBeVisible();
     await expect(page.getByText("Relances en retard (1)")).toBeVisible();
@@ -269,5 +269,44 @@ test.describe.serial("CRM et matching", () => {
     await expect(match.getByText("70 %")).toBeVisible(); // budget dépassé de 8,7 % : critère partiel
     await match.getByRole("button", { name: `Prévenir ${gerant.name}` }).click();
     await expect(match.getByText(`${gerant.name} prévenu(e)`)).toBeVisible();
+  });
+  test("Hugo suit la vente de l'offre à l'acte : échéances, pièces, statut du bien", async ({ page }) => {
+    test.setTimeout(60_000);
+    await signIn(page, hugo.email);
+    await page.goto(propertyUrl);
+    await page.getByRole("link", { name: "Ouvrir une affaire" }).click();
+    await expect(page.getByLabel("Bien", { exact: true })).toHaveValue(propertyUrl.split("/").pop()!);
+    await page.getByLabel("Prix convenu (€)").fill("245000");
+    await page.getByLabel("Honoraires (€)").fill("10000");
+    await page.getByRole("button", { name: "Ouvrir l'affaire" }).click();
+    await expect(page.getByRole("heading", { name: address })).toBeVisible();
+    await expect(page.getByText(/prix convenu 245\s000\s€/)).toBeVisible();
+
+    // Compromis : la notification d'aujourd'hui ouvre un délai de rétractation de 10 jours (au moins).
+    await page.getByRole("button", { name: "Passer à : Compromis signé" }).click();
+    await expect(page.locator("[aria-current=step]")).toHaveText("2. Compromis signé");
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
+    await page.getByLabel("Compromis signé le").fill(today);
+    await page.getByLabel("Notification à l'acquéreur le").fill(today);
+    await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    await expect(page.getByText("Affaire enregistrée.")).toBeVisible();
+    await expect(page.getByText("Fin du délai de rétractation (indicative)")).toBeVisible();
+    await expect(page.getByText(/^Dans 1[0-4] j$/)).toBeVisible();
+
+    // Pièces : cocher le titre de propriété.
+    await page.getByRole("button", { name: "Cocher : Titre de propriété du vendeur" }).click();
+    await expect(page.getByRole("button", { name: "Décocher : Titre de propriété du vendeur" })).toHaveAttribute("aria-pressed", "true");
+    await capture(page, "14-affaire");
+
+    // Le bien est passé « sous offre », puis « vendu » à l'acte.
+    await page.goto(propertyUrl);
+    await expect(page.getByText("Sous offre").first()).toBeVisible();
+    await page.getByRole("link", { name: "Compromis signé" }).click();
+    await page.getByRole("button", { name: "Passer à : Conditions levées" }).click();
+    await page.getByRole("button", { name: "Passer à : Acte signé" }).click();
+    await expect(page.locator("[aria-current=step]")).toHaveText("4. Acte signé");
+    await page.goto(propertyUrl);
+    await expect(page.getByText("Vendu").first()).toBeVisible();
+    await expect(page.getByText(/n'est plus rapproché des acquéreurs/)).toBeVisible();
   });
 });

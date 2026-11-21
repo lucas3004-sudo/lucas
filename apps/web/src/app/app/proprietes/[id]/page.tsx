@@ -27,6 +27,8 @@ import {
 import { TaskList } from "../../taches/task-list";
 import { AppointmentList } from "../../agenda/appointment-list";
 import { listAppointments } from "@/lib/agenda/data";
+import { listDeals } from "@/lib/deals/data";
+import { DEAL_STAGES } from "@/lib/deals/labels";
 
 export const metadata: Metadata = { title: "Bien de l'agence", robots: { index: false } };
 
@@ -41,11 +43,12 @@ export default async function PropertyPage({ params, searchParams }: { params: P
 
   const { weights, custom } = parseWeights(await searchParams);
   const matchable = MATCHABLE_STATUSES.includes(property.status);
-  const [members, profiles, tasks, appointments] = await Promise.all([
+  const [members, profiles, tasks, appointments, deals] = await Promise.all([
     agencyMembers(ctx.org.id),
     matchable ? activeProfiles(ctx) : Promise.resolve([]),
     listTasks(ctx, "team", { propertyId: property.id }),
     listAppointments(ctx, { propertyId: property.id, from: new Date(Date.now() - 86_400_000) }),
+    listDeals(ctx, { propertyId: property.id }),
   ]);
   const memberIds = new Set(members.map((m) => m.userId));
   const canEdit = canEditRecord(ctx, property.owner_user_id);
@@ -81,6 +84,11 @@ export default async function PropertyPage({ params, searchParams }: { params: P
         description={<>Responsable : {memberName(members, property.owner_user_id)} · ajouté le {fmt.date(property.created_at)}</>}
         actions={
           <>
+            {ctx.role !== "lecture" && property.status !== "vendu" && property.status !== "retire" ? (
+              <LinkButton href={`/app/affaires/nouvelle?bien=${property.id}`} variant="secondary">
+                Ouvrir une affaire
+              </LinkButton>
+            ) : null}
             {ctx.role !== "lecture" ? (
               <LinkButton href={`/app/agenda?bien=${property.id}&type=visite`} variant="secondary">
                 Planifier une visite
@@ -248,6 +256,22 @@ export default async function PropertyPage({ params, searchParams }: { params: P
               </form>
             ) : null}
           </Card>
+
+          {deals.length ? (
+            <Card>
+              <CardHeader title="Affaires" />
+              <ul className="divide-y divide-line">
+                {deals.map((d) => (
+                  <li key={d.id}>
+                    <Link href={`/app/affaires/${d.id}`} className="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-surface-muted">
+                      <Badge tone={d.stage === "acte" ? "success" : d.stage === "abandon" ? "neutral" : "brand"}>{DEAL_STAGES[d.stage]}</Badge>
+                      <span className="flex-1 text-ink-muted">{d.price !== null ? fmt.euros(d.price) : "Prix non renseigné"}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader title="Rendez-vous à venir" />

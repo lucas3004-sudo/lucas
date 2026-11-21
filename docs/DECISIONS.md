@@ -301,3 +301,15 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - un profil créé après le bien affiche ses correspondances sur la fiche du contact, et le bouton « Prévenir » reste disponible côté bien.
 - **Objection du Devil's Advocate** : un acquéreur ajouté ou modifié après coup ne déclenche aucune alerte vers le responsable du bien.
 - **Réponse** : c'est vrai. La fiche de l'acquéreur montre immédiatement les biens correspondants : son propre responsable les voit donc. L'alerte dans l'autre sens (nouveau profil vers les responsables des biens) sera ajoutée avec le worker.
+
+## D-040 — Affaires : visibilité héritée du bien, échéances indicatives
+- **Date** : 2026-11-21 · **Statut** : Acceptée
+- **Décision** :
+  - une affaire est lisible si son bien l'est : pas de réglage de visibilité en plus ;
+  - le statut du bien suit l'étape (sous offre, puis vendu) ;
+  - les échéances sont calculées et affichées avec leur règle ; elles sont « indicatives » ;
+  - la liste des pièces est indicative ;
+  - aucune information n'est envoyée aux parties : ImmoPilot ne notifie rien à leur place.
+- **Raison** : le notaire est responsable des actes et des délais. Un rappel clair et sourcé aide l'agent sans se substituer au notaire.
+- **Objection du Devil's Advocate** : un agent pourrait se fier au calcul et manquer une particularité (lettre recommandée non retirée, jour férié local).
+- **Réponse** : c'est vrai. La règle est affichée sous la date, la mention « indicative » est visible, et la date de départ est celle que l'agent saisit (première présentation). Le point figurera dans les questions à l'avocat (formulation des aides au calcul de délai).

@@ -28,7 +28,9 @@ export type AuditAction =
   | "rdv.cree"
   | "rdv.annule"
   | "contacts.importes"
-  | "biens.importes";
+  | "biens.importes"
+  | "affaire.creee"
+  | "affaire.etape";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -54,6 +56,8 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "rdv.annule": "Rendez-vous annulé",
   "contacts.importes": "Contacts importés (CSV)",
   "biens.importes": "Biens importés (CSV)",
+  "affaire.creee": "Affaire ouverte",
+  "affaire.etape": "Étape d'affaire modifiée",
 };
 
 export async function audit(params: {
