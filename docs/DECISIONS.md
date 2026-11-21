@@ -369,3 +369,12 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - les styles en ligne restent autorisés (Tailwind et attributs `style` de React).
 - **Vérification** : un test de bout en bout injecte un gestionnaire d'événement HTML (XSS typique). Il est bloqué. Un contrôle montre que la même injection s'exécute sans CSP. Les 21 autres scénarios passent : l'application fonctionne normalement.
 - **Limite** : `strict-dynamic` fait confiance aux scripts créés par un script déjà autorisé. C'est le compromis standard : la protection porte sur l'injection de HTML, la forme la plus courante d'attaque.
+
+## D-046 — Contrôle de version de la base au démarrage et état de santé public
+- **Date** : 2026-11-21 · **Statut** : Acceptée (répond à l'objection de D-027)
+- **Décision** :
+  - le code connaît la liste exacte des migrations attendues (`EXPECTED_MIGRATIONS`), et un garde-fou de test vérifie qu'elle correspond aux fichiers ;
+  - au premier accès à l'application, le site compare cette liste à `ops.schema_migrations`. Le rôle applicatif lit seulement les noms et les dates, pas les empreintes (migration 0015) ;
+  - si une migration manque, l'application affiche « Mise à jour en cours » au lieu de fonctionner sur une base en retard ;
+  - `/api/health` (public) renvoie l'état, avec des nombres seulement : 200 si à jour, 503 sinon.
+- **Vérification** : la base de développement a été rendue volontairement « en retard », puis remise en état. `/api/health` a renvoyé 503, puis 200.

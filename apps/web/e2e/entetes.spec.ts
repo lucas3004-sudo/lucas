@@ -35,3 +35,12 @@ test("les routes d'API ont une CSP fermée et nosniff", async ({ request }) => {
   expect(res.headers()["content-security-policy"]).toContain("default-src 'none'");
   expect(res.headers()["x-content-type-options"]).toBe("nosniff");
 });
+
+test("état de santé public : base joignable et à jour, sans détail technique", async ({ request }) => {
+  const res = await request.get("/api/health");
+  expect(res.status()).toBe(200);
+  const body = await res.json();
+  expect(body.statut).toBe("ok");
+  expect(body.migrations.appliquees).toBeGreaterThanOrEqual(body.migrations.attendues);
+  expect(JSON.stringify(body)).not.toMatch(/\.sql/);
+});

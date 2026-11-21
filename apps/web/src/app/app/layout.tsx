@@ -1,12 +1,26 @@
 import { signOutAction } from "@/lib/agency/actions";
 import Link from "next/link";
 import { getSession, requireAgency } from "@/lib/agency/context";
+import { schemaStatus } from "@/lib/server/schema-check";
 import { canReadAuditLog } from "@/lib/agency/rules";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Logo } from "@/ui/logo";
 import { Nav, type NavItem } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // Code déployé sans sa migration : on ne sert pas l'application sur une base en retard.
+  const schema = await schemaStatus();
+  if (!schema.ok) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 text-center">
+        <h1 className="text-[22px] font-semibold tracking-tight text-ink">Mise à jour en cours</h1>
+        <p className="mt-2 text-sm text-ink-muted">
+          La base de données n&apos;est pas encore à jour ({schema.missing.length} étape(s) en attente). Vos données ne sont pas affectées.
+          Réessayez dans quelques minutes.
+        </p>
+      </main>
+    );
+  }
   const { user, org, role } = await requireAgency();
   const session = await getSession();
   const twoFactorOn = Boolean((session?.user as { twoFactorEnabled?: boolean | null } | undefined)?.twoFactorEnabled);
