@@ -24,3 +24,12 @@ Date : 2026-11-20 · Réservé au gérant et aux managers (menu et page). La bas
 
 ## Capture
 [Pilotage](captures/13-pilotage.png)
+
+## Accueil « Ma journée » (tous les rôles), ajouté le 2026-11-21
+L'accueil montre à chacun **ses propres** éléments :
+- les tâches en retard et celles du jour ;
+- les rendez-vous d'aujourd'hui et de demain (heure de Paris) ;
+- les échéances à 7 jours des affaires dont il est en charge, retards compris ;
+- les biens signalés pour ses acquéreurs (alertes automatiques et bouton « Prévenir »).
+
+Ce sont des listes, pas des scores : rien n'est comparé entre collègues.
