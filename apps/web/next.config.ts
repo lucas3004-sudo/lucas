@@ -31,6 +31,8 @@ const config: NextConfig = {
   transpilePackages: ["@immopilot/db", "@immopilot/domain", "@immopilot/integrations"],
   serverExternalPackages: ["pg"],
   poweredByHeader: false,
+  // Import CSV : fichier de 1 Mo au plus, renvoyé une fois pour la confirmation.
+  experimental: { serverActions: { bodySizeLimit: "3mb" } },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

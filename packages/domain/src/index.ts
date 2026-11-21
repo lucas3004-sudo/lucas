@@ -7,3 +7,4 @@ export * from "./crm/duplicates";
 export * from "./invest/simulate";
 export * from "./calendar/time";
 export * from "./calendar/ics";
+export * from "./crm/import";

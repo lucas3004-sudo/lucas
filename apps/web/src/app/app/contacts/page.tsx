@@ -20,7 +20,14 @@ export default async function ContactsPage({ searchParams }: { searchParams: Pro
       <PageHeader
         title="Contacts"
         description="Acquéreurs, vendeurs et investisseurs de l'agence. Un contact privé n'est visible que par son responsable, le gérant et les managers."
-        actions={ctx.role !== "lecture" ? <LinkButton href="/app/contacts/nouveau">Nouveau contact</LinkButton> : null}
+        actions={
+          ctx.role !== "lecture" ? (
+            <>
+              <LinkButton href="/app/contacts/import" variant="secondary">Importer (CSV)</LinkButton>
+              <LinkButton href="/app/contacts/nouveau">Nouveau contact</LinkButton>
+            </>
+          ) : null
+        }
       />
       <form role="search" className="mb-4 flex max-w-md gap-2">
         <Input name="q" defaultValue={q} placeholder="Nom, e-mail ou téléphone" aria-label="Rechercher un contact" />

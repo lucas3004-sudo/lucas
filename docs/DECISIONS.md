@@ -279,3 +279,15 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Raison** : un abonnement exige une adresse secrète, lisible sans connexion, qui exposerait des noms et des adresses si elle fuitait. Il faudrait un jeton révocable, à durée limitée et journalisé : c'est à construire avec le socle de sécurité.
 - **Objection du Devil's Advocate** : sans abonnement, un rendez-vous déplacé n'est pas mis à jour dans l'agenda personnel.
 - **Réponse** : c'est vrai. L'identifiant du rendez-vous et sa date de modification sont exportés : un nouvel import met donc à jour l'événement existant au lieu de le dupliquer, et un rendez-vous annulé est retiré. L'abonnement sécurisé est noté pour la phase 9.
+
+## D-038 — Import CSV : aperçu, puis import revérifié par le serveur ; jamais de consentement importé
+- **Date** : 2026-11-21 · **Statut** : Acceptée
+- **Décision** :
+  - l'import se fait en deux temps : un aperçu sans écriture, puis la confirmation. À la confirmation, le serveur relit tout le fichier ; l'aperçu renvoyé par le navigateur n'est jamais repris tel quel ;
+  - les doublons sont écartés, jamais fusionnés ;
+  - une ligne invalide est ignorée et sa raison affichée ;
+  - les consentements de prospection ne sont jamais importés, faute de preuve individuelle ;
+  - un bien n'est créé que si la BAN reconnaît une adresse précise (numéro ou rue, score d'au moins 50 %) ;
+  - limites : 1 Mo par fichier, 2 000 contacts ou 200 biens par import (géocodage 5 adresses à la fois).
+- **Objection du Devil's Advocate** : une agence qui change de logiciel voudra reprendre ses consentements existants.
+- **Réponse** : c'est vrai. Un consentement sans preuve ne protège pas l'agence en cas de contrôle. Une reprise « avec preuve jointe » (colonne date, colonne preuve) pourra être étudiée avec l'avocat (question 3 de la fiche juridique).

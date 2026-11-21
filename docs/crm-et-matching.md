@@ -31,6 +31,20 @@ Date : 2026-11-20 · Choix du fondateur : « CRM et matching d'abord », avant l
 - Bouton « Exporter ses données (RGPD) » sur la fiche. Il produit un fichier JSON lisible avec les coordonnées, les rôles, les notes, les consentements avec leurs preuves, les profils de recherche, les rendez-vous et les tâches liés.
 - Réservé à qui peut modifier le contact : son responsable, le gérant, un manager ou un assistant. Un collègue qui ne voit pas le contact reçoit « introuvable ». Chaque export est journalisé, avec l'identifiant seulement.
 
+### Import CSV des contacts et des biens (F4, F5)
+- **Deux temps** :
+  - un aperçu ligne par ligne, sans rien écrire : à importer, doublon ou erreur, avec la raison ;
+  - puis la confirmation, avec le choix de la visibilité et du responsable.
+  À la confirmation, le serveur relit tout le fichier et refait chaque contrôle.
+- **Fichiers acceptés** :
+  - export Excel français (point-virgule, encodage Windows reconnu automatiquement) ou CSV en UTF-8 ;
+  - colonnes reconnues par synonymes : « Courriel » vaut « E-mail », « Acheteur » vaut le rôle « acquéreur » ;
+  - colonnes inconnues signalées et ignorées ;
+  - modèle téléchargeable.
+- **Contacts** : 2 000 lignes au maximum. Les doublons sont écartés, qu'ils soient déjà dans l'agence (e-mail, téléphone ou nom) ou répétés dans le fichier. **Aucun consentement de prospection n'est importé** : il faut une preuve par contact.
+- **Biens** : 200 lignes au maximum. Chaque adresse est vérifiée auprès de la BAN : seule une adresse précise (numéro ou rue) avec un score de 50 % au moins est acceptée. Une adresse déjà présente dans l'agence est écartée.
+- Le journal enregistre l'import avec le nombre de lignes, sans aucune donnée personnelle.
+
 ## Qui voit et fait quoi (appliqué par la base, RLS, migrations 0007 et 0008)
 
 | | Gérant | Manager | Assistant | Négociateur | Lecture seule |
@@ -61,7 +75,7 @@ Le test de réattribution a montré qu'une règle de la base était **toujours v
 - [Fiche contact](captures/11-fiche-contact.png)
 
 ## Reste à faire pour couvrir entièrement F4 et F5
-- Import CSV des contacts et des biens ; photos des biens.
+- Photos des biens.
 - Pipeline des affaires (suivi des offres et des ventes).
 - Tableau de bord du gérant (F13), à partir des tâches et des biens désormais disponibles.
 - Investment Studio (simulations).
