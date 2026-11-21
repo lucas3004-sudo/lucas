@@ -14,7 +14,7 @@ d'acceptation sont vérifiés.
 | 2. Architecture détaillée | ✅ Terminée (2026-11-20) | [Architecture](docs/phase-2/architecture.md), [Modèle de données](docs/phase-2/modele-donnees.md), [Permissions](docs/phase-2/permissions.md), [Moteur d'agents](docs/phase-2/moteur-agents.md), [Ingestion](docs/phase-2/ingestion.md) ; prototypes [RLS](prototypes/rls/run.sh) (12 tests sur 12) et [nettoyage DVF](prototypes/dvf/clean_dvf.py) |
 | 3. Fondation (+ préproduction) | ✅ Fondation livrée, testée (CI au vert), fusionnée dans `main`. Base de préproduction Supabase prête et testée. ⏸️ **Mise en ligne Vercel en attente d'un réglage par le fondateur, depuis un ordinateur** | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
 | 4. Intelligence immobilière | ✅ Dossier de bien livré et testé (2026-11-20) ; données publiques à charger en préproduction une fois le site en ligne | [Phase 4](docs/phase-4-dossier-de-bien.md), [capture](docs/captures/08-dossier-de-bien.png) |
-| 5. Socle agents | À faire | — |
+| 5. Socle agents | 🟡 **Socle sans IA livré et testé (2026-11-21)** : fiches versionnées, passerelle d'outils, missions, approbations, Agent Center, 4 agents déterministes. Reste : modes IA, Copilot, worker (clé Anthropic nécessaire) | [Socle des agents](docs/phase-5-socle-agents.md) |
 | 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio**, **tableau de bord du gérant**, **agenda (.ics)**, **export RGPD** et **import CSV**, **alertes de correspondance**, **suivi des affaires** et **fiche annonce** (mentions obligatoires, sans IA) et **photos des biens** livrés et testés. Phase 6 terminée côté outils, hors IA | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [Affaires](docs/affaires.md), [Annonce](docs/annonce.md), [captures 09 à 15](docs/captures/) |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
 | 8. Monétisation | À faire | — |
@@ -23,6 +23,8 @@ d'acceptation sont vérifiés.
 | 11. Production | À faire | — |
 
 ## Fonctionnalités opérationnelles (testées)
+**Agents (sans IA)** : Agent Center avec 4 agents déterministes (qualité des données, Opportunity Finder, veille des échéances, détection des doublons) ; passerelle d'outils qui refuse tout ce qui dépasse la fiche ; boîte d'approbations (aucune fusion sans décision humaine).
+
 **Sécurité du compte** : double authentification par application (TOTP) avec codes de secours, essais limités, rappel au gérant et aux managers ([détails](docs/securite-compte.md)).
 
 **Application (phase 3)** :
@@ -36,9 +38,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-20) :
-- 132 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
-- 31 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos) ;
-- 20 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
+- 140 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 34 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents) ;
+- 21 scénarios de bout en bout (Playwright), dont 1 pour les agents et les approbations, dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -114,6 +116,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-21, socle des agents (sans IA)** : package `@immopilot/agents` (passerelle, missions), migration 0014 (missions, étapes, approbations sous RLS), Agent Center, boîte d'approbations, fusion de doublons approuvée ; décision D-044. Qualité des données fusionnée ([PR n° 15](https://github.com/lucas3004-sudo/lucas/pull/15)).
 - **2026-11-21, qualité des données** : premier agent déterministe (sans IA), qui signale sans corriger. Double authentification fusionnée ([PR n° 14](https://github.com/lucas3004-sudo/lucas/pull/14)) ; migration 0013 appliquée en préproduction (13 migrations, schéma identique au local).
 - **2026-11-21, double authentification** : extension TOTP de Better Auth (migration 0013), page « Sécurité du compte », étape de vérification à la connexion, codes de secours, rappel au gérant ; décision D-043. Photos fusionnées ([PR n° 13](https://github.com/lucas3004-sudo/lucas/pull/13)) ; migration 0012 appliquée en préproduction.
 - **2026-11-21, photos des biens** : migration 0012 (photos sous RLS), contrôle du format par les octets et suppression des métadonnées (EXIF, GPS), galerie et affichage protégé ; décision D-042. Annonce et « Ma journée » fusionnées ([PR n° 11](https://github.com/lucas3004-sudo/lucas/pull/11), [PR n° 12](https://github.com/lucas3004-sudo/lucas/pull/12)) ; migration 0011 appliquée en préproduction.

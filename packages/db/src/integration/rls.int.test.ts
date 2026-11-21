@@ -443,6 +443,69 @@ describe("photos des biens (migration 0012)", () => {
   });
 });
 
+describe("agents : missions, étapes, approbations (migration 0014)", () => {
+  const A1 = () => ({ orgId: A, userId: users.negoA });
+  const A2 = () => ({ orgId: A, userId: users.nego2A });
+  const GA = () => ({ orgId: A, userId: users.gerantA });
+  const newMission = (by: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(`INSERT INTO app.missions (org_id, agent_id, agent_version, requested_by) VALUES ($1, 'duplicate-detection', '1.0.0', $2) RETURNING id`, [A, by])
+      .then((r) => r.rows[0].id as string);
+  const newApproval = (missionId: string, by: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.approvals (org_id, mission_id, agent_id, tool, level, title, payload, requested_by)
+       VALUES ($1, $2, 'duplicate-detection', 'contacts.merge', 'L2', 'Fusion proposée', '{}'::jsonb, $3) RETURNING id`,
+      [A, missionId, by],
+    ).then((r) => r.rows[0].id as string);
+
+  it("mission : visible par son demandeur et le gérant, pas par un collègue ni l'autre agence ; jamais au nom d'un autre", async () => {
+    const m = await withTenant(pool, A1(), newMission(users.negoA));
+    await withTenant(pool, GA(), async (_db, c) => expect(await count(c, "app.missions", "id = $1", [m])).toBe(1));
+    await withTenant(pool, A2(), async (_db, c) => expect(await count(c, "app.missions", "id = $1", [m])).toBe(0));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.missions")).toBe(0));
+    await expectDenied(withTenant(pool, A1(), newMission(users.nego2A)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.lectureA }, newMission(users.lectureA)));
+    // Étapes : ajoutées par le demandeur seulement ; jamais modifiables.
+    await withTenant(pool, A1(), (_db, c) =>
+      c.query(`INSERT INTO app.mission_steps (org_id, mission_id, position, tool, level, status) VALUES ($1, $2, 1, 'contacts.duplicates', 'L0', 'ok')`, [A, m]));
+    await expectDenied(withTenant(pool, A2(), (_db, c) =>
+      c.query(`INSERT INTO app.mission_steps (org_id, mission_id, position, tool, level, status) VALUES ($1, $2, 2, 'x', 'L0', 'ok')`, [A, m])));
+    await expectDenied(withTenant(pool, A1(), (_db, c) => c.query(`UPDATE app.mission_steps SET status = 'refuse'`)));
+  });
+
+  it("approbation : le négociateur décide pour ses missions, pas pour celles d'un collègue ; le gérant décide ; personne au nom d'un autre", async () => {
+    const m1 = await withTenant(pool, A1(), newMission(users.negoA));
+    const a1 = await withTenant(pool, A1(), newApproval(m1, users.negoA));
+    const m2 = await withTenant(pool, A2(), newMission(users.nego2A));
+    const a2 = await withTenant(pool, A2(), newApproval(m2, users.nego2A));
+    // A1 ne voit pas l'approbation de A2 et ne peut pas la décider.
+    await withTenant(pool, A1(), async (_db, c) => {
+      expect(await count(c, "app.approvals", "id = $1", [a2])).toBe(0);
+      expect((await c.query(`UPDATE app.approvals SET status = 'approuvee', decided_by = $2 WHERE id = $1`, [a2, users.negoA])).rowCount).toBe(0);
+    });
+    // Décider au nom d'un autre : refusé.
+    await expectDenied(withTenant(pool, GA(), (_db, c) =>
+      c.query(`UPDATE app.approvals SET status = 'approuvee', decided_by = $2 WHERE id = $1`, [a1, users.negoA])));
+    // Contrôles positifs.
+    await withTenant(pool, A1(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.approvals SET status = 'refusee', decided_by = $2, decided_at = now() WHERE id = $1`, [a1, users.negoA])).rowCount).toBe(1));
+    await withTenant(pool, GA(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.approvals SET status = 'approuvee', decided_by = $2, decided_at = now() WHERE id = $1`, [a2, users.gerantA])).rowCount).toBe(1));
+    // Une décision prise ne se modifie plus.
+    await withTenant(pool, GA(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.approvals SET status = 'approuvee', decided_by = $2 WHERE id = $1`, [a1, users.gerantA])).rowCount).toBe(0));
+    // Une approbation ne se crée que sur sa propre mission.
+    await expectDenied(withTenant(pool, A2(), newApproval(m1, users.nego2A)));
+  });
+
+  it("activation d'un agent : réservée au gérant", async () => {
+    await expectDenied(withTenant(pool, A1(), (_db, c) =>
+      c.query(`INSERT INTO app.agent_settings (org_id, agent_id, enabled, updated_by) VALUES ($1, 'data-quality', false, $2)`, [A, users.negoA])));
+    await withTenant(pool, GA(), (_db, c) =>
+      c.query(`INSERT INTO app.agent_settings (org_id, agent_id, enabled, updated_by) VALUES ($1, 'data-quality', false, $2)`, [A, users.gerantA]));
+    await withTenant(pool, A1(), async (_db, c) => expect(await count(c, "app.agent_settings", "agent_id = 'data-quality' AND NOT enabled")).toBe(1));
+  });
+});
+
 describe("garde-fou : aucune table d'agence n'échappe à la RLS", () => {
   it("chaque table du schéma app a la RLS activée, forcée, et une politique restrictive d'isolation", async () => {
     const { rows } = await owner.query<{ table: string; enabled: boolean; forced: boolean; restrictive: number }>(`

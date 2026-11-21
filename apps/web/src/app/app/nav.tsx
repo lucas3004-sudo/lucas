@@ -15,6 +15,7 @@ const ICONS = {
   calendar: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5",
   deal: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
   shield: "M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM8.5 12l2.5 2.5 4.5-5",
+  bot: "M12 3v3M7 8h10a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3zM9 13h.01M15 13h.01M9.5 17h5",
   chart: "M4 20V10M10 20V4M16 20v-8M22 20H2",
   check: "M4 6h16v14H4zM8 3v5M16 3v5M8.5 13.5l2.5 2.5 4.5-5",
 } as const;

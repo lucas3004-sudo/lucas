@@ -28,7 +28,7 @@ const securityHeaders = [
 ];
 
 const config: NextConfig = {
-  transpilePackages: ["@immopilot/db", "@immopilot/domain", "@immopilot/integrations"],
+  transpilePackages: ["@immopilot/agents", "@immopilot/db", "@immopilot/domain", "@immopilot/integrations"],
   serverExternalPackages: ["pg"],
   poweredByHeader: false,
   // Import CSV : fichier de 1 Mo au plus, renvoyé une fois pour la confirmation.
