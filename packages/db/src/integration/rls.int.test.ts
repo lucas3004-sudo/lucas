@@ -326,6 +326,46 @@ describe("CRM : contacts, consentements, profils, biens, tâches (migration 0007
   });
 });
 
+describe("rendez-vous (migration 0009)", () => {
+  const A1 = () => ({ orgId: A, userId: users.negoA });
+  const A2 = () => ({ orgId: A, userId: users.nego2A });
+  const GA = () => ({ orgId: A, userId: users.gerantA });
+  const insert = (organizer: string, by: string, title: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.appointments (org_id, organizer_user_id, created_by, kind, title, starts_at, ends_at)
+       VALUES ($1, $2, $3, 'visite', $4, now() + interval '1 day', now() + interval '1 day 1 hour') RETURNING id`,
+      [A, organizer, by, title],
+    ).then((r) => r.rows[0].id as string);
+
+  it("un négociateur planifie pour lui-même (contrôle positif) ; visible par lui et le gérant, pas par un collègue ni l'autre agence", async () => {
+    const id = await withTenant(pool, A1(), insert(users.negoA, users.negoA, "Visite A1"));
+    await withTenant(pool, A1(), async (_db, c) => expect(await count(c, "app.appointments", "id = $1", [id])).toBe(1));
+    await withTenant(pool, GA(), async (_db, c) => expect(await count(c, "app.appointments", "id = $1", [id])).toBe(1));
+    await withTenant(pool, A2(), async (_db, c) => {
+      expect(await count(c, "app.appointments", "id = $1", [id])).toBe(0);
+      expect((await c.query(`UPDATE app.appointments SET status = 'annule' WHERE id = $1`, [id])).rowCount).toBe(0);
+    });
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.appointments")).toBe(0));
+  });
+
+  it("pas de rendez-vous au nom d'un collègue pour un négociateur ; le gérant peut, mais jamais hors agence ; lecture seule refusée", async () => {
+    await expectDenied(withTenant(pool, A1(), insert(users.nego2A, users.negoA, "Usurpé")));
+    expect(await withTenant(pool, GA(), insert(users.nego2A, users.gerantA, "Planifié par le gérant"))).toBeTruthy();
+    await expectDenied(withTenant(pool, GA(), insert(users.gerantB, users.gerantA, "Hors agence")));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.lectureA }, insert(users.lectureA, users.lectureA, "Lecteur")));
+  });
+
+  it("un rendez-vous ne peut pas être réattribué hors agence ni durer plus de 24 h", async () => {
+    const id = await withTenant(pool, A1(), insert(users.negoA, users.negoA, "À modifier"));
+    await expectDenied(withTenant(pool, GA(), (_db, c) => c.query(`UPDATE app.appointments SET organizer_user_id = $2 WHERE id = $1`, [id, users.gerantB])));
+    // Durée : contrainte de cohérence de la table (code 23514), pas une règle d'accès.
+    await expect(withTenant(pool, A1(), (_db, c) => c.query(`UPDATE app.appointments SET ends_at = starts_at + interval '25 hours' WHERE id = $1`, [id])))
+      .rejects.toMatchObject({ code: "23514" });
+    await withTenant(pool, A1(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.appointments SET status = 'annule' WHERE id = $1`, [id])).rowCount).toBe(1));
+  });
+});
+
 describe("garde-fou : aucune table d'agence n'échappe à la RLS", () => {
   it("chaque table du schéma app a la RLS activée, forcée, et une politique restrictive d'isolation", async () => {
     const { rows } = await owner.query<{ table: string; enabled: boolean; forced: boolean; restrictive: number }>(`

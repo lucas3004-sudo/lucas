@@ -19,11 +19,14 @@ export type AuditAction =
   | "contact.cree"
   | "contact.modifie"
   | "contact.supprime"
+  | "contact.exporte"
   | "consentement.enregistre"
   | "profil.cree"
   | "bien_agence.cree"
   | "bien_agence.supprime"
-  | "tache.creee";
+  | "tache.creee"
+  | "rdv.cree"
+  | "rdv.annule";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -39,11 +42,14 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "contact.cree": "Contact créé",
   "contact.modifie": "Contact modifié",
   "contact.supprime": "Contact supprimé",
+  "contact.exporte": "Données d'un contact exportées (RGPD)",
   "consentement.enregistre": "Consentement enregistré",
   "profil.cree": "Profil de recherche créé",
   "bien_agence.cree": "Bien de l'agence créé",
   "bien_agence.supprime": "Bien de l'agence supprimé",
   "tache.creee": "Tâche créée",
+  "rdv.cree": "Rendez-vous planifié",
+  "rdv.annule": "Rendez-vous annulé",
 };
 
 export async function audit(params: {

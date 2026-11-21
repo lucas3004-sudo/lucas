@@ -20,6 +20,7 @@ import {
 } from "@/lib/crm/data";
 import { CONSENT_CHANNELS, CONTACT_ROLES, PROFILE_STATUS, type ConsentChannel } from "@/lib/crm/labels";
 import { fmt } from "@/lib/format";
+import { buttonClass, LinkButton } from "@/ui/button";
 import { ConfirmSubmit, SubmitButton } from "@/ui/client";
 import { Select } from "@/ui/form";
 import { Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
@@ -35,6 +36,8 @@ import {
   VisibilityBadge,
 } from "../../_crm/parts";
 import { TaskList } from "../../taches/task-list";
+import { AppointmentList } from "../../agenda/appointment-list";
+import { listAppointments } from "@/lib/agenda/data";
 
 export const metadata: Metadata = { title: "Contact", robots: { index: false } };
 
@@ -57,12 +60,13 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
   const { contact, consents, profiles } = data;
 
   const active = profiles.filter((p) => p.status === "actif");
-  const [members, settings, properties, communes, tasks] = await Promise.all([
+  const [members, settings, properties, communes, tasks, appointments] = await Promise.all([
     agencyMembers(ctx.org.id),
     getAgencySettings(ctx),
     active.length ? matchableProperties(ctx) : Promise.resolve([]),
     communeNames(ctx, [...new Set(profiles.flatMap((p) => p.insee_codes))]),
     listTasks(ctx, "team", { contactId: contact.id }),
+    listAppointments(ctx, { contactId: contact.id }),
   ]);
   const canEdit = canEditRecord(ctx, contact.owner_user_id);
   const consentNow = currentConsents(consents);
@@ -173,6 +177,23 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
           </Card>
 
           <Card>
+            <CardHeader
+              title="Rendez-vous"
+              action={ctx.role !== "lecture" ? <LinkButton href={`/app/agenda?contact=${contact.id}`} variant="secondary" size="sm">Planifier</LinkButton> : null}
+            />
+            {appointments.length ? (
+              <AppointmentList
+                appointments={appointments}
+                members={members}
+                meId={ctx.user.id}
+                canManage={(a) => a.organizer_user_id === ctx.user.id || a.created_by === ctx.user.id || ["gerant", "manager", "assistant"].includes(ctx.role)}
+              />
+            ) : (
+              <EmptyState title="Aucun rendez-vous avec ce contact." />
+            )}
+          </Card>
+
+          <Card>
             <CardHeader title="Tâches liées" />
             {tasks.length ? <TaskList tasks={tasks} members={members} meId={ctx.user.id} /> : <EmptyState title="Aucune tâche liée à ce contact." />}
             {ctx.role !== "lecture" ? (
@@ -204,6 +225,14 @@ export default async function ContactPage({ params }: { params: Promise<{ id: st
               ) : null}
               {contact.notes ? <p className="whitespace-pre-line pt-2 text-ink">{contact.notes}</p> : null}
             </CardBody>
+            {canEdit ? (
+              <div className="border-t border-line px-5 py-3">
+                <a href={`/api/v1/contacts/${contact.id}/export`} download className={buttonClass("secondary", "sm")}>
+                  Exporter ses données (RGPD)
+                </a>
+                <p className="mt-1.5 text-xs text-ink-muted">Fichier à remettre au contact s&apos;il demande l&apos;accès à ses données. L&apos;export est journalisé.</p>
+              </div>
+            ) : null}
             {canEdit ? (
               <details className="border-t border-line">
                 <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-brand-text">Modifier le contact</summary>

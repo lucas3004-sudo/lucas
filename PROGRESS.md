@@ -15,7 +15,7 @@ d'acceptation sont vérifiés.
 | 3. Fondation (+ préproduction) | ✅ Fondation livrée, testée (CI au vert), fusionnée dans `main`. Base de préproduction Supabase prête et testée. ⏸️ **Mise en ligne Vercel en attente d'un réglage par le fondateur, depuis un ordinateur** | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
 | 4. Intelligence immobilière | ✅ Dossier de bien livré et testé (2026-11-20) ; données publiques à charger en préproduction une fois le site en ligne | [Phase 4](docs/phase-4-dossier-de-bien.md), [capture](docs/captures/08-dossier-de-bien.png) |
 | 5. Socle agents | À faire | — |
-| 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio** et **tableau de bord du gérant** livrés et testés. Reste : import CSV, rendez-vous, export RGPD | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [captures 09 à 13](docs/captures/) |
+| 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio**, **tableau de bord du gérant**, **agenda (.ics)** et **export RGPD** livrés et testés. Reste : import CSV | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [captures 09 à 13](docs/captures/) |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
 | 8. Monétisation | À faire | — |
 | 9. Qualité et sécurité (audit formel) | À faire | — |
@@ -34,8 +34,8 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-20) :
-- 87 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
-- 24 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution) ;
+- 96 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 27 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous) ;
 - 15 scénarios de bout en bout (Playwright), dont 8 pour le CRM, le matching et le pilotage, et 1 pour l'Investment Studio ;
 - lint, types, build de production.
 
@@ -54,7 +54,9 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - consentements de prospection par canal, avec preuve, en ajout seul ;
 - profils de recherche (communes par code postal), biens de l'agence (adresse BAN) ;
 - matching de chaque bien avec **tous** les profils actifs de l'agence : score expliqué, pondérations modifiables, acquéreur privé d'un collègue anonymisé, bouton « Prévenir » qui crée une tâche ;
-- tâches (échéance, retard, faite) ; journal d'audit sans donnée personnelle.
+- tâches (échéance, retard, faite) ; journal d'audit sans donnée personnelle ;
+- agenda : rendez-vous en heure de Paris, liés à un contact ou à un bien, export calendrier (.ics) ;
+- export des données d'un contact (droit d'accès RGPD), journalisé.
 
 **Investment Studio** : rendement brut et net, cash-flow, mensualité, intérêts, sensibilité au prix et au loyer ; toutes les hypothèses modifiables ; accessible depuis un bien ou un dossier ; mention « simulation, pas un conseil ».
 
@@ -99,6 +101,11 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
 
 ## Journal
+- **2026-11-21, agenda et export RGPD** :
+  - migration 0009 (rendez-vous sous RLS, 3 tests d'isolation de plus, soit 27) ;
+  - conversion heure de Paris ⇄ UTC testée aux changements d'heure ;
+  - export calendrier conforme au standard .ics ;
+  - export des données d'un contact ; décision D-037.
 - **2026-11-20, pilotage du gérant (F13)** : tableau de bord mesuré, sans classement ; création manuelle de tâche désormais journalisée ; décision D-036. Investment Studio fusionné ([PR n° 5](https://github.com/lucas3004-sudo/lucas/pull/5)).
 - **2026-11-20, Investment Studio** : domaine de simulation (12 cas calculés à la main), écran avec sensibilité, liens depuis les biens et les dossiers, décision D-035. CRM fusionné dans `main` ([PR n° 4](https://github.com/lucas3004-sudo/lucas/pull/4)).
 - **2026-11-20, CRM et matching** :

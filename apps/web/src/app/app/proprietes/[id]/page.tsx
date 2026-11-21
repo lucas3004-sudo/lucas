@@ -25,6 +25,8 @@ import {
   VisibilityBadge,
 } from "../../_crm/parts";
 import { TaskList } from "../../taches/task-list";
+import { AppointmentList } from "../../agenda/appointment-list";
+import { listAppointments } from "@/lib/agenda/data";
 
 export const metadata: Metadata = { title: "Bien de l'agence", robots: { index: false } };
 
@@ -39,10 +41,11 @@ export default async function PropertyPage({ params, searchParams }: { params: P
 
   const { weights, custom } = parseWeights(await searchParams);
   const matchable = MATCHABLE_STATUSES.includes(property.status);
-  const [members, profiles, tasks] = await Promise.all([
+  const [members, profiles, tasks, appointments] = await Promise.all([
     agencyMembers(ctx.org.id),
     matchable ? activeProfiles(ctx) : Promise.resolve([]),
     listTasks(ctx, "team", { propertyId: property.id }),
+    listAppointments(ctx, { propertyId: property.id, from: new Date(Date.now() - 86_400_000) }),
   ]);
   const memberIds = new Set(members.map((m) => m.userId));
   const canEdit = canEditRecord(ctx, property.owner_user_id);
@@ -78,6 +81,11 @@ export default async function PropertyPage({ params, searchParams }: { params: P
         description={<>Responsable : {memberName(members, property.owner_user_id)} · ajouté le {fmt.date(property.created_at)}</>}
         actions={
           <>
+            {ctx.role !== "lecture" ? (
+              <LinkButton href={`/app/agenda?bien=${property.id}&type=visite`} variant="secondary">
+                Planifier une visite
+              </LinkButton>
+            ) : null}
             <LinkButton href={simulationLink} variant="secondary">
               Simuler un investissement
             </LinkButton>
@@ -239,6 +247,20 @@ export default async function PropertyPage({ params, searchParams }: { params: P
                 </SubmitButton>
               </form>
             ) : null}
+          </Card>
+
+          <Card>
+            <CardHeader title="Rendez-vous à venir" />
+            {appointments.length ? (
+              <AppointmentList
+                appointments={appointments}
+                members={members}
+                meId={ctx.user.id}
+                canManage={(a) => a.organizer_user_id === ctx.user.id || a.created_by === ctx.user.id || ["gerant", "manager", "assistant"].includes(ctx.role)}
+              />
+            ) : (
+              <EmptyState title="Aucun rendez-vous prévu pour ce bien." />
+            )}
           </Card>
 
           <Card>

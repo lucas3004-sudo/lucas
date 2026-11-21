@@ -5,3 +5,5 @@ export * from "./valuation/estimate";
 export * from "./matching/match";
 export * from "./crm/duplicates";
 export * from "./invest/simulate";
+export * from "./calendar/time";
+export * from "./calendar/ics";

@@ -126,6 +126,7 @@ test.describe.serial("CRM et matching", () => {
     await expect(page.getByText("Paul Acheteur")).toHaveCount(0);
     await page.goto(contactUrl);
     await expect(page.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
+    expect((await page.request.get(`/api/v1${contactUrl.replace("/app", "")}/export`)).status()).toBe(404);
 
     await page.goto("/app/proprietes/nouveau");
     await page.getByLabel("Adresse du bien").fill("8 boulevard du port amiens");
@@ -170,6 +171,33 @@ test.describe.serial("CRM et matching", () => {
     await capture(page, "10-taches");
     await page.goto(contactUrl);
     await expect(page.getByRole("link", { name: address })).toBeVisible();
+
+    // Rendez-vous avec l'acquéreur, depuis sa fiche : le contact est pré-sélectionné.
+    await page.getByRole("link", { name: "Planifier" }).click();
+    await expect(page.getByLabel("Contact", { exact: true })).toHaveValue(contactUrl.split("/").pop()!);
+    await page.getByLabel("Objet").fill("Visite du 8 boulevard du Port");
+    await page.getByLabel("Bien", { exact: true }).selectOption({ label: address });
+    await page.getByRole("button", { name: "Planifier" }).click();
+    await expect(page.getByText("Rendez-vous enregistré.")).toBeVisible();
+    await expect(page.getByText("Visite : Visite du 8 boulevard du Port")).toBeVisible();
+    await expect(page.getByText(`Moi · ${address} · Paul Acheteur`)).toBeVisible();
+
+    const ics = await (await page.request.get("/api/v1/agenda/ics")).text();
+    expect(ics).toContain("BEGIN:VCALENDAR");
+    expect(ics).toContain("SUMMARY:Visite : Visite du 8 boulevard du Port");
+    expect(ics).toMatch(/DTSTART:\d{8}T0[89]0000Z/); // 10 h à Paris = 9 h UTC l'hiver, 8 h l'été
+
+    // Droit d'accès : le fichier contient les coordonnées, la preuve du consentement et le rendez-vous.
+    const exported = await page.request.get(`/api/v1${contactUrl.replace("/app", "")}/export`);
+    expect(exported.status()).toBe(200);
+    expect(exported.headers()["content-disposition"]).toContain("attachment");
+    const data = await exported.json();
+    expect(data.contact.email).toBe(buyerEmail);
+    expect(data.consentements[0].preuve).toContain("fiche de visite");
+    expect(data.profils_de_recherche).toHaveLength(1);
+    expect(data.rendez_vous[0].objet).toBe("Visite du 8 boulevard du Port");
+
+    await page.goto(contactUrl);
     await capture(page, "11-fiche-contact");
   });
 
@@ -178,10 +206,11 @@ test.describe.serial("CRM et matching", () => {
     await page.goto("/app/contacts");
     await expect(page.getByRole("link", { name: /Paul Acheteur/ })).toBeVisible();
     await page.goto(propertyUrl);
-    await expect(page.getByRole("link", { name: "Paul Acheteur" })).toBeVisible();
+    // Le gérant voit l'identité dans les correspondances et dans les rendez-vous du bien.
+    await expect(page.getByRole("link", { name: "Paul Acheteur" })).toHaveCount(2);
 
     await page.goto("/app/journal");
-    for (const label of ["Contact créé", "Consentement enregistré", "Profil de recherche créé", "Bien de l'agence créé", "Tâche créée"]) {
+    for (const label of ["Contact créé", "Consentement enregistré", "Profil de recherche créé", "Bien de l'agence créé", "Tâche créée", "Rendez-vous planifié", "Données d'un contact exportées (RGPD)"]) {
       await expect(page.getByRole("cell", { name: label, exact: true }).first()).toBeVisible();
     }
     await expect(page.getByText(buyerEmail)).toHaveCount(0);
@@ -202,14 +231,15 @@ test.describe.serial("CRM et matching", () => {
     await page.getByRole("link", { name: "Pilotage" }).click();
     await expect(page.getByRole("heading", { name: "Pilotage de l'agence" })).toBeVisible();
     await expect(page.getByText(/Période du .* au /)).toBeVisible();
-    // Colonnes : contacts, consentements, biens, dossiers, tâches créées, tâches terminées, en retard.
+    // Colonnes : contacts, consentements, biens, dossiers, tâches créées, rendez-vous passés, tâches terminées, en retard.
     const cells = (name: string) => page.getByRole("row", { name: new RegExp(name) }).getByRole("cell");
     await expect(cells(ines.name).nth(0)).toHaveText("1");
     await expect(cells(ines.name).nth(1)).toHaveText("1");
-    await expect(cells(ines.name).nth(5)).toHaveText("1");
+    await expect(cells(ines.name).nth(5)).toHaveText("0"); // rendez-vous à venir : pas encore « passé »
+    await expect(cells(ines.name).nth(6)).toHaveText("1");
     await expect(cells(hugo.name).nth(2)).toHaveText("1");
     await expect(cells(hugo.name).nth(4)).toHaveText("1");
-    await expect(cells(hugo.name).nth(6)).toHaveText("1");
+    await expect(cells(hugo.name).nth(7)).toHaveText("1");
     await expect(cells(gerant.name).nth(4)).toHaveText("1");
     await expect(page.getByText("Chaque bien proposé a au moins un acquéreur correspondant.")).toBeVisible();
     await expect(page.getByText("Relances en retard (1)")).toBeVisible();

@@ -16,6 +16,21 @@ Date : 2026-11-20 · Choix du fondateur : « CRM et matching d'abord », avant l
 | **Tâches** | Création, attribution à un membre de l'agence, échéance, retard signalé, faite / rouverte ; liées à un contact ou à un bien | F4 |
 | **Journal d'audit** | Création, modification, suppression, consentement, profil, bien, tâche. **Identifiants seulement** : aucun nom, e-mail ou téléphone dans le journal (un effacement RGPD n'y laisse rien) | — |
 
+## Ajouts du 2026-11-21
+
+### Agenda et rendez-vous (F4)
+- Types de rendez-vous : visite, estimation, signature, rendez-vous, autre. On saisit la date en **heure de Paris** ; elle est enregistrée en UTC. Les changements d'heure sont gérés : une heure qui n'existe pas est refusée, une heure répétée correspond à sa première occurrence.
+- Un rendez-vous peut être lié à un contact et à un bien. Si aucun lieu n'est saisi, l'adresse du bien sert de lieu. On peut planifier depuis la fiche d'un contact (« Planifier ») ou d'un bien (« Planifier une visite »).
+- Un rendez-vous est visible par son organisateur, son auteur, le gérant et les managers.
+  - Un négociateur ne planifie que pour lui-même.
+  - Le gérant, un manager ou un assistant peuvent planifier pour un membre de l'agence, jamais pour quelqu'un d'extérieur (migration 0009).
+- **Export calendrier (.ics)** : on peut télécharger un rendez-vous seul ou tous ses rendez-vous, et les ajouter à Google Agenda, Outlook ou Apple Calendrier. Un rendez-vous annulé est exporté comme « annulé », pour que l'agenda le retire.
+- Le pilotage compte les rendez-vous passés et non annulés de chaque membre sur la période.
+
+### Export des données d'un contact (RGPD, droit d'accès)
+- Bouton « Exporter ses données (RGPD) » sur la fiche. Il produit un fichier JSON lisible avec les coordonnées, les rôles, les notes, les consentements avec leurs preuves, les profils de recherche, les rendez-vous et les tâches liés.
+- Réservé à qui peut modifier le contact : son responsable, le gérant, un manager ou un assistant. Un collègue qui ne voit pas le contact reçoit « introuvable ». Chaque export est journalisé, avec l'identifiant seulement.
+
 ## Qui voit et fait quoi (appliqué par la base, RLS, migrations 0007 et 0008)
 
 | | Gérant | Manager | Assistant | Négociateur | Lecture seule |
@@ -47,8 +62,7 @@ Le test de réattribution a montré qu'une règle de la base était **toujours v
 
 ## Reste à faire pour couvrir entièrement F4 et F5
 - Import CSV des contacts et des biens ; photos des biens.
-- Export d'un contact (droit d'accès RGPD) ; la suppression existe déjà.
-- Rendez-vous avec export calendrier (.ics) ; pipeline des affaires.
+- Pipeline des affaires (suivi des offres et des ventes).
 - Tableau de bord du gérant (F13), à partir des tâches et des biens désormais disponibles.
 - Investment Studio (simulations).
 
