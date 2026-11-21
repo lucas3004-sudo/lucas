@@ -95,20 +95,23 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - CSP sans nonces (`unsafe-inline`) : durcissement prévu en phase 9.
 
 ## Décisions en attente du fondateur
-1. **Réglage du projet Vercel « lucas »** (à faire depuis un ordinateur, la page ne s'ouvre pas sur l'appareil du fondateur) :
+Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui suit demande une action ou un accord du fondateur, du plus urgent au moins urgent.
+
+1. **Mise en ligne (Vercel)** — à faire depuis un ordinateur, la page ne s'ouvre pas sur son téléphone. C'est elle qui permettra d'essayer tout ce qui a été construit :
    - [Root Directory](https://vercel.com/lucasblaevoet30-7777s-projects/lucas/settings/build-and-deployment) = `apps/web` ;
    - [variables d'environnement](https://vercel.com/lucasblaevoet30-7777s-projects/lucas/settings/environment-variables) : coller le fichier `vercel-variables.env` transmis le 2026-11-20 ;
-   - puis redéployer.
+   - puis redéployer ;
+   - déconnecter le second projet Vercel relié au dépôt (« saas »), pour éviter des constructions en double.
 
-   Le second projet Vercel relié au dépôt (« saas ») est à déconnecter, pour éviter des constructions en double. **Base Supabase prête et testée. Code fusionné dans `main` (PR n° 2).**
-2. **Création du compte Brevo** (e-mails), choisi le 2026-11-20 : à guider après la mise en ligne.
-2. Clé API Anthropic avec plafond de dépense, avant la phase 5.
-3. Demandes de devis aux fournisseurs d'annonces : **reportées** avant la phase 6 (choix du fondateur).
-4. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`, avec les questions pour gérant).
-5. Consultation d'un avocat avant la commercialisation (10 questions prêtes dans `docs/legal/fiche-juridique.md`).
-6. Projet Vercel relié au dépôt : à vérifier en phase 3 (D-009).
+   La base de préproduction est à jour (13 migrations, schéma identique à celui des tests).
+2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
+3. **Clé API Anthropic avec plafond de dépense** : elle débloque la phase 5 (agents IA, Copilot, rédaction d'annonces par IA).
+4. **Stockage des photos avant la production** (D-042) : un stockage d'objets sera nécessaire au-delà d'environ 100 à 150 biens illustrés (compte ou offre selon le volume).
+5. Demandes de devis aux fournisseurs d'annonces : **reportées** (choix du fondateur).
+6. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`).
+7. Consultation d'un avocat avant la commercialisation (questions prêtes dans `docs/legal/fiche-juridique.md`, dont la liste des mentions d'annonce et l'information des salariés sur le pilotage).
 
-Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
+Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
 - **2026-11-21, qualité des données** : premier agent déterministe (sans IA), qui signale sans corriger. Double authentification fusionnée ([PR n° 14](https://github.com/lucas3004-sudo/lucas/pull/14)) ; migration 0013 appliquée en préproduction (13 migrations, schéma identique au local).
