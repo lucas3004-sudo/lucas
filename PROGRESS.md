@@ -23,6 +23,8 @@ d'acceptation sont vérifiés.
 | 11. Production | À faire | — |
 
 ## Fonctionnalités opérationnelles (testées)
+**Sécurité du compte** : double authentification par application (TOTP) avec codes de secours, essais limités, rappel au gérant et aux managers ([détails](docs/securite-compte.md)).
+
 **Application (phase 3)** :
 - **Comptes** : inscription, connexion, déconnexion. Mot de passe de 12 caractères minimum. Limitation des tentatives (429 constaté).
 - **Agences** : création (le créateur devient gérant), choix de l'agence active.
@@ -36,7 +38,7 @@ d'acceptation sont vérifiés.
 **Tests** (tous au vert le 2026-11-20) :
 - 130 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 31 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos) ;
-- 19 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et 1 pour l'Investment Studio ;
+- 20 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -88,7 +90,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 ## Lacunes connues (à combler avant de vraies agences)
 - **Photos stockées en base** (D-042) : environ 100 à 150 biens illustrés dans l'offre gratuite de Supabase. Il faudra un stockage d'objets avant la production (accord du fondateur nécessaire).
 - **Vérification de l'adresse e-mail** et envoi des invitations par e-mail : nécessitent un service d'e-mail, donc un compte externe (D-023).
-- **Double authentification** obligatoire pour le gérant (prévue au socle de sécurité) : pas encore construite.
+- **Double authentification** : construite et testée (D-043), mais seulement rappelée au gérant et aux managers. Elle devra devenir obligatoire avant la production, avec une procédure de récupération par e-mail (Brevo).
 - CSP sans nonces (`unsafe-inline`) : durcissement prévu en phase 9.
 
 ## Décisions en attente du fondateur
@@ -108,6 +110,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
 
 ## Journal
+- **2026-11-21, double authentification** : extension TOTP de Better Auth (migration 0013), page « Sécurité du compte », étape de vérification à la connexion, codes de secours, rappel au gérant ; décision D-043. Photos fusionnées ([PR n° 13](https://github.com/lucas3004-sudo/lucas/pull/13)) ; migration 0012 appliquée en préproduction.
 - **2026-11-21, photos des biens** : migration 0012 (photos sous RLS), contrôle du format par les octets et suppression des métadonnées (EXIF, GPS), galerie et affichage protégé ; décision D-042. Annonce et « Ma journée » fusionnées ([PR n° 11](https://github.com/lucas3004-sudo/lucas/pull/11), [PR n° 12](https://github.com/lucas3004-sudo/lucas/pull/12)) ; migration 0011 appliquée en préproduction.
 - **2026-11-21, accueil « Ma journée »** : les éléments du jour de chaque utilisateur, sans comparaison entre collègues.
 - **2026-11-21, fiche annonce** : migration 0011 (champs d'annonce, lien du barème), contrôle des mentions et texte sans IA, copie bloquée si une mention manque ; décision D-041. Affaires fusionnées ([PR n° 10](https://github.com/lucas3004-sudo/lucas/pull/10)) ; migration 0010 appliquée en préproduction (44 règles d'accès, même empreinte qu'en local).
