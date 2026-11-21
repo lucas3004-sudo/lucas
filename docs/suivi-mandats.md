@@ -14,6 +14,7 @@ Ne pas laisser expirer un mandat sans le voir. Le logiciel enregistre, pour chaq
   - à partir de 30 jours avant la fin, un badge apparaît sur la fiche du bien et l'élément s'affiche dans « Ma journée » (« Mandats à renouveler », pour les biens dont on est responsable) ;
   - après la fin, la fiche affiche « Mandat expiré depuis N jour(s) », et le bien apparaît dans « Qualité des données » (« Mandats expirés »), donc aussi dans l'agent Qualité des données ;
   - seuls les biens « Sous mandat » ou « Sous offre » sont concernés.
+- **Agent « Veille des mandats »** (Agent Center, sans IA, niveau L1) : il crée une tâche « Mandat à renouveler » pour le responsable de chaque bien concerné, sans doublon. Il ne modifie jamais le mandat.
 - **Aucun délai légal calculé** (irrévocabilité d'un exclusif, préavis de résiliation) : ces règles dépendent du contrat signé. Seule la date saisie par l'agence fait foi.
 - **Import CSV des biens** :
   - nouvelles colonnes « N° mandat », « Date de mandat » et « Fin du mandat » (JJ/MM/AAAA ou AAAA-MM-JJ) ;

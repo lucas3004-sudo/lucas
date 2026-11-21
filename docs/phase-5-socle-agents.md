@@ -20,6 +20,7 @@ Date : 2026-11-21 · Choix du fondateur : « continuer sans IA ni compte ». Le 
 | Qualité des données | `quality.report` | L0 | Compte les points à reprendre (consentements, doublons, annonces, biens, échéances…) |
 | Opportunity Finder | `matching.missed`, `tasks.createMatchAlert` | L1 | Prévient les collègues des correspondances de 75 % ou plus pas encore signalées (identité jamais révélée) |
 | Veille des échéances | `deals.deadlines`, `tasks.createReminder` | L1 | Crée une tâche de rappel pour chaque échéance d'affaire à 3 jours ou dépassée, sans doublon |
+| Veille des mandats | `mandates.expiring`, `tasks.createMandateReminder` | L1 | Crée une tâche pour le responsable de chaque bien dont le mandat se termine dans 30 jours ou est expiré, sans doublon ; ne modifie jamais le mandat |
 | Détection des doublons | `contacts.duplicates`, `contacts.merge` | **L2** | Propose la fusion des contacts en double. **Aucune fusion sans approbation** |
 
 - **Agent Center** (`/app/agents`) : pour chaque agent, le statut, le mode, le niveau, les outils, la version, le coût mesuré et la dernière mission, avec les boutons « Lancer » et « Activer / Désactiver » (gérant). On y trouve aussi l'historique des missions.

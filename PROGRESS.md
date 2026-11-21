@@ -14,7 +14,7 @@ d'acceptation sont vérifiés.
 | 2. Architecture détaillée | ✅ Terminée (2026-11-20) | [Architecture](docs/phase-2/architecture.md), [Modèle de données](docs/phase-2/modele-donnees.md), [Permissions](docs/phase-2/permissions.md), [Moteur d'agents](docs/phase-2/moteur-agents.md), [Ingestion](docs/phase-2/ingestion.md) ; prototypes [RLS](prototypes/rls/run.sh) (12 tests sur 12) et [nettoyage DVF](prototypes/dvf/clean_dvf.py) |
 | 3. Fondation (+ préproduction) | ✅ Fondation livrée, testée (CI au vert), fusionnée dans `main`. Base de préproduction Supabase prête et testée. ⏸️ **Mise en ligne Vercel en attente d'un réglage par le fondateur, depuis un ordinateur** | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
 | 4. Intelligence immobilière | ✅ Dossier de bien livré et testé (2026-11-20) ; données publiques à charger en préproduction une fois le site en ligne | [Phase 4](docs/phase-4-dossier-de-bien.md), [capture](docs/captures/08-dossier-de-bien.png) |
-| 5. Socle agents | 🟡 **Socle sans IA livré et testé (2026-11-21)** : fiches versionnées, passerelle d'outils, missions, approbations, Agent Center, 4 agents déterministes. Reste : modes IA, Copilot, worker (clé Anthropic nécessaire) | [Socle des agents](docs/phase-5-socle-agents.md) |
+| 5. Socle agents | 🟡 **Socle sans IA livré et testé (2026-11-21)** : fiches versionnées, passerelle d'outils, missions, approbations, Agent Center, 5 agents déterministes. Reste : modes IA, Copilot, worker (clé Anthropic nécessaire) | [Socle des agents](docs/phase-5-socle-agents.md) |
 | 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio**, **tableau de bord du gérant**, **agenda (.ics)**, **export RGPD** et **import CSV**, **alertes de correspondance**, **suivi des affaires** et **fiche annonce** (mentions obligatoires, sans IA) et **photos des biens** livrés et testés. Phase 6 terminée côté outils, hors IA | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [Affaires](docs/affaires.md), [Annonce](docs/annonce.md), [captures 09 à 15](docs/captures/) |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
 | 8. Monétisation | En cours : formules et quotas appliqués, sans paiement (2026-11-21) | [Formules et quotas](docs/formules-et-quotas.md) |
@@ -25,7 +25,7 @@ d'acceptation sont vérifiés.
 ## Fonctionnalités opérationnelles (testées)
 **Formules et quotas (sans paiement)** : formule de chaque agence (Essai par défaut), consommation comptée sur toute l'agence, ajout refusé au quota avec un message clair, page « Formule et consommation » ([détails](docs/formules-et-quotas.md), D-048).
 
-**Agents (sans IA)** : Agent Center avec 4 agents déterministes (qualité des données, Opportunity Finder, veille des échéances, détection des doublons) ; passerelle d'outils qui refuse tout ce qui dépasse la fiche ; boîte d'approbations (aucune fusion sans décision humaine).
+**Agents (sans IA)** : Agent Center avec 5 agents déterministes (qualité des données, Opportunity Finder, veille des échéances, veille des mandats, détection des doublons) ; passerelle d'outils qui refuse tout ce qui dépasse la fiche ; boîte d'approbations (aucune fusion sans décision humaine).
 
 **Sécurité du compte** : double authentification par application (TOTP) avec codes de secours, essais limités, rappel au gérant et aux managers ([détails](docs/securite-compte.md)).
 
@@ -40,7 +40,7 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 161 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 162 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 41 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats) ;
 - 33 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats et l'export de l'agence ;
 - lint, types, build de production.
@@ -122,6 +122,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-21, agent « Veille des mandats »** : 5e agent déterministe (L1). Il crée un rappel pour le responsable de chaque mandat qui se termine dans 30 jours ou a expiré, sans doublon. Export de l'agence fusionné ([PR n° 22](https://github.com/lucas3004-sudo/lucas/pull/22)).
 - **2026-11-21, export complet de l'agence** : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ; décision D-052. Suivi des mandats fusionné ([PR n° 21](https://github.com/lucas3004-sudo/lucas/pull/21)) ; migration 0019 appliquée en préproduction (19 migrations, même empreinte qu'en local).
 - **2026-11-21, suivi des mandats (F5)** : migration 0019 (numéro unique par agence, dates cohérentes), carte « Mandat » sur la fiche du bien, rappel 30 jours avant la fin, mandats expirés dans « Qualité des données » ; décision D-051. Accessibilité fusionnée ([PR n° 20](https://github.com/lucas3004-sudo/lucas/pull/20)).
 - **2026-11-21, accessibilité** : audit automatique axe-core (WCAG 2.1 AA) de 27 pages en thèmes clair et sombre, sur mobile et au clavier, avec un contrôle positif. Corrigés : contraste du texte discret, tableaux défilants inaccessibles au clavier, lien d'évitement ajouté. Compte rendu de visite fusionné ([PR n° 19](https://github.com/lucas3004-sudo/lucas/pull/19)) ; migration 0018 appliquée en préproduction (18 migrations, 72 règles d'accès, même empreinte qu'en local).
