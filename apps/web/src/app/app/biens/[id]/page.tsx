@@ -138,7 +138,7 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
           action={<StatusBadge status={snap.market.status} />}
         />
         {market && market.comparables.length ? (
-          <div className="overflow-x-auto">
+          <div role="region" aria-label="Ventes comparables (défilable)" tabIndex={0} className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-line text-[12px] uppercase tracking-wide text-ink-muted">
                 <tr>

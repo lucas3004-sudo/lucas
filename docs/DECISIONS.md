@@ -423,3 +423,12 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Pourquoi** : rendre compte au vendeur après chaque visite est une attente forte des mandants. Le faire sans IA coûte 0 € et reste disponible tant que l'IA n'est pas ouverte.
 - **Prudence** : les champs libres peuvent contenir des données personnelles. Le formulaire le rappelle, et l'export RGPD d'un contact inclut les comptes rendus de ses visites.
 - Détails : `docs/compte-rendu-visite.md`.
+
+## D-050 — Accessibilité : WCAG 2.1 AA vérifié automatiquement à chaque modification
+- **Date** : 2026-11-21 · **Statut** : Acceptée (décision technique réversible)
+- **Décision** :
+  - la cible est le niveau WCAG 2.1 AA (base du RGAA) ;
+  - la CI bloque toute modification qui introduit une violation grave ou critique (axe-core 4.14.0) sur 27 pages, dans les deux thèmes, avec un passage mobile et un passage au clavier ;
+  - un contrôle positif garantit que l'audit tourne vraiment.
+- **Conséquence** : la teinte du texte discret est assombrie en thème clair (`#626b7e`) et éclaircie en thème sombre (`#8390a6`) pour atteindre 4,5:1. La hiérarchie visuelle avec le texte secondaire est un peu moins marquée : la lisibilité passe avant.
+- **Limite** : l'audit automatique ne remplace pas un audit manuel, nécessaire pour une déclaration RGAA. Détails : `docs/accessibilite.md`.

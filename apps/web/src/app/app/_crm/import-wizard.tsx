@@ -94,7 +94,7 @@ export function ImportWizard({
             {p.encoding === "windows-1252" ? " Encodage Windows (Excel) détecté et converti." : ""}
           </p>
           {"quotaWarning" in p && p.quotaWarning ? <Alert tone="warning">{p.quotaWarning}</Alert> : null}
-          <div className="max-h-96 overflow-auto rounded-[var(--radius-control)] border border-line">
+          <div role="region" aria-label="Aperçu de l'import (défilable)" tabIndex={0} className="max-h-96 overflow-auto rounded-[var(--radius-control)] border border-line">
             <table className="w-full text-sm">
               <caption className="sr-only">Aperçu de l&apos;import, ligne par ligne</caption>
               <thead className="sticky top-0 bg-surface-muted text-left text-xs text-ink-muted">
