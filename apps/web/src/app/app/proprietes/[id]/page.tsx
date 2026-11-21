@@ -94,6 +94,9 @@ export default async function PropertyPage({ params, searchParams }: { params: P
                 Planifier une visite
               </LinkButton>
             ) : null}
+            <LinkButton href={`/app/proprietes/${property.id}/annonce`} variant="secondary">
+              Annonce
+            </LinkButton>
             <LinkButton href={simulationLink} variant="secondary">
               Simuler un investissement
             </LinkButton>

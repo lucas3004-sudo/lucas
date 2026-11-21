@@ -5,6 +5,8 @@ import type { AgencyContext } from "./context";
 
 export interface AgencySettings {
   defaultVisibility: "private" | "agency";
+  /** Lien vers le barème des honoraires de l'agence (cité dans les annonces). */
+  feeScheduleUrl: string | null;
   /** false tant que l'agence n'a jamais enregistré ses paramètres (valeurs par défaut affichées). */
   configured: boolean;
   updatedAt: Date | null;
@@ -16,6 +18,6 @@ export async function getAgencySettings(ctx: AgencyContext): Promise<AgencySetti
   );
   const row = rows[0];
   return row
-    ? { defaultVisibility: row.defaultVisibility, configured: true, updatedAt: row.updatedAt }
-    : { defaultVisibility: "agency", configured: false, updatedAt: null };
+    ? { defaultVisibility: row.defaultVisibility, feeScheduleUrl: row.feeScheduleUrl, configured: true, updatedAt: row.updatedAt }
+    : { defaultVisibility: "agency", feeScheduleUrl: null, configured: false, updatedAt: null };
 }

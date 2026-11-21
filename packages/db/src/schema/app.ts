@@ -10,6 +10,7 @@ export const app = pgSchema("app");
 export const organizationSettings = app.table("organization_settings", {
   orgId: uuid("org_id").primaryKey(),
   defaultVisibility: text("default_visibility", { enum: ["private", "agency"] }).notNull().default("agency"),
+  feeScheduleUrl: text("fee_schedule_url"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   updatedBy: uuid("updated_by").notNull(),
 });
