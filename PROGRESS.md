@@ -107,7 +107,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 
    La base de préproduction est à jour (13 migrations, schéma identique à celui des tests).
 2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
-3. **Clé API Anthropic avec plafond de dépense** : elle débloque la phase 5 (agents IA, Copilot, rédaction d'annonces par IA).
+3. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
 4. **Stockage des photos avant la production** (D-042) : un stockage d'objets sera nécessaire au-delà d'environ 100 à 150 biens illustrés (compte ou offre selon le volume).
 5. Demandes de devis aux fournisseurs d'annonces : **reportées** (choix du fondateur).
 6. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`).
