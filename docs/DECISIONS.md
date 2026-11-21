@@ -313,3 +313,16 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Raison** : le notaire est responsable des actes et des délais. Un rappel clair et sourcé aide l'agent sans se substituer au notaire.
 - **Objection du Devil's Advocate** : un agent pourrait se fier au calcul et manquer une particularité (lettre recommandée non retirée, jour férié local).
 - **Réponse** : c'est vrai. La règle est affichée sous la date, la mention « indicative » est visible, et la date de départ est celle que l'agent saisit (première présentation). Le point figurera dans les questions à l'avocat (formulation des aides au calcul de délai).
+
+## D-041 — Annonce sans IA d'abord, copie bloquée si une mention obligatoire manque
+- **Date** : 2026-11-21 · **Statut** : Acceptée
+- **Décision** :
+  - avant toute IA, l'annonce est assemblée à partir des données saisies : titre, texte de l'agent repris tel quel, caractéristiques, prix et honoraires, DPE, copropriété, Géorisques ;
+  - tant qu'une mention obligatoire manque, la copie est bloquée ;
+  - le lien vers le barème des honoraires est un paramètre de l'agence.
+- **Raison** :
+  - cela rend service tout de suite, sans coût ni compte externe ;
+  - aucune caractéristique ne peut être déformée (règle permanente du Listing Copywriter) ;
+  - la rédaction par IA viendra en surcouche, marquée « générée par IA ».
+- **Objection du Devil's Advocate** : le contrôle peut donner un faux sentiment de conformité, alors que certaines bases sont « à confirmer ».
+- **Réponse** : c'est vrai. L'écran parle de « contrôle indicatif, à faire valider par l'avocat ». La liste des mentions figure dans les questions à l'avocat (fiche juridique) et sera ajustée après sa réponse.

@@ -71,6 +71,19 @@ export interface Property {
   seller_contact_id: string | null;
   notes: string | null;
   created_at: Date;
+  // Champs d'annonce (migration 0011).
+  ges_class: string | null;
+  energy_cost_low: number | null;
+  energy_cost_high: number | null;
+  energy_cost_year: number | null;
+  is_copro: boolean | null;
+  copro_lots: number | null;
+  copro_annual_charges: number | null;
+  copro_procedure: string | null;
+  fees_payer: "vendeur" | "acquereur" | null;
+  fees_percent: number | null;
+  listing_title: string | null;
+  listing_description: string | null;
 }
 
 export interface Task {
@@ -145,7 +158,7 @@ function toProfile(r: Record<string, unknown>): BuyerProfile {
 }
 
 function toProperty(r: Record<string, unknown>): Property {
-  return { ...(r as unknown as Property), surface: NUM(r.surface), rooms: NUM(r.rooms), price: NUM(r.price) };
+  return { ...(r as unknown as Property), surface: NUM(r.surface), rooms: NUM(r.rooms), price: NUM(r.price), fees_percent: NUM(r.fees_percent) };
 }
 
 /** État courant du consentement par canal : la dernière ligne enregistrée fait foi. */

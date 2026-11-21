@@ -111,3 +111,21 @@ export function ConfirmSubmit({ message, children, size = "sm" }: { message: str
     </button>
   );
 }
+
+/** Copie un texte dans le presse-papiers (bouton). */
+export function CopyTextButton({ text, label = "Copier le texte" }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className={buttonClass("primary", "md")}
+      onClick={async () => {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+    >
+      {copied ? "Copié" : label}
+    </button>
+  );
+}

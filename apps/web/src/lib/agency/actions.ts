@@ -95,12 +95,16 @@ export async function switchAgencyAction(form: FormData): Promise<void> {
 const settingsSchema = z.object({
   name: agencyName,
   defaultVisibility: z.enum(["private", "agency"]),
+  feeScheduleUrl: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? null : typeof v === "string" ? v.trim() : v),
+    z.url({ protocol: /^https$/, error: "Le lien du barème doit commencer par https://." }).max(300).nullable(),
+  ),
 });
 
 export async function updateSettingsAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const ctx = await requireAgency();
   if (!canEditSettings(ctx.role)) return { error: "Seuls le gérant et les managers peuvent modifier les paramètres." };
-  const parsed = settingsSchema.safeParse({ name: form.get("name"), defaultVisibility: form.get("defaultVisibility") });
+  const parsed = settingsSchema.safeParse({ name: form.get("name"), defaultVisibility: form.get("defaultVisibility"), feeScheduleUrl: form.get("feeScheduleUrl") ?? "" });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Valeurs invalides." };
 
   if (parsed.data.name !== ctx.org.name) {
@@ -120,13 +124,13 @@ export async function updateSettingsAction(_prev: ActionState, form: FormData): 
   await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, (db) =>
     db
       .insert(schema.organizationSettings)
-      .values({ orgId: ctx.org.id, defaultVisibility: parsed.data.defaultVisibility, updatedBy: ctx.user.id })
+      .values({ orgId: ctx.org.id, defaultVisibility: parsed.data.defaultVisibility, feeScheduleUrl: parsed.data.feeScheduleUrl, updatedBy: ctx.user.id })
       .onConflictDoUpdate({
         target: schema.organizationSettings.orgId,
-        set: { defaultVisibility: parsed.data.defaultVisibility, updatedBy: ctx.user.id, updatedAt: new Date() },
+        set: { defaultVisibility: parsed.data.defaultVisibility, feeScheduleUrl: parsed.data.feeScheduleUrl, updatedBy: ctx.user.id, updatedAt: new Date() },
       }),
   );
-  await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "agence.parametres_modifies", details: { visibiliteParDefaut: parsed.data.defaultVisibility } });
+  await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "agence.parametres_modifies", details: { visibiliteParDefaut: parsed.data.defaultVisibility, baremeHonoraires: parsed.data.feeScheduleUrl ? "renseigné" : "vide" } });
   revalidatePath("/app", "layout");
   return { success: "Paramètres enregistrés." };
 }

@@ -25,6 +25,7 @@ export default async function SettingsPage() {
         <SettingsForm
           name={ctx.org.name}
           defaultVisibility={settings.defaultVisibility}
+          feeScheduleUrl={settings.feeScheduleUrl}
           canEdit={canEditSettings(ctx.role)}
           canRename={canEditAgencyName(ctx.role)}
         />

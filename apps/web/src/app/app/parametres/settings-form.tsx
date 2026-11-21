@@ -21,11 +21,13 @@ const VISIBILITY = [
 export function SettingsForm({
   name,
   defaultVisibility,
+  feeScheduleUrl,
   canEdit,
   canRename,
 }: {
   name: string;
   defaultVisibility: "private" | "agency";
+  feeScheduleUrl: string | null;
   canEdit: boolean;
   canRename: boolean;
 }) {
@@ -58,6 +60,12 @@ export function SettingsForm({
           ))}
         </div>
       </fieldset>
+
+      <div className="max-w-xl">
+        <Field label="Lien vers le barème des honoraires" htmlFor="feeScheduleUrl" hint="Page publique de votre barème (https://…). Il est cité dans les annonces générées par ImmoPilot.">
+          <Input id="feeScheduleUrl" name="feeScheduleUrl" type="url" placeholder="https://www.votre-agence.fr/honoraires" defaultValue={feeScheduleUrl ?? ""} maxLength={300} disabled={!canEdit} />
+        </Field>
+      </div>
 
       {canEdit ? <SubmitButton pendingLabel="Enregistrement…">Enregistrer</SubmitButton> : null}
     </form>
