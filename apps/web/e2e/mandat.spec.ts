@@ -69,6 +69,16 @@ test("un négociateur suit ses mandats : rappel avant la fin, mandat expiré sig
   const expired = page.locator("section").filter({ has: page.getByRole("heading", { name: "Mandats expirés" }) });
   await expect(expired.getByRole("link", { name: /8 Boulevard du Port 80000 Amiens.*Mandat expiré depuis 2 jour\(s\)/ })).toBeVisible();
 
+  // Agent « Veille des mandats » : un rappel pour le responsable, jamais en double.
+  await page.goto("/app/agents");
+  await page.getByRole("button", { name: "Lancer Veille des mandats" }).click();
+  await expect(page.getByText("1 mandat(s) à renouveler ou expiré(s), 1 rappel(s) créé(s).").first()).toBeVisible();
+  await page.getByRole("button", { name: "Lancer Veille des mandats" }).click();
+  await expect(page.getByText("1 mandat(s) à renouveler ou expiré(s), 0 rappel(s) créé(s).").first()).toBeVisible();
+  await page.goto("/app/taches");
+  await expect(page.getByText("Mandat à renouveler : 8 Boulevard du Port 80000 Amiens")).toHaveCount(1);
+  await expect(page.getByText(/Le mandat n° M-2026-042 a expiré il y a 2 jour\(s\)/)).toBeVisible();
+
   await page.goto("/app/journal");
   await expect(page.getByRole("cell", { name: "Mandat d'un bien modifié", exact: true }).first()).toBeVisible();
 });

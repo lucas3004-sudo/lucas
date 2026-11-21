@@ -27,6 +27,15 @@ export interface MissedMatch {
   count: number;
   propertyLabel: string;
 }
+export interface MandateItem {
+  propertyId: string;
+  ownerUserId: string;
+  propertyLabel: string;
+  mandateNumber: string | null;
+  endsOn: string;
+  /** Négatif : mandat expiré depuis -daysLeft jours. */
+  daysLeft: number;
+}
 export interface DuplicateGroup {
   reason: string;
   ids: string[];
@@ -82,6 +91,37 @@ export const deadlineWatcherAgent: AgentDefinition<Record<string, never>> = {
   },
 };
 
+/** Rappel 30 jours avant la fin d'un mandat (et après la fin), sous forme de tâche pour le responsable du bien. */
+export const mandateWatcherAgent: AgentDefinition<Record<string, never>> = {
+  id: "mandate-watcher",
+  version: "1.0.0",
+  name: "Veille des mandats",
+  department: "mandats",
+  mode: "deterministe",
+  description: "Crée une tâche pour le responsable de chaque bien dont le mandat se termine dans 30 jours ou est expiré, sans doublon. Ne modifie jamais le mandat.",
+  tools: ["mandates.expiring", "tasks.createMandateReminder"],
+  maxPermission: "L1",
+  budget: { maxSteps: 60 },
+  input: noInput,
+  async run(gateway): Promise<MissionSummary> {
+    const r = await gateway.call<MandateItem[]>("mandates.expiring", {});
+    if (r.status !== "ok") throw new Error("Mandats indisponibles.");
+    let created = 0;
+    for (const m of r.result.slice(0, 50)) {
+      const when = m.daysLeft < 0 ? `a expiré il y a ${-m.daysLeft} jour(s)` : m.daysLeft === 0 ? "se termine aujourd'hui" : `se termine dans ${m.daysLeft} jour(s)`;
+      const t = await gateway.call<{ created: boolean }>("tasks.createMandateReminder", {
+        propertyId: m.propertyId,
+        assigneeUserId: m.ownerUserId,
+        title: `Mandat à renouveler : ${m.propertyLabel}`.slice(0, 200),
+        details: `Le mandat${m.mandateNumber ? ` n° ${m.mandateNumber}` : ""} ${when} (${m.endsOn}). Renouvelez-le avec le vendeur ou changez le statut du bien.`,
+        dueOn: m.endsOn,
+      });
+      if (t.status === "ok" && t.result.created) created += 1;
+    }
+    return { text: `${r.result.length} mandat(s) à renouveler ou expiré(s), ${created} rappel(s) créé(s).`, counts: { mandats: r.result.length, rappels: created } };
+  },
+};
+
 /** Rattrape les correspondances manquées (profils créés après le bien, critères modifiés). */
 export const opportunityFinderAgent: AgentDefinition<Record<string, never>> = {
   id: "opportunity-finder",
@@ -133,5 +173,5 @@ export const duplicateDetectionAgent: AgentDefinition<Record<string, never>> = {
   },
 };
 
-export const AGENTS = [dataQualityAgent, opportunityFinderAgent, deadlineWatcherAgent, duplicateDetectionAgent] as const;
+export const AGENTS = [dataQualityAgent, opportunityFinderAgent, deadlineWatcherAgent, mandateWatcherAgent, duplicateDetectionAgent] as const;
 export const AGENTS_BY_ID = new Map<string, AgentDefinition<Record<string, never>>>(AGENTS.map((a) => [a.id, a]));

@@ -2,18 +2,20 @@
  * Outils des agents, liés à l'identité de l'utilisateur qui lance la mission (la RLS s'applique).
  * Un agent n'y accède que par la passerelle (@immopilot/agents) : liste fermée, niveau, budget.
  */
-import type { DeadlineItem, DuplicateGroup, MissedMatch, ToolDefinition } from "@immopilot/agents";
+import type { DeadlineItem, DuplicateGroup, MandateItem, MissedMatch, ToolDefinition } from "@immopilot/agents";
 import { withTenant } from "@immopilot/db";
-import { duplicateGroups, utcToParisLocal } from "@immopilot/domain";
+import { duplicateGroups, mandateAlert, utcToParisLocal } from "@immopilot/domain";
 import { z } from "zod";
 import type { AgencyContext } from "../agency/context";
 import { ALERT_TITLE_PREFIX, matchesByOwner } from "../crm/alerts";
-import { activeProfiles, asMatchProfile, asMatchProperty, matchableProperties } from "../crm/data";
+import { activeProfiles, asMatchProfile, asMatchProperty, listProperties, matchableProperties } from "../crm/data";
 import { listDeals } from "../deals/data";
 import { dealDeadlines } from "../deals/deadlines";
 import { qualityCounts, qualityReport } from "../quality/report";
 import { getTenantPool } from "../server/db";
 import { mergeContacts } from "./merge";
+
+export const MANDATE_REMINDER_PREFIX = "Mandat à renouveler";
 
 const REASONS: Record<string, string> = { email: "même e-mail", telephone: "même téléphone", nom: "même nom complet" };
 
@@ -64,6 +66,47 @@ export function buildTools(ctx: AgencyContext): Map<string, ToolDefinition<never
           await c.query(
             `INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title, details, due_on, property_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [ctx.org.id, input.assigneeUserId, ctx.user.id, input.title, `${input.details} Rappel créé par l'agent Veille des échéances.`, input.dueOn, deal.property_id],
+          );
+          return { created: true };
+        }),
+    } as unknown as ToolDefinition<never, unknown>,
+    {
+      id: "mandates.expiring",
+      level: "L0",
+      description: "Mandats qui se terminent dans 30 jours ou sont expirés (biens sous mandat ou sous offre)",
+      input: z.object({}).strict(),
+      run: async (): Promise<MandateItem[]> =>
+        (await listProperties(ctx))
+          .filter((p) => seesAll || p.owner_user_id === ctx.user.id)
+          .flatMap((p) => {
+            const alert = mandateAlert({ status: p.status, mandateEndsOn: p.mandate_ends_on }, today());
+            if (!alert || !p.mandate_ends_on) return [];
+            return [{
+              propertyId: p.id, ownerUserId: p.owner_user_id, propertyLabel: p.address_label, mandateNumber: p.mandate_number,
+              endsOn: p.mandate_ends_on, daysLeft: alert.kind === "expire" ? -alert.daysAgo : alert.daysLeft,
+            }];
+          }),
+    } as unknown as ToolDefinition<never, unknown>,
+    {
+      id: "tasks.createMandateReminder",
+      level: "L1",
+      description: "Créer une tâche de rappel de fin de mandat pour le responsable du bien (sans doublon)",
+      input: z.object({
+        propertyId: z.uuid(), assigneeUserId: z.uuid(), title: z.string().min(2).max(200), details: z.string().max(2000), dueOn: z.iso.date(),
+      }),
+      run: async (input: { propertyId: string; assigneeUserId: string; title: string; details: string; dueOn: string }) =>
+        withTenant(getTenantPool(), tenant, async (_db, c) => {
+          // Le bien doit être visible (RLS) et le destinataire en être le responsable.
+          const property = (await c.query<{ owner_user_id: string }>("SELECT owner_user_id FROM app.properties WHERE id = $1", [input.propertyId])).rows[0];
+          if (!property || property.owner_user_id !== input.assigneeUserId) return { created: false };
+          const exists = await c.query(
+            "SELECT 1 FROM app.tasks WHERE assignee_user_id = $1 AND property_id = $2 AND status = 'a_faire' AND title LIKE $3",
+            [input.assigneeUserId, input.propertyId, `${MANDATE_REMINDER_PREFIX}%`],
+          );
+          if (exists.rowCount) return { created: false };
+          await c.query(
+            `INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title, details, due_on, property_id) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [ctx.org.id, input.assigneeUserId, ctx.user.id, input.title, `${input.details} Rappel créé par l'agent Veille des mandats.`, input.dueOn, input.propertyId],
           );
           return { created: true };
         }),

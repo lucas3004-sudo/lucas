@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createGateway, GatewayError, runMission, type AgentDefinition, type MissionPorts, type StepRecord, type ToolDefinition } from "./core";
-import { AGENTS, deadlineWatcherAgent, duplicateDetectionAgent } from "./definitions";
+import { AGENTS, deadlineWatcherAgent, duplicateDetectionAgent, mandateWatcherAgent } from "./definitions";
 
 function harness() {
   const steps: StepRecord[] = [];
@@ -119,6 +119,7 @@ describe("fiches des agents", () => {
     expect(new Set(AGENTS.map((a) => a.id)).size).toBe(AGENTS.length);
     // Les rappels d'échéances n'ont pas besoin d'approbation ; la fusion de doublons, si (L2).
     expect(deadlineWatcherAgent.maxPermission).toBe("L1");
+    expect(mandateWatcherAgent.maxPermission).toBe("L1");
     expect(duplicateDetectionAgent.maxPermission).toBe("L2");
   });
 
@@ -136,5 +137,30 @@ describe("fiches des agents", () => {
       { keepId: "a", removeId: "c", reason: "email" },
     ]);
     expect(executed).toEqual(["contacts.duplicates"]);
+  });
+
+  it("la veille des mandats crée un rappel par mandat proche ou expiré, pour le responsable du bien", async () => {
+    const h = harness();
+    executed.length = 0;
+    const reminders: unknown[] = [];
+    const appTools = new Map<string, ToolDefinition<never, unknown>>([
+      ["mandates.expiring", tool("mandates.expiring", "L0", [
+        { propertyId: "p1", ownerUserId: "u1", propertyLabel: "8 Boulevard du Port", mandateNumber: "M-42", endsOn: "2026-12-01", daysLeft: 10 },
+        { propertyId: "p2", ownerUserId: "u2", propertyLabel: "2 Place Gambetta", mandateNumber: null, endsOn: "2026-11-19", daysLeft: -2 },
+      ])],
+      ["tasks.createMandateReminder", {
+        ...tool("tasks.createMandateReminder", "L1"),
+        input: z.object({ propertyId: z.string(), assigneeUserId: z.string(), title: z.string(), details: z.string(), dueOn: z.string() }),
+        run: async (input: unknown) => (reminders.push(input), { created: true }),
+      } as never],
+    ]);
+    const outcome = await runMission(mandateWatcherAgent, appTools, h.ports, {});
+    expect(outcome).toMatchObject({ status: "reussie", summary: { counts: { mandats: 2, rappels: 2 } } });
+    expect(reminders).toEqual([
+      { propertyId: "p1", assigneeUserId: "u1", title: "Mandat à renouveler : 8 Boulevard du Port", dueOn: "2026-12-01",
+        details: "Le mandat n° M-42 se termine dans 10 jour(s) (2026-12-01). Renouvelez-le avec le vendeur ou changez le statut du bien." },
+      { propertyId: "p2", assigneeUserId: "u2", title: "Mandat à renouveler : 2 Place Gambetta", dueOn: "2026-11-19",
+        details: "Le mandat a expiré il y a 2 jour(s) (2026-11-19). Renouvelez-le avec le vendeur ou changez le statut du bien." },
+    ]);
   });
 });
