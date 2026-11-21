@@ -441,3 +441,14 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - il ne calcule aucun délai légal (irrévocabilité, préavis) et ne se présente pas comme le registre des mandats.
 - **Pourquoi** : le besoin courant est de ne pas laisser filer un mandat. Les délais légaux dépendent du contrat, et la tenue électronique du registre est une question juridique ouverte (fiche juridique, question n° 10).
 - Détails : `docs/suivi-mandats.md`.
+
+## D-052 — Export complet de l'agence : CSV par type, réservé au gérant avec double authentification
+- **Date** : 2026-11-21 · **Statut** : Acceptée (décision technique réversible)
+- **Décision** :
+  - huit fichiers CSV compatibles Excel, téléchargés depuis les paramètres ;
+  - les colonnes des contacts et des biens sont celles de l'import (aller-retour possible) ;
+  - accès réservé au gérant, double authentification active ;
+  - chaque export est journalisé sans donnée personnelle ;
+  - les formules sont neutralisées (injection CSV).
+- **Pourquoi** : la réversibilité rassure les agences et répond au RGPD. Exiger la double authentification limite le risque principal, l'exfiltration par un compte compromis.
+- Détails : `docs/export-agence.md`.
