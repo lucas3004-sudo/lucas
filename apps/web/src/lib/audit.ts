@@ -32,7 +32,10 @@ export type AuditAction =
   | "affaire.creee"
   | "affaire.etape"
   | "photo.ajoutee"
-  | "photo.supprimee";
+  | "photo.supprimee"
+  | "agent.mission"
+  | "agent.reglage"
+  | "approbation.decidee";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -62,6 +65,9 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "affaire.etape": "Étape d'affaire modifiée",
   "photo.ajoutee": "Photo de bien ajoutée",
   "photo.supprimee": "Photo de bien supprimée",
+  "agent.mission": "Mission d'agent lancée",
+  "agent.reglage": "Agent activé ou désactivé",
+  "approbation.decidee": "Demande d'approbation décidée",
 };
 
 export async function audit(params: {

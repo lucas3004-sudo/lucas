@@ -349,3 +349,14 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Raison** : rendre l'activation obligatoire dès maintenant bloquerait l'accès en préproduction sans procédure de récupération. Cette procédure (perte du téléphone et de tous les codes de secours) demande un e-mail vérifié, donc un service d'envoi (Brevo, en attente).
 - **Objection du Devil's Advocate** : un gérant peut ignorer le bandeau indéfiniment.
 - **Réponse** : c'est vrai. L'obligation est inscrite dans les lacunes à combler avant la production (PROGRESS.md). Le pilotage pourra afficher, pour le gérant, les membres sans double authentification.
+
+## D-044 — Agents : d'abord déterministes, approbation obligatoire dès L2, exécution avec l'identité du décideur
+- **Date** : 2026-11-21 · **Statut** : Acceptée (choix du fondateur : « continuer sans IA ni compte »)
+- **Décision** :
+  - le socle (fiches versionnées, passerelle d'outils, missions, approbations, Agent Center) est construit avec quatre agents déterministes, sans appel à un modèle ;
+  - toute action L2 ou L3 proposée par un agent devient une demande d'approbation ;
+  - l'action approuvée s'exécute avec l'identité de celui qui l'approuve, dans la transaction de la décision ;
+  - la fusion de contacts est réservée au gérant et aux managers, car elle supprime une fiche (droit de suppression du tableau des rôles).
+- **Raison** : la sécurité des agents se joue dans la passerelle et les approbations, pas dans le modèle. Les tester sans IA permet de brancher l'IA ensuite sur un socle déjà vérifié.
+- **Objection du Devil's Advocate** : sans worker, une mission s'exécute pendant la requête : un gros volume rendrait la page lente.
+- **Réponse** : c'est vrai. Les budgets d'étapes plafonnent chaque mission (au plus 120 étapes) et les agents actuels sont rapides. Le worker, prévu avec l'IA, prendra le relais.

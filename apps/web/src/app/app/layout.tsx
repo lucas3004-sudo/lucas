@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/app/taches", label: "Tâches", icon: "check" },
     { href: "/app/investissement", label: "Investment Studio", icon: "chart" },
     { href: "/app/qualite", label: "Qualité des données", icon: "shield" },
+    ...(role !== "lecture" ? [{ href: "/app/agents", label: "Agents", icon: "bot" as const }] : []),
     { href: "/app/equipe", label: "Équipe", icon: "team" },
     { href: "/app/parametres", label: "Paramètres", icon: "settings" },
     ...(canReadAuditLog(role)
