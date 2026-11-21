@@ -163,6 +163,8 @@ test.describe.serial("CRM et matching", () => {
 
   test("Inès reçoit la tâche et voit le bien correspondant sur la fiche de son acquéreur", async ({ page }) => {
     await signIn(page, ines.email);
+    // Ma journée : le bien signalé apparaît dès l'accueil.
+    await expect(page.getByRole("heading", { name: "Biens signalés pour mes acquéreurs (1)" })).toBeVisible();
     await page.getByRole("link", { name: "Tâches" }).first().click();
     await expect(page.getByText("Bien correspondant à vos acquéreurs (100 %)")).toBeVisible();
     await expect(page.getByText(`Nouveau bien ajouté par ${hugo.name} : « ${address} ». Il correspond à 1 de vos profils de recherche (meilleur score 100 %).`)).toBeVisible();
@@ -273,6 +275,9 @@ test.describe.serial("CRM et matching", () => {
   test("Hugo suit la vente de l'offre à l'acte : échéances, pièces, statut du bien", async ({ page }) => {
     test.setTimeout(60_000);
     await signIn(page, hugo.email);
+    // Ma journée : la relance en retard confiée par la gérante est en tête de l'accueil.
+    const late = page.getByRole("listitem").filter({ hasText: "Rappeler le vendeur" });
+    await expect(late.getByText(/^En retard/)).toBeVisible();
     await page.goto(propertyUrl);
     await page.getByRole("link", { name: "Ouvrir une affaire" }).click();
     await expect(page.getByLabel("Bien", { exact: true })).toHaveValue(propertyUrl.split("/").pop()!);
