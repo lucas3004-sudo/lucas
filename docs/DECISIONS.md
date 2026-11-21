@@ -393,3 +393,22 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - sans carte bancaire enregistrée, aucun paiement n'est possible ;
   - un plafond mensuel réglable par le fondateur arrête l'IA quand il est atteint.
 - **Rentabilité** : quotas par formule (grille de la phase 1 : coût IA maximal d'environ un tiers du prix), modèles économiques pour les tâches simples, cache et traitement différé. Le logiciel mesurera le coût réel par agence et arrêtera l'IA au quota.
+
+## D-048 — Formules et quotas appliqués par le logiciel, sans paiement
+- **Date** : 2026-11-21 · **Statut** : Acceptée (réponse à la question de rentabilité du fondateur) ; trois hypothèses à valider (ci-dessous)
+- **Décision** :
+  - la grille D-014 est appliquée par le logiciel. La formule de chaque agence est enregistrée en base (`app.agency_plans`, migration 0016) ;
+  - la formule est attribuée par l'exploitant (rôle propriétaire). L'application peut seulement la lire, ce qui est testé ;
+  - sans attribution, l'agence est en **Essai** : sans IA, 30 dossiers par mois, 500 contacts, 5 membres ;
+  - les compteurs sont calculés par la base sur toute l'agence, éléments privés compris, sans révéler ces éléments (`app.agency_usage`, migration 0017) ;
+  - au quota, l'ajout est refusé avec un message clair. Rien de ce qui existe n'est bloqué ni supprimé ;
+  - une invitation en attente réserve une place ;
+  - les quotas mensuels repartent à zéro le 1er à minuit, heure de Paris.
+- **Pourquoi** : le coût de l'IA doit rester plafonné par agence. Le plafond existe avant que l'IA soit ouverte, et il s'appliquera dès son ouverture.
+- **Hypothèses à valider** :
+  - Investisseur : 100 contacts et 1 membre, absents de la grille ;
+  - Essai : quotas de préproduction ;
+  - Solo et Pro : « 1 utilisateur » appliqué comme 1 membre.
+- **Limite** : le contrôle est souple (deux créations simultanées peuvent dépasser d'une unité). Il sera strict pour l'IA, avec une réservation avant l'appel au modèle.
+- **Non construit** : le paiement en ligne. Il demandera un compte externe (Stripe ou équivalent), donc l'accord du fondateur.
+- Détails : `docs/formules-et-quotas.md`.

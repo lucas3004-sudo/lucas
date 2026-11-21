@@ -47,3 +47,12 @@ export function utcToParisLocal(date: Date): string {
   const p = Object.fromEntries(partsFmt.formatToParts(date).map((x) => [x.type, x.value]));
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
 }
+
+/** Premier jour du mois (heure de Paris) contenant `now`, décalé de `offsetMonths` mois, à minuit. */
+export function parisMonthStart(now: Date, offsetMonths = 0): Date {
+  const [y, m] = utcToParisLocal(now).slice(0, 7).split("-").map(Number) as [number, number];
+  const index = y * 12 + (m - 1) + offsetMonths;
+  const month = String((index % 12) + 1).padStart(2, "0");
+  // Minuit le 1er n'est jamais une heure sautée à Paris (changements d'heure à 2 h et 3 h).
+  return parisLocalToUtc(`${Math.floor(index / 12)}-${month}-01T00:00`)!;
+}

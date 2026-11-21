@@ -52,3 +52,22 @@ Contrôle effectué le 20/11/2026 après les migrations 0001 à 0004 : test d'at
 L'hôte du répartiteur n'est pas déductible de la référence du projet. Il a été identifié par une tentative de connexion volontairement fausse, depuis GitHub Actions (aucun secret utilisé) :
 - `aws-0-eu-west-3.pooler.supabase.com` : « tenant/user not found », donc ce n'est pas le bon ;
 - `aws-1-eu-west-3.pooler.supabase.com` : « password authentication failed », donc **c'est le bon**. Il reconnaît aussi les rôles `app_user` et `app_auth`.
+
+## 6. Attribuer une formule à une agence (D-048)
+Il n'y a pas encore de paiement en ligne : la formule est attribuée par l'exploitant. Sans attribution, l'agence est en « Essai » (sans IA). Le rôle de l'application ne peut que **lire** la formule. Seul le propriétaire du schéma (`app_owner`) peut l'écrire, et l'opération reste tracée par `updated_at`.
+
+Dans l'éditeur SQL de Supabase (ou `psql` avec le rôle propriétaire) :
+
+```sql
+BEGIN;
+SET LOCAL ROLE app_owner;
+-- Retrouver l'agence par son nom (jamais par une donnée personnelle).
+SELECT id, name FROM iam.organization WHERE name ILIKE '%nom de l''agence%';
+-- Attribuer la formule : essai, investisseur, solo, pro ou agency ; extra_seats pour Agency seulement.
+INSERT INTO app.agency_plans (org_id, plan, extra_seats, note)
+VALUES ('<id de l''agence>', 'agency', 2, 'Bêta : accord du 2026-12-01')
+ON CONFLICT (org_id) DO UPDATE SET plan = EXCLUDED.plan, extra_seats = EXCLUDED.extra_seats, note = EXCLUDED.note, updated_at = now();
+COMMIT;
+```
+
+Supprimer la ligne remet l'agence en Essai. Une baisse de formule ne supprime rien : les éléments déjà créés restent. Seuls les nouveaux ajouts au-delà du quota sont refusés.

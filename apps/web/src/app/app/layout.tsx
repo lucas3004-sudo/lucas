@@ -40,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ...(role !== "lecture" ? [{ href: "/app/agents", label: "Agents", icon: "bot" as const }] : []),
     { href: "/app/equipe", label: "Équipe", icon: "team" },
     { href: "/app/parametres", label: "Paramètres", icon: "settings" },
+    { href: "/app/formule", label: "Formule", icon: "plan" },
     ...(canReadAuditLog(role)
       ? [
           { href: "/app/pilotage", label: "Pilotage", icon: "gauge" as const },

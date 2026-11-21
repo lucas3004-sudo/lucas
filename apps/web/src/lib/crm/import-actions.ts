@@ -21,6 +21,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAgency, type AgencyContext } from "../agency/context";
 import { audit } from "../audit";
+import { quotaError } from "../billing/plan";
 import { alertMatchingBuyers } from "./alerts";
 import { getTenantPool } from "../server/db";
 import { duplicateCandidates } from "./data";
@@ -43,6 +44,8 @@ export interface ImportState {
     unknownColumns: string[];
     recognized: string[];
     encoding: string;
+    /** Quota de contacts dépassé par cet import (formule de l'agence). */
+    quotaWarning?: string;
   };
   /** Texte du fichier, renvoyé tel quel pour la confirmation (relu entièrement côté serveur). */
   csv?: string;
@@ -112,6 +115,7 @@ export async function previewContactsImportAction(_prev: ImportState, form: Form
   if ("error" in input) return { error: input.error };
   const result = await analyzeContacts(ctx, input.text);
   if ("fatal" in result) return { error: result.fatal };
+  const quotaWarning = result.toInsert.length ? await quotaError(ctx, "contacts", result.toInsert.length) : null;
   return {
     csv: input.text,
     preview: {
@@ -120,6 +124,7 @@ export async function previewContactsImportAction(_prev: ImportState, form: Form
       unknownColumns: result.parsed.unknownColumns,
       recognized: Object.values(result.parsed.columns) as string[],
       encoding: input.encoding,
+      ...(quotaWarning ? { quotaWarning } : {}),
     },
   };
 }
@@ -135,6 +140,8 @@ export async function importContactsAction(_prev: ImportState, form: FormData): 
   const result = await analyzeContacts(ctx, input.text);
   if ("fatal" in result) return { error: result.fatal };
   if (!result.toInsert.length) return { error: "Aucune ligne à importer (toutes sont des doublons ou des erreurs)." };
+  const overQuota = await quotaError(ctx, "contacts", result.toInsert.length);
+  if (overQuota) return { error: overQuota };
   const { visibility, ownerUserId } = target.data;
   try {
     await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) => {

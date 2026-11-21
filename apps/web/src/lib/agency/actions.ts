@@ -14,6 +14,7 @@ import { redirect } from "next/navigation";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { audit } from "../audit";
+import { quotaError } from "../billing/plan";
 import { getAuth } from "../auth/server";
 import { ROLES } from "../auth/roles";
 import { appUrl } from "../server/env";
@@ -148,6 +149,8 @@ export async function inviteMemberAction(_prev: ActionState, form: FormData): Pr
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Valeurs invalides." };
   const rule = canInvite(ctx.role, parsed.data.role);
   if (!rule.ok) return { error: rule.message };
+  const overQuota = await quotaError(ctx, "membres");
+  if (overQuota) return { error: overQuota };
 
   let invitationId: string;
   try {

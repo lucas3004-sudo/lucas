@@ -93,6 +93,7 @@ export function ImportWizard({
             {p.unknownColumns.length ? ` Colonnes ignorées : ${p.unknownColumns.join(", ")}.` : ""}
             {p.encoding === "windows-1252" ? " Encodage Windows (Excel) détecté et converti." : ""}
           </p>
+          {"quotaWarning" in p && p.quotaWarning ? <Alert tone="warning">{p.quotaWarning}</Alert> : null}
           <div className="max-h-96 overflow-auto rounded-[var(--radius-control)] border border-line">
             <table className="w-full text-sm">
               <caption className="sr-only">Aperçu de l&apos;import, ligne par ligne</caption>
