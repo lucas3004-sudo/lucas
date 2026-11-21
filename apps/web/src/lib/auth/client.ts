@@ -1,8 +1,21 @@
 "use client";
 import { createAuthClient } from "better-auth/react";
+import { twoFactorClient } from "better-auth/client/plugins";
 
-/** Client navigateur : uniquement connexion et inscription (routes HTTP limitées en débit). */
-export const authClient = createAuthClient();
+/**
+ * Client navigateur : connexion, inscription et double authentification (routes HTTP limitées
+ * en débit). Un compte protégé par la double authentification est envoyé vers la saisie du code.
+ */
+export const authClient = createAuthClient({
+  plugins: [
+    twoFactorClient({
+      onTwoFactorRedirect() {
+        const next = new URLSearchParams(window.location.search).get("invitation");
+        window.location.href = `/connexion/verification${next ? `?invitation=${encodeURIComponent(next)}` : ""}`;
+      },
+    }),
+  ],
+});
 
 const MESSAGES: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: "Adresse e-mail ou mot de passe incorrect.",
@@ -11,6 +24,13 @@ const MESSAGES: Record<string, string> = {
   PASSWORD_TOO_SHORT: "Le mot de passe doit contenir au moins 12 caractères.",
   PASSWORD_TOO_LONG: "Le mot de passe est trop long (128 caractères au maximum).",
   INVALID_EMAIL: "Adresse e-mail invalide.",
+  INVALID_CODE: "Code incorrect.",
+  INVALID_TWO_FACTOR_COOKIE: "La vérification a expiré : reconnectez-vous.",
+  INVALID_BACKUP_CODE: "Code de secours incorrect ou déjà utilisé.",
+  INVALID_PASSWORD: "Mot de passe incorrect.",
+  TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: "Trop d'essais : patientez avant de réessayer.",
+  ACCOUNT_TEMPORARILY_LOCKED: "Trop d'essais incorrects : compte bloqué temporairement. Réessayez plus tard.",
+  TOTP_ALREADY_ENABLED: "La double authentification est déjà activée.",
 };
 
 export function authErrorMessage(error: { code?: string; status?: number } | null | undefined): string {

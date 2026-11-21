@@ -339,3 +339,13 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - passage à un stockage d'objets (Supabase Storage ou équivalent), avec des liens signés de courte durée ;
   - la clé de stockage restera côté serveur.
   Cela demandera l'accord du fondateur (compte ou offre payante selon le volume).
+
+## D-043 — Double authentification : disponible pour tous, rappelée au gérant, obligatoire avant la production
+- **Date** : 2026-11-21 · **Statut** : Acceptée
+- **Décision** :
+  - double authentification par application (TOTP) et codes de secours, avec l'extension de Better Auth (migration 0013 dans `iam`) ;
+  - pour l'instant, un bandeau la rappelle au gérant et aux managers, sans blocage ;
+  - elle deviendra **obligatoire pour ces rôles avant la mise en production**, une fois les premiers utilisateurs accompagnés.
+- **Raison** : rendre l'activation obligatoire dès maintenant bloquerait l'accès en préproduction sans procédure de récupération. Cette procédure (perte du téléphone et de tous les codes de secours) demande un e-mail vérifié, donc un service d'envoi (Brevo, en attente).
+- **Objection du Devil's Advocate** : un gérant peut ignorer le bandeau indéfiniment.
+- **Réponse** : c'est vrai. L'obligation est inscrite dans les lacunes à combler avant la production (PROGRESS.md). Le pilotage pourra afficher, pour le gérant, les membres sans double authentification.

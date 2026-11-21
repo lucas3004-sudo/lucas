@@ -7,6 +7,7 @@
  */
 import type { BetterAuthOptions } from "better-auth";
 import { organization } from "better-auth/plugins/organization";
+import { twoFactor } from "better-auth/plugins/two-factor";
 import { Pool } from "pg";
 import { ac, agencyRoles } from "./roles";
 
@@ -82,6 +83,9 @@ export function authOptions(pool: Pool) {
       customRules: {
         "/sign-in/email": { window: 60, max: limitFromEnv("AUTH_RATE_LIMIT_SIGNIN", 10) },
         "/sign-up/email": { window: 60, max: limitFromEnv("AUTH_RATE_LIMIT_SIGNUP", 5) },
+        // Double authentification : un code à 6 chiffres ne doit pas pouvoir être deviné en série.
+        "/two-factor/verify-totp": { window: 60, max: limitFromEnv("AUTH_RATE_LIMIT_SIGNIN", 10) },
+        "/two-factor/verify-backup-code": { window: 60, max: limitFromEnv("AUTH_RATE_LIMIT_SIGNIN", 10) },
       },
     },
     plugins: [
@@ -94,6 +98,10 @@ export function authOptions(pool: Pool) {
         // Sans service d'e-mail, l'invitation est un lien à copier dans l'écran Équipe.
         sendInvitationEmail: async () => {},
       }),
+      // Double authentification par application (TOTP, RFC 6238) et codes de secours.
+      // Le secret est chiffré en base avec BETTER_AUTH_SECRET ; l'activation n'est effective
+      // qu'après la saisie d'un premier code valide.
+      twoFactor({ issuer: "ImmoPilot AI" }),
     ],
   } satisfies BetterAuthOptions;
 }

@@ -17,7 +17,7 @@ export function SignInForm({ invitation }: { invitation?: string }) {
     const data = new FormData(event.currentTarget);
     setPending(true);
     setError(null);
-    const { error: signInError } = await authClient.signIn.email({
+    const { data: result, error: signInError } = await authClient.signIn.email({
       email: String(data.get("email") ?? ""),
       password: String(data.get("password") ?? ""),
     });
@@ -26,6 +26,8 @@ export function SignInForm({ invitation }: { invitation?: string }) {
       setPending(false);
       return;
     }
+    // Double authentification : le client redirige vers la saisie du code (onTwoFactorRedirect).
+    if (result && "twoFactorRedirect" in result && result.twoFactorRedirect) return;
     router.replace(invitation ? `/invitation/${encodeURIComponent(invitation)}` : await enterAppAction());
     router.refresh();
   }

@@ -1,5 +1,6 @@
 import { signOutAction } from "@/lib/agency/actions";
-import { requireAgency } from "@/lib/agency/context";
+import Link from "next/link";
+import { getSession, requireAgency } from "@/lib/agency/context";
 import { canReadAuditLog } from "@/lib/agency/rules";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Logo } from "@/ui/logo";
@@ -7,6 +8,9 @@ import { Nav, type NavItem } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, org, role } = await requireAgency();
+  const session = await getSession();
+  const twoFactorOn = Boolean((session?.user as { twoFactorEnabled?: boolean | null } | undefined)?.twoFactorEnabled);
+  const remindTwoFactor = (role === "gerant" || role === "manager") && !twoFactorOn;
 
   // Seuls les modules réellement construits apparaissent (aucun lien vers une page vide).
   const items: NavItem[] = [
@@ -32,7 +36,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="border-t border-line pt-4">
       <p className="truncate text-sm font-medium text-ink">{user.name}</p>
       <p className="truncate text-xs text-ink-muted">{user.email}</p>
-      <form action={signOutAction} className="mt-3">
+      <Link href="/app/securite" className="mt-3 block text-xs font-medium text-ink-muted hover:text-ink">
+        Sécurité du compte{twoFactorOn ? "" : " (double authentification désactivée)"}
+      </Link>
+      <form action={signOutAction} className="mt-2">
         <button type="submit" className="text-xs font-medium text-ink-muted hover:text-ink">
           Se déconnecter
         </button>
@@ -75,7 +82,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </details>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8 sm:py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+        {remindTwoFactor ? (
+          <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-control)] bg-warning-soft px-3.5 py-2.5 text-sm text-warning print:hidden">
+            <span>Votre rôle donne accès à toutes les données de l&apos;agence : activez la double authentification.</span>
+            <Link href="/app/securite" className="font-medium underline">Activer</Link>
+          </div>
+        ) : null}
+        {children}
+      </main>
     </div>
   );
 }
