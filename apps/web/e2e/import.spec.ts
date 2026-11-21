@@ -54,10 +54,13 @@ test("un gérant importe ses contacts puis ses biens depuis des fichiers CSV", a
   await expect(page.getByRole("button", { name: /^Importer/ })).toHaveCount(0);
 
   // Biens : chaque adresse est vérifiée auprès de la BAN.
+  // Fin du mandat dans 15 jours (JJ/MM/AAAA, heure de Paris).
+  const endsOn = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", year: "numeric" })
+    .format(new Date(Date.now() + 15 * 86_400_000));
   const propertiesCsv = [
-    "Adresse,Code postal,Ville,Type,Surface,Pièces,Prix,Équipements",
-    '8 boulevard du Port,80000,Amiens,Appartement,"62,5",3,250000,balcon',
-    "1 rue des Exemples,80000,Amiens,Local commercial,40,,,",
+    "Adresse,Code postal,Ville,Type,Surface,Pièces,Prix,Équipements,N° mandat,Fin du mandat",
+    `8 boulevard du Port,80000,Amiens,Appartement,"62,5",3,250000,balcon,M-IMP-1,${endsOn}`,
+    "1 rue des Exemples,80000,Amiens,Local commercial,40,,,,,",
   ].join("\n");
   await page.goto("/app/proprietes/import");
   await page.getByLabel("Fichier CSV").setInputFiles({ name: "biens.csv", mimeType: "text/csv", buffer: Buffer.from(propertiesCsv, "utf-8") });
@@ -69,6 +72,10 @@ test("un gérant importe ses contacts puis ses biens depuis des fichiers CSV", a
   await expect(page.getByText("1 bien(s) importé(s).")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("link", { name: "Voir les biens" }).click();
   await expect(page.getByRole("link", { name: /8 Boulevard du Port 80000 Amiens/ })).toBeVisible();
+  // Le mandat importé (numéro et date de fin) déclenche le rappel d'échéance.
+  await page.getByRole("link", { name: /8 Boulevard du Port 80000 Amiens/ }).click();
+  await expect(page.getByText("Mandat : fin dans 15 jour(s)")).toBeVisible();
+  await expect(page.getByText("M-IMP-1")).toBeVisible();
 
   // Qualité des données : l'acquéreur importé n'a pas de consentement (jamais importé) ; l'annonce est incomplète.
   await page.getByRole("link", { name: "Qualité des données" }).click();

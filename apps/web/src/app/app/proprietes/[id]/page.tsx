@@ -1,4 +1,4 @@
-import { CRITERION_LABELS, INTEREST_LABELS, matchProperty, NEXT_STEP_LABELS, PRICE_OPINION_LABELS, visitStats, type CriterionKey } from "@immopilot/domain";
+import { CRITERION_LABELS, INTEREST_LABELS, mandateAlert, mandateAlertLabel, matchProperty, NEXT_STEP_LABELS, PRICE_OPINION_LABELS, utcToParisLocal, visitStats, type CriterionKey } from "@immopilot/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -29,6 +29,7 @@ import { withTenant } from "@immopilot/db";
 import { MAX_PHOTOS } from "@/lib/crm/photo-limits";
 import { deletePhotoAction } from "@/lib/crm/photos";
 import { getTenantPool } from "@/lib/server/db";
+import { MandateForm } from "./mandate-form";
 import { PhotoUpload } from "./photo-upload";
 import { AppointmentList } from "../../agenda/appointment-list";
 import { listAppointments } from "@/lib/agenda/data";
@@ -64,6 +65,7 @@ export default async function PropertyPage({ params, searchParams }: { params: P
   const vstats = visitStats(visits.map((v) => ({ interest: v.interest, priceOpinion: v.price_opinion, nextStep: v.next_step })));
   const memberIds = new Set(members.map((m) => m.userId));
   const canEdit = canEditRecord(ctx, property.owner_user_id);
+  const mandate = mandateAlert({ status: property.status, mandateEndsOn: property.mandate_ends_on }, utcToParisLocal(new Date()).slice(0, 10));
 
   // Matching sur TOUS les profils actifs de l'agence ; l'identité n'est affichée que si le contact est visible.
   const results = profiles.map((profile) => ({ profile, result: matchProperty(asMatchProperty(property), asMatchProfile(profile), weights) }));
@@ -132,6 +134,7 @@ export default async function PropertyPage({ params, searchParams }: { params: P
         <PropertyStatusBadge status={property.status} />
         <VisibilityBadge visibility={property.visibility} />
         {property.mandate_type ? <Badge>Mandat {property.mandate_type}</Badge> : null}
+        {mandate ? <Badge tone={mandate.kind === "expire" ? "danger" : "warning"}>{mandateAlertLabel(mandate)}</Badge> : null}
       </div>
 
       <Card className="mb-4">
@@ -298,6 +301,33 @@ export default async function PropertyPage({ params, searchParams }: { params: P
                   Changer le statut
                 </SubmitButton>
               </form>
+            ) : null}
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Mandat"
+              description="Suivi pour les rappels d'échéance. Votre registre des mandats reste la référence officielle."
+            />
+            <CardBody className="space-y-1.5 text-sm">
+              <p><span className="text-ink-muted">Type : </span>{property.mandate_type ? (property.mandate_type === "exclusif" ? "exclusif" : "simple") : "—"}</p>
+              <p><span className="text-ink-muted">Numéro : </span>{property.mandate_number ?? "—"}</p>
+              <p><span className="text-ink-muted">Signé le : </span>{property.mandate_signed_on ? fmt.date(property.mandate_signed_on) : "—"}</p>
+              <p><span className="text-ink-muted">Fin : </span>{property.mandate_ends_on ? fmt.date(property.mandate_ends_on) : "—"}</p>
+            </CardBody>
+            {canEdit ? (
+              <details className="border-t border-line">
+                <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-ink">Modifier le mandat</summary>
+                <MandateForm
+                  propertyId={property.id}
+                  initial={{
+                    mandateType: property.mandate_type ?? "",
+                    mandateNumber: property.mandate_number ?? "",
+                    signedOn: property.mandate_signed_on ?? "",
+                    endsOn: property.mandate_ends_on ?? "",
+                  }}
+                />
+              </details>
             ) : null}
           </Card>
 

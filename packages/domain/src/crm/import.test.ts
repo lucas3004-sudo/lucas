@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeCsvBytes, detectSeparator, normalizeHeader, parseContactsCsv, parseFrenchNumber, parsePropertiesCsv } from "./import";
+import { decodeCsvBytes, detectSeparator, normalizeHeader, parseContactsCsv, parseFrenchDate, parseFrenchNumber, parsePropertiesCsv } from "./import";
 
 describe("import CSV — lecture du fichier", () => {
   it("décode l'UTF-8 (BOM retiré) et, à défaut, le Windows-1252 d'Excel", () => {
@@ -74,7 +74,8 @@ describe("import CSV — biens", () => {
       errors: [],
       data: {
         addressQuery: "8 boulevard du Port 80000 Amiens", type: "Appartement", surface: 62.5, rooms: 3, price: 250_000,
-        dpeClass: "D", status: "mandat", mandateType: "exclusif", features: ["balcon_terrasse", "stationnement"], notes: null,
+        dpeClass: "D", status: "mandat", mandateType: "exclusif", mandateNumber: null, mandateSignedOn: null, mandateEndsOn: null,
+        features: ["balcon_terrasse", "stationnement"], notes: null,
       },
     });
     expect(r.rows[1]!.errors).toEqual(["Type de bien non pris en charge : « Local commercial » (appartement ou maison)."]);
@@ -83,5 +84,32 @@ describe("import CSV — biens", () => {
 
   it("exige les colonnes adresse et type", () => {
     expect(parsePropertiesCsv("Ville;Prix\nAmiens;1").fatal).toBe("Colonne obligatoire absente : adresse, type.");
+  });
+
+  it("reprend le numéro et les dates du mandat (formats français), et refuse les dates impossibles", () => {
+    const csv = [
+      "Adresse;Type;N° mandat;Date de mandat;Fin du mandat",
+      "8 bd du Port 80000 Amiens;Appartement;M-2026-042;01/09/2026;01/12/2026",
+      "2 place Gambetta 80000 Amiens;Maison;;31/02/2026;",
+      "3 rue X 80000 Amiens;Maison;M-1;01/12/2026;2026-11-01",
+    ].join("\n");
+    const r = parsePropertiesCsv(csv);
+    expect(r.rows[0]!.data).toMatchObject({ mandateNumber: "M-2026-042", mandateSignedOn: "2026-09-01", mandateEndsOn: "2026-12-01" });
+    expect(r.rows[1]!.errors).toContain("Date de signature du mandat invalide : « 31/02/2026 » (JJ/MM/AAAA).");
+    expect(r.rows[2]!.errors).toContain("La fin du mandat doit suivre sa signature.");
+  });
+});
+
+describe("dates des fichiers CSV", () => {
+  it("formats français et ISO ; dates inexistantes refusées", () => {
+    expect(parseFrenchDate("21/11/2026")).toBe("2026-11-21");
+    expect(parseFrenchDate("1-2-2027")).toBe("2027-02-01");
+    expect(parseFrenchDate("21.11.2026")).toBe("2026-11-21");
+    expect(parseFrenchDate("2026-11-21")).toBe("2026-11-21");
+    expect(parseFrenchDate(" ")).toBeNull();
+    expect(parseFrenchDate("29/02/2027")).toBe("invalide");
+    expect(parseFrenchDate("29/02/2028")).toBe("2028-02-29");
+    expect(parseFrenchDate("11/21/2026")).toBe("invalide"); // format américain
+    expect(parseFrenchDate("demain")).toBe("invalide");
   });
 });

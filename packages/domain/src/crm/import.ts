@@ -41,6 +41,23 @@ export function normalizeHeader(header: string): string {
 }
 
 /** Nombre écrit à la française : « 250 000 », « 62,5 », « 250 000,00 € ». Null si vide ; NaN si illisible. */
+/**
+ * Date d'un fichier CSV : « 21/11/2026 », « 21-11-2026 », « 21.11.2026 » ou « 2026-11-21 ».
+ * Renvoie « AAAA-MM-JJ », null si vide, « invalide » si la date n'existe pas.
+ */
+export function parseFrenchDate(raw: string): string | null | "invalide" {
+  const t = raw.trim();
+  if (!t) return null;
+  let m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(t);
+  let y: number, mo: number, d: number;
+  if (m) [d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  else if ((m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t))) [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  else return "invalide";
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  if (y < 1990 || y > 2100 || date.getUTCMonth() !== mo - 1 || date.getUTCDate() !== d) return "invalide";
+  return date.toISOString().slice(0, 10);
+}
+
 export function parseFrenchNumber(raw: string): number | null {
   const s = raw.replace(/[\s\u00a0\u202f€]/g, "").replace(/m2$/i, "");
   if (s === "") return null;
@@ -181,6 +198,9 @@ export interface PropertyDraft {
   dpeClass: "A" | "B" | "C" | "D" | "E" | "F" | "G" | null;
   status: ImportPropertyStatus;
   mandateType: "simple" | "exclusif" | null;
+  mandateNumber: string | null;
+  mandateSignedOn: string | null;
+  mandateEndsOn: string | null;
   features: PropertyFeature[];
   notes: string | null;
 }
@@ -196,6 +216,9 @@ const PROPERTY_COLUMNS = {
   dpe: ["dpe", "classedpe", "etiquetteenergie", "classeenergie"],
   statut: ["statut", "status", "etat"],
   mandat: ["mandat", "typedemandat"],
+  numeromandat: ["numeromandat", "numerodemandat", "nmandat", "nomandat", "refmandat", "referencemandat"],
+  debutmandat: ["debutmandat", "datedemandat", "datemandat", "mandatsignele", "datesignaturemandat", "signaturemandat"],
+  finmandat: ["finmandat", "datefinmandat", "findumandat", "echeancemandat", "expirationmandat"],
   equipements: ["equipements", "equipement", "atouts"],
   notes: ["notes", "note", "commentaire", "commentaires", "description"],
 } as const satisfies ColumnSpec<string>;
@@ -249,6 +272,20 @@ export function parsePropertiesCsv(text: string): ParsedImport<PropertyDraft, Pr
     const mandateType = mandateRaw.includes("exclusif") ? "exclusif" : mandateRaw.includes("simple") ? "simple" : null;
     if (mandateRaw && !mandateType) errors.push(`Type de mandat inconnu : « ${get("mandat")} » (simple ou exclusif).`);
 
+    const mandateNumber = get("numeromandat").trim() || null;
+    if (mandateNumber && mandateNumber.length > 30) errors.push("Numéro de mandat trop long (30 caractères au maximum).");
+    const dateOf = (k: PropertyColumn, label: string) => {
+      const v = parseFrenchDate(get(k));
+      if (v === "invalide") {
+        errors.push(`${label} invalide : « ${get(k)} » (JJ/MM/AAAA).`);
+        return null;
+      }
+      return v;
+    };
+    const mandateSignedOn = dateOf("debutmandat", "Date de signature du mandat");
+    const mandateEndsOn = dateOf("finmandat", "Date de fin du mandat");
+    if (mandateSignedOn && mandateEndsOn && mandateEndsOn <= mandateSignedOn) errors.push("La fin du mandat doit suivre sa signature.");
+
     const features: PropertyFeature[] = [];
     for (const part of get("equipements").split(/[,/;|]+/).map(plain).filter(Boolean)) {
       const f = FEATURE_SYNONYMS[part];
@@ -260,7 +297,7 @@ export function parsePropertiesCsv(text: string): ParsedImport<PropertyDraft, Pr
     if (notes && notes.length > 5000) errors.push("Notes trop longues (5 000 caractères au maximum).");
 
     return type && status
-      ? { addressQuery, type, surface, rooms, price, dpeClass, status, mandateType, features, notes }
+      ? { addressQuery, type, surface, rooms, price, dpeClass, status, mandateType, mandateNumber, mandateSignedOn, mandateEndsOn, features, notes }
       : null;
   });
 }

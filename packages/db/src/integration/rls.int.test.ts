@@ -626,3 +626,35 @@ describe("comptes rendus de visite (migration 0018)", () => {
       expect((await c.query(`UPDATE app.visit_reports SET interest = 'aucun' WHERE id = $1`, [id])).rowCount).toBe(0));
   });
 });
+
+describe("suivi des mandats (migration 0019)", () => {
+  const newProperty = (orgId: string, owner: string, mandateNumber: string | null) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, type, address_label, ban_id, insee_code, created_by, mandate_number)
+       VALUES ($1, $2, 'private', 'mandat', 'Maison', 'Bien sous mandat', 'ban-mandat', '80021', $2, $3) RETURNING id`,
+      [orgId, owner, mandateNumber],
+    ).then((r) => r.rows[0].id as string);
+
+  it("un numéro de mandat ne sert qu'une fois par agence, même sur un bien privé d'un collègue ; l'autre agence peut le réutiliser", async () => {
+    expect(await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty(A, users.negoA, "M-2026-001"))).toBeTruthy();
+    await expect(withTenant(pool, { orgId: A, userId: users.nego2A }, newProperty(A, users.nego2A, "M-2026-001"))).rejects.toMatchObject({ code: "23505" });
+    expect(await withTenant(pool, { orgId: B, userId: users.gerantB }, newProperty(B, users.gerantB, "M-2026-001"))).toBeTruthy();
+    // Plusieurs biens sans numéro : autorisé.
+    expect(await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty(A, users.negoA, null))).toBeTruthy();
+    expect(await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty(A, users.negoA, null))).toBeTruthy();
+  });
+
+  it("la date de fin suit la signature ; seul un ayant droit du bien modifie son mandat", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty(A, users.negoA, null));
+    await expect(withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) =>
+      c.query(`UPDATE app.properties SET mandate_signed_on = '2026-11-01', mandate_ends_on = '2026-10-01' WHERE id = $1`, [id])))
+      .rejects.toMatchObject({ code: "23514" });
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) =>
+      expect((await c.query(`UPDATE app.properties SET mandate_signed_on = '2026-11-01', mandate_ends_on = '2027-02-01' WHERE id = $1`, [id])).rowCount).toBe(1));
+    // Bien privé : un collègue ne le voit pas, donc ne le modifie pas ; le gérant oui.
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, async (_db, c) =>
+      expect((await c.query(`UPDATE app.properties SET mandate_ends_on = '2030-01-01' WHERE id = $1`, [id])).rowCount).toBe(0));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) =>
+      expect((await c.query(`UPDATE app.properties SET mandate_ends_on = '2027-03-01' WHERE id = $1`, [id])).rowCount).toBe(1));
+  });
+});

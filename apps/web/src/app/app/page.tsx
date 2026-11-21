@@ -6,10 +6,10 @@ import { canManageTeam } from "@/lib/agency/rules";
 import { getAgencySettings } from "@/lib/agency/settings";
 import { ROLE_DESCRIPTIONS, ROLE_LABELS } from "@/lib/auth/roles";
 import { getAuth } from "@/lib/auth/server";
-import { utcToParisLocal } from "@immopilot/domain";
+import { mandateAlert, mandateAlertLabel, utcToParisLocal } from "@immopilot/domain";
 import { listAppointments } from "@/lib/agenda/data";
 import { APPOINTMENT_KINDS } from "@/lib/agenda/labels";
-import { listTasks } from "@/lib/crm/data";
+import { listProperties, listTasks } from "@/lib/crm/data";
 import { bucketTasks, todayAndTomorrowWindow } from "@/lib/dashboard/today";
 import { listDeals } from "@/lib/deals/data";
 import { dealDeadlines } from "@/lib/deals/deadlines";
@@ -60,11 +60,18 @@ export default async function DashboardPage() {
   // Ma journée : uniquement mes éléments (tâches, rendez-vous, affaires dont je suis en charge).
   const today = utcToParisLocal(new Date()).slice(0, 10);
   const range = todayAndTomorrowWindow(today);
-  const [myTasks, myAppointments, deals] = await Promise.all([
+  const [myTasks, myAppointments, deals, properties] = await Promise.all([
     listTasks(ctx, "mine"),
     listAppointments(ctx, { scope: "mine", from: range.from, to: range.to }),
     listDeals(ctx),
+    listProperties(ctx),
   ]);
+  const myMandates = properties
+    .filter((p) => p.owner_user_id === user.id)
+    .flatMap((p) => {
+      const alert = mandateAlert({ status: p.status, mandateEndsOn: p.mandate_ends_on }, today);
+      return alert ? [{ p, alert }] : [];
+    });
   const buckets = bucketTasks(myTasks, today);
   const myDeadlines = deals
     .filter((d) => d.owner_user_id === user.id)
@@ -114,6 +121,20 @@ export default async function DashboardPage() {
             tone: dl.daysLeft < 0 ? "danger" : dl.daysLeft <= 3 ? "warning" : "neutral",
           }))}
         />
+        {myMandates.length ? (
+          <DayList
+            title={`Mandats à renouveler (${myMandates.length})`}
+            empty=""
+            href="/app/proprietes"
+            items={myMandates.map(({ p, alert }) => ({
+              key: p.id,
+              label: p.address_label,
+              meta: mandateAlertLabel(alert),
+              href: `/app/proprietes/${p.id}`,
+              tone: alert.kind === "expire" ? "danger" : "warning",
+            }))}
+          />
+        ) : null}
         <DayList
           title={`Biens signalés pour mes acquéreurs (${buckets.matches.length})`}
           empty="Aucun nouveau bien signalé."
