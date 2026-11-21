@@ -45,6 +45,15 @@ Date : 2026-11-20 · Choix du fondateur : « CRM et matching d'abord », avant l
 - **Biens** : 200 lignes au maximum. Chaque adresse est vérifiée auprès de la BAN : seule une adresse précise (numéro ou rue) avec un score de 50 % au moins est acceptée. Une adresse déjà présente dans l'agence est écartée.
 - Le journal enregistre l'import avec le nombre de lignes, sans aucune donnée personnelle.
 
+### Alertes automatiques : nouveau bien correspondant (Opportunity Finder v1, F11)
+- Quand un bien proposé (prospect, mandat, sous offre) est **créé ou importé**, chaque collègue dont un profil de recherche actif atteint **75 %** (pondérations par défaut) reçoit une tâche :
+  - titre : « Bien correspondant à vos acquéreurs (x %) » ;
+  - contenu : l'adresse du bien, le nombre de profils concernés et le meilleur score.
+- L'auteur du bien n'est pas alerté pour ses propres acquéreurs : il les voit déjà sur la fiche.
+- **Aucune identité n'est révélée** à l'auteur. Le collègue décide seul de contacter son acquéreur.
+- Il y a un seul signalement ouvert par collègue et par bien, que l'alerte soit automatique ou faite avec le bouton « Prévenir ». Le bouton reste utile pour un acquéreur ajouté **après** le bien.
+- Chaque alerte est journalisée comme une tâche créée (motif « alerte automatique »).
+
 ## Qui voit et fait quoi (appliqué par la base, RLS, migrations 0007 et 0008)
 
 | | Gérant | Manager | Assistant | Négociateur | Lecture seule |

@@ -149,8 +149,9 @@ test.describe.serial("CRM et matching", () => {
     await page.getByRole("button", { name: "Recalculer" }).click();
     await expect(page.getByText("Pondérations (personnalisées)")).toBeVisible();
 
-    await match.getByRole("button", { name: `Prévenir ${ines.name}` }).click();
+    // Alerte automatique (Opportunity Finder) : Inès est prévenue dès la création du bien.
     await expect(match.getByText(`${ines.name} prévenu(e)`)).toBeVisible();
+    await expect(match.getByRole("button", { name: /Prévenir/ })).toHaveCount(0);
     await match.getByText("Pourquoi ce score ?").click();
     await capture(page, "09-bien-acquereurs-correspondants");
 
@@ -163,8 +164,8 @@ test.describe.serial("CRM et matching", () => {
   test("Inès reçoit la tâche et voit le bien correspondant sur la fiche de son acquéreur", async ({ page }) => {
     await signIn(page, ines.email);
     await page.getByRole("link", { name: "Tâches" }).first().click();
-    await expect(page.getByText("Bien correspondant à l'un de vos acquéreurs (100 %)")).toBeVisible();
-    await expect(page.getByText(new RegExp(`${hugo.name} signale que le bien « ${address} »`))).toBeVisible();
+    await expect(page.getByText("Bien correspondant à vos acquéreurs (100 %)")).toBeVisible();
+    await expect(page.getByText(`Nouveau bien ajouté par ${hugo.name} : « ${address} ». Il correspond à 1 de vos profils de recherche (meilleur score 100 %).`)).toBeVisible();
     await page.getByRole("button", { name: "Marquer faite" }).click();
     await expect(page.getByRole("button", { name: "Rouvrir" })).toBeVisible();
 
@@ -245,5 +246,28 @@ test.describe.serial("CRM et matching", () => {
     await expect(page.getByText("Relances en retard (1)")).toBeVisible();
     await expect(page.getByText("Rappeler le vendeur")).toBeVisible();
     await capture(page, "13-pilotage");
+  });
+  test("un acquéreur ajouté après le bien : le collègue prévient manuellement son responsable", async ({ page }) => {
+    test.setTimeout(60_000);
+    await signIn(page, gerant.email);
+    await page.goto("/app/contacts/nouveau");
+    await page.getByLabel("Prénom").fill("Jeanne");
+    await page.getByLabel("Nom", { exact: true }).fill("Partagée");
+    await page.getByLabel("Acquéreur").check();
+    await page.getByLabel("Visibilité").selectOption("agency");
+    await page.getByRole("button", { name: "Créer le contact" }).click();
+    await expect(page.getByRole("heading", { name: "Jeanne Partagée" })).toBeVisible();
+    await page.getByText("Ajouter un profil de recherche").click();
+    await page.getByLabel("Budget maximal (€)").fill("230000");
+    await page.getByLabel("Codes postaux recherchés").fill("80000");
+    await page.getByRole("button", { name: "Ajouter le profil" }).click();
+    await expect(page.getByText("Profil de recherche enregistré.")).toBeVisible({ timeout: 20_000 });
+
+    await signIn(page, hugo.email);
+    await page.goto(propertyUrl);
+    const match = page.getByRole("listitem").filter({ hasText: "Jeanne Partagée" });
+    await expect(match.getByText("70 %")).toBeVisible(); // budget dépassé de 8,7 % : critère partiel
+    await match.getByRole("button", { name: `Prévenir ${gerant.name}` }).click();
+    await expect(match.getByText(`${gerant.name} prévenu(e)`)).toBeVisible();
   });
 });

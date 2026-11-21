@@ -34,9 +34,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-20) :
-- 103 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 105 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 27 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous) ;
-- 16 scénarios de bout en bout (Playwright), dont 8 pour le CRM, le matching et le pilotage, 1 pour l'import CSV et 1 pour l'Investment Studio ;
+- 17 scénarios de bout en bout (Playwright), dont 9 pour le CRM, le matching, les alertes et le pilotage, 1 pour l'import CSV et 1 pour l'Investment Studio ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -57,7 +57,8 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - tâches (échéance, retard, faite) ; journal d'audit sans donnée personnelle ;
 - agenda : rendez-vous en heure de Paris, liés à un contact ou à un bien, export calendrier (.ics) ;
 - export des données d'un contact (droit d'accès RGPD), journalisé ;
-- import CSV des contacts et des biens (Excel accepté), avec aperçu, doublons écartés, adresses vérifiées par la BAN.
+- import CSV des contacts et des biens (Excel accepté), avec aperçu, doublons écartés, adresses vérifiées par la BAN ;
+- alertes automatiques : un nouveau bien prévient les collègues dont un acquéreur correspond à 75 % ou plus (Opportunity Finder v1).
 
 **Investment Studio** : rendement brut et net, cash-flow, mensualité, intérêts, sensibilité au prix et au loyer ; toutes les hypothèses modifiables ; accessible depuis un bien ou un dossier ; mention « simulation, pas un conseil ».
 
@@ -102,6 +103,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
 
 ## Journal
+- **2026-11-21, alertes de correspondance (F11 v1)** : tâche automatique pour les collègues concernés à la création ou à l'import d'un bien ; décision D-039. Import CSV fusionné ([PR n° 8](https://github.com/lucas3004-sudo/lucas/pull/8)).
 - **2026-11-21, import CSV** : contacts et biens, aperçu puis import revérifié, encodage Excel, doublons écartés, aucun consentement importé ; décision D-038. Agenda et export RGPD fusionnés ([PR n° 7](https://github.com/lucas3004-sudo/lucas/pull/7)) ; migration 0009 appliquée en préproduction (39 règles d'accès, même empreinte qu'en local).
 - **2026-11-21, agenda et export RGPD** :
   - migration 0009 (rendez-vous sous RLS, 3 tests d'isolation de plus, soit 27) ;

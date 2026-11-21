@@ -291,3 +291,13 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - limites : 1 Mo par fichier, 2 000 contacts ou 200 biens par import (géocodage 5 adresses à la fois).
 - **Objection du Devil's Advocate** : une agence qui change de logiciel voudra reprendre ses consentements existants.
 - **Réponse** : c'est vrai. Un consentement sans preuve ne protège pas l'agence en cas de contrôle. Une reprise « avec preuve jointe » (colonne date, colonne preuve) pourra être étudiée avec l'avocat (question 3 de la fiche juridique).
+
+## D-039 — Alertes de correspondance à la création d'un bien, sans tâche de fond
+- **Date** : 2026-11-21 · **Statut** : Acceptée
+- **Décision** :
+  - à la création ou à l'import d'un bien proposé, les correspondances sont calculées dans la même transaction ;
+  - chaque collègue concerné (au moins 75 %) reçoit une tâche, sans identité révélée ;
+  - il n'y a pas encore de recalcul périodique, faute de « worker » (le travail de fond arrive avec le socle d'agents, phase 5) ;
+  - un profil créé après le bien affiche ses correspondances sur la fiche du contact, et le bouton « Prévenir » reste disponible côté bien.
+- **Objection du Devil's Advocate** : un acquéreur ajouté ou modifié après coup ne déclenche aucune alerte vers le responsable du bien.
+- **Réponse** : c'est vrai. La fiche de l'acquéreur montre immédiatement les biens correspondants : son propre responsable les voit donc. L'alerte dans l'autre sens (nouveau profil vers les responsables des biens) sera ajoutée avec le worker.

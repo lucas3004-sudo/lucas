@@ -21,6 +21,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAgency, type AgencyContext } from "../agency/context";
 import { audit } from "../audit";
+import { alertMatchingBuyers } from "./alerts";
 import { getTenantPool } from "../server/db";
 import { duplicateCandidates } from "./data";
 
@@ -236,23 +237,34 @@ export async function importPropertiesAction(_prev: ImportState, form: FormData)
   if ("fatal" in result) return { error: result.fatal };
   if (!result.toInsert.length) return { error: "Aucune ligne à importer (toutes sont des doublons ou des erreurs)." };
   const { visibility, ownerUserId } = target.data;
+  let alerts: string[] = [];
   try {
-    await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) => {
+    alerts = await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) => {
+      const taskIds: string[] = [];
       for (const { d, a } of result.toInsert) {
-        await c.query(
+        const id = (await c.query<{ id: string }>(
           `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, mandate_type, type, address_label, ban_id, insee_code,
              longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
           [ctx.org.id, ownerUserId, visibility, d.status, d.mandateType, d.type, a.label, a.banId, a.inseeCode,
            a.longitude, a.latitude, d.surface, d.rooms, d.price, d.dpeClass, d.features, d.notes, ctx.user.id],
-        );
+        )).rows[0]!.id;
+        taskIds.push(...(await alertMatchingBuyers(c, {
+          orgId: ctx.org.id, authorUserId: ctx.user.id, authorName: ctx.user.name, propertyId: id, status: d.status, label: a.label,
+          property: { type: d.type, price: d.price, surface: d.surface, rooms: d.rooms, inseeCode: a.inseeCode, features: d.features },
+        })));
       }
+      return taskIds;
     });
   } catch (e) {
     if ((e as { code?: string }).code === "42501") return { error: "Import refusé : vous ne pouvez pas attribuer ces biens à ce membre." };
     throw e;
   }
   await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "biens.importes", details: { lignes: result.toInsert.length } });
+  for (const taskId of alerts) {
+    await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "tache.creee", targetType: "tache", targetId: taskId, details: { motif: "alerte_automatique" } });
+  }
   revalidatePath("/app/proprietes");
-  return { success: `${result.toInsert.length} bien(s) importé(s).`, imported: result.toInsert.length };
+  const alerted = alerts.length ? ` ${alerts.length} alerte(s) envoyée(s) aux collègues dont un acquéreur correspond.` : "";
+  return { success: `${result.toInsert.length} bien(s) importé(s).${alerted}`, imported: result.toInsert.length };
 }
