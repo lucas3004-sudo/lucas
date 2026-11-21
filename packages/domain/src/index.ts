@@ -11,3 +11,4 @@ export * from "./crm/import";
 export * from "./deals/deadlines";
 export * from "./listing/mentions";
 export * from "./media/images";
+export * from "./crm/quality";

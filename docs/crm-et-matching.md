@@ -64,6 +64,18 @@ Date : 2026-11-20 · Choix du fondateur : « CRM et matching d'abord », avant l
 - Affichage par une adresse protégée : connexion obligatoire, et la photo n'est servie que si le bien est visible (RLS). Elle est envoyée avec l'en-tête `nosniff` et un cache privé.
 - Droits : voir les photos suit la visibilité du bien. En ajouter ou en supprimer suit le droit de modifier le bien. Une photo ne se modifie pas (migration 0012).
 
+### Qualité des données (agent déterministe, sans IA)
+La page « Qualité des données » liste ce qu'il faut reprendre, avec un lien vers chaque élément :
+- les **contacts sans consentement de prospection valide** : ne pas les démarcher avant de l'avoir recueilli ;
+- les **doublons probables** (même e-mail, même téléphone ou même nom complet), à fusionner à la main ;
+- les **annonces incomplètes** (biens sous mandat ou sous offre auxquels il manque des mentions obligatoires) ;
+- les **biens incomplets pour le rapprochement** (sans prix, surface ou nombre de pièces) ;
+- les **affaires avec une échéance dépassée** ;
+- les **profils de recherche trop larges** (ni budget ni secteur) ;
+- les **contacts sans coordonnées**.
+
+Périmètre : ses propres éléments. Le gérant et les managers peuvent afficher toute l'agence. Rien n'est corrigé automatiquement.
+
 ## Qui voit et fait quoi (appliqué par la base, RLS, migrations 0007 et 0008)
 
 | | Gérant | Manager | Assistant | Négociateur | Lecture seule |

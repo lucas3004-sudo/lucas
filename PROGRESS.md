@@ -36,7 +36,7 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-20) :
-- 130 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 132 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 31 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos) ;
 - 20 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
 - lint, types, build de production.
@@ -63,6 +63,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - alertes automatiques : un nouveau bien prévient les collègues dont un acquéreur correspond à 75 % ou plus (Opportunity Finder v1) ;
 - affaires de l'offre à l'acte : étapes, échéances (délai de rétractation calculé), pièces par étape, statut du bien synchronisé ;
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
+- qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
 - fiche annonce : contrôle des mentions obligatoires (DPE, dépenses d'énergie, copropriété, honoraires, barème, Géorisques), copie bloquée s'il en manque une, texte produit sans IA.
 
@@ -110,6 +111,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2.
 
 ## Journal
+- **2026-11-21, qualité des données** : premier agent déterministe (sans IA), qui signale sans corriger. Double authentification fusionnée ([PR n° 14](https://github.com/lucas3004-sudo/lucas/pull/14)) ; migration 0013 appliquée en préproduction (13 migrations, schéma identique au local).
 - **2026-11-21, double authentification** : extension TOTP de Better Auth (migration 0013), page « Sécurité du compte », étape de vérification à la connexion, codes de secours, rappel au gérant ; décision D-043. Photos fusionnées ([PR n° 13](https://github.com/lucas3004-sudo/lucas/pull/13)) ; migration 0012 appliquée en préproduction.
 - **2026-11-21, photos des biens** : migration 0012 (photos sous RLS), contrôle du format par les octets et suppression des métadonnées (EXIF, GPS), galerie et affichage protégé ; décision D-042. Annonce et « Ma journée » fusionnées ([PR n° 11](https://github.com/lucas3004-sudo/lucas/pull/11), [PR n° 12](https://github.com/lucas3004-sudo/lucas/pull/12)) ; migration 0011 appliquée en préproduction.
 - **2026-11-21, accueil « Ma journée »** : les éléments du jour de chaque utilisateur, sans comparaison entre collègues.
