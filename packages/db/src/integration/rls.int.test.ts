@@ -405,6 +405,44 @@ describe("affaires (migration 0010)", () => {
   });
 });
 
+describe("photos des biens (migration 0012)", () => {
+  const A1 = () => ({ orgId: A, userId: users.negoA });
+  const A2 = () => ({ orgId: A, userId: users.nego2A });
+  const newProperty = (visibility: "private" | "agency") => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.properties (org_id, owner_user_id, visibility, type, address_label, ban_id, insee_code, created_by)
+       VALUES ($1, $2, $3, 'Maison', 'Adresse photo', 'ban-photo', '80021', $2) RETURNING id`,
+      [A, users.negoA, visibility],
+    ).then((r) => r.rows[0].id as string);
+  const addPhoto = (propertyId: string, by: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.property_photos (org_id, property_id, content_type, bytes, width, height, created_by)
+       VALUES ($1, $2, 'image/jpeg', '\\xffd8ffd9'::bytea, 10, 10, $3) RETURNING id`,
+      [A, propertyId, by],
+    ).then((r) => r.rows[0].id as string);
+
+  it("photo d'un bien privé : visible par son responsable et le gérant, pas par un collègue ni l'autre agence", async () => {
+    const prop = await withTenant(pool, A1(), newProperty("private"));
+    const photo = await withTenant(pool, A1(), addPhoto(prop, users.negoA));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) => expect(await count(c, "app.property_photos", "id = $1", [photo])).toBe(1));
+    await withTenant(pool, A2(), async (_db, c) => expect(await count(c, "app.property_photos", "id = $1", [photo])).toBe(0));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.property_photos")).toBe(0));
+  });
+
+  it("bien partagé : un collègue voit les photos mais n'en ajoute ni n'en supprime ; aucune modification possible", async () => {
+    const prop = await withTenant(pool, A1(), newProperty("agency"));
+    const photo = await withTenant(pool, A1(), addPhoto(prop, users.negoA));
+    await withTenant(pool, A2(), async (_db, c) => {
+      expect(await count(c, "app.property_photos", "id = $1", [photo])).toBe(1);
+      expect((await c.query(`DELETE FROM app.property_photos WHERE id = $1`, [photo])).rowCount).toBe(0);
+    });
+    await expectDenied(withTenant(pool, A2(), addPhoto(prop, users.nego2A)));
+    await expectDenied(withTenant(pool, A1(), (_db, c) => c.query(`UPDATE app.property_photos SET width = 20 WHERE id = $1`, [photo])));
+    await withTenant(pool, A1(), async (_db, c) =>
+      expect((await c.query(`DELETE FROM app.property_photos WHERE id = $1`, [photo])).rowCount).toBe(1));
+  });
+});
+
 describe("garde-fou : aucune table d'agence n'échappe à la RLS", () => {
   it("chaque table du schéma app a la RLS activée, forcée, et une politique restrictive d'isolation", async () => {
     const { rows } = await owner.query<{ table: string; enabled: boolean; forced: boolean; restrictive: number }>(`

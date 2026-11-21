@@ -326,3 +326,16 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - la rédaction par IA viendra en surcouche, marquée « générée par IA ».
 - **Objection du Devil's Advocate** : le contrôle peut donner un faux sentiment de conformité, alors que certaines bases sont « à confirmer ».
 - **Réponse** : c'est vrai. L'écran parle de « contrôle indicatif, à faire valider par l'avocat ». La liste des mentions figure dans les questions à l'avocat (fiche juridique) et sera ajustée après sa réponse.
+
+## D-042 — Photos stockées en base (préproduction), à déplacer vers un stockage d'objets avant la production
+- **Date** : 2026-11-21 · **Statut** : Acceptée (provisoire)
+- **Décision** :
+  - les photos sont stockées dans PostgreSQL (`bytea`), sous la même RLS que le bien ;
+  - le serveur n'accepte que JPEG et PNG, retire les métadonnées (dont le GPS) et limite chaque photo à 1,5 Mo ;
+  - 15 photos au plus par bien.
+- **Raison** : l'isolation entre agences est garantie par la base sans nouveau service ni nouvelle clé. Le site ne reçoit toujours que ses identifiants limités (D-027). Rien à créer ni à payer.
+- **Limite** : le plan gratuit de Supabase compte 500 Mo de base. À environ 300 Ko par photo, cela fait de l'ordre de 100 à 150 biens entièrement illustrés.
+- **Révision prévue avant la production** :
+  - passage à un stockage d'objets (Supabase Storage ou équivalent), avec des liens signés de courte durée ;
+  - la clé de stockage restera côté serveur.
+  Cela demandera l'accord du fondateur (compte ou offre payante selon le volume).

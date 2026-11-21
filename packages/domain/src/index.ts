@@ -10,3 +10,4 @@ export * from "./calendar/ics";
 export * from "./crm/import";
 export * from "./deals/deadlines";
 export * from "./listing/mentions";
+export * from "./media/images";

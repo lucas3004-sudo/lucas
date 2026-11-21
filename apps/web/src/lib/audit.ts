@@ -30,7 +30,9 @@ export type AuditAction =
   | "contacts.importes"
   | "biens.importes"
   | "affaire.creee"
-  | "affaire.etape";
+  | "affaire.etape"
+  | "photo.ajoutee"
+  | "photo.supprimee";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -58,6 +60,8 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "biens.importes": "Biens importés (CSV)",
   "affaire.creee": "Affaire ouverte",
   "affaire.etape": "Étape d'affaire modifiée",
+  "photo.ajoutee": "Photo de bien ajoutée",
+  "photo.supprimee": "Photo de bien supprimée",
 };
 
 export async function audit(params: {

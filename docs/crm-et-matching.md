@@ -54,6 +54,16 @@ Date : 2026-11-20 · Choix du fondateur : « CRM et matching d'abord », avant l
 - Il y a un seul signalement ouvert par collègue et par bien, que l'alerte soit automatique ou faite avec le bouton « Prévenir ». Le bouton reste utile pour un acquéreur ajouté **après** le bien.
 - Chaque alerte est journalisée comme une tâche créée (motif « alerte automatique »).
 
+### Photos des biens (F5)
+- C'est une galerie sur la fiche du bien, avec 15 photos au plus par bien.
+- **Dans le navigateur**, chaque image est réduite à 1 600 px au plus et convertie en JPEG ; ses métadonnées disparaissent au passage.
+- **Le serveur revérifie tout** :
+  - format réel lu dans les octets : JPEG ou PNG uniquement, jamais de SVG ni de HTML ;
+  - **suppression des métadonnées** : EXIF, donc la **position GPS** du téléphone, commentaires, XMP, blocs texte PNG ;
+  - taille de 1,5 Mo au plus, dimensions de 8 000 px au plus.
+- Affichage par une adresse protégée : connexion obligatoire, et la photo n'est servie que si le bien est visible (RLS). Elle est envoyée avec l'en-tête `nosniff` et un cache privé.
+- Droits : voir les photos suit la visibilité du bien. En ajouter ou en supprimer suit le droit de modifier le bien. Une photo ne se modifie pas (migration 0012).
+
 ## Qui voit et fait quoi (appliqué par la base, RLS, migrations 0007 et 0008)
 
 | | Gérant | Manager | Assistant | Négociateur | Lecture seule |
@@ -84,7 +94,6 @@ Le test de réattribution a montré qu'une règle de la base était **toujours v
 - [Fiche contact](captures/11-fiche-contact.png)
 
 ## Reste à faire pour couvrir entièrement F4 et F5
-- Photos des biens.
 - Pipeline des affaires (suivi des offres et des ventes).
 - Tableau de bord du gérant (F13), à partir des tâches et des biens désormais disponibles.
 - Investment Studio (simulations).

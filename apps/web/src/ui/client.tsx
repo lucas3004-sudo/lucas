@@ -96,11 +96,23 @@ export function CopyField({ value, label }: { value: string; label: string }) {
 }
 
 /** Bouton d'envoi qui demande une confirmation (suppression, action irréversible). */
-export function ConfirmSubmit({ message, children, size = "sm" }: { message: string; children: ReactNode; size?: "sm" | "md" }) {
+export function ConfirmSubmit({
+  message,
+  children,
+  size = "sm",
+  ariaLabel,
+}: {
+  message: string;
+  children: ReactNode;
+  size?: "sm" | "md";
+  /** Nom accessible précis quand plusieurs boutons portent le même texte. */
+  ariaLabel?: string;
+}) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
+      aria-label={ariaLabel}
       disabled={pending}
       className={buttonClass("danger", size)}
       onClick={(e) => {
