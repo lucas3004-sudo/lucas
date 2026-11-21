@@ -107,7 +107,7 @@ export default async function AgentsPage() {
         {missions.length === 0 ? (
           <p className="px-5 py-4 text-sm text-ink-muted">Aucune mission.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div role="region" aria-label="Dernières missions (défilable)" tabIndex={0} className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs text-ink-muted">

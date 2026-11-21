@@ -4,7 +4,7 @@ import { requireAgency } from "@/lib/agency/context";
 import { agencyPlanAndUsage, quotaFor } from "@/lib/billing/plan";
 import { fmt } from "@/lib/format";
 import { cn } from "@/ui/cn";
-import { Alert, Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
+import { Alert, Badge, Card, CardHeader, PageHeader } from "@/ui/surface";
 
 export const metadata: Metadata = { title: "Formule et consommation" };
 
@@ -98,7 +98,7 @@ export default async function PlanPage() {
 
         <Card>
           <CardHeader title="Les formules" description="Grille de lancement, prix hors taxes. L'IA n'est pas encore activée : ses quotas s'appliqueront dès son ouverture." />
-          <CardBody className="overflow-x-auto p-0">
+          <div role="region" aria-label="Comparaison des formules (défilable)" tabIndex={0} className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <caption className="sr-only">Comparaison des formules et de leurs quotas</caption>
               <thead className="bg-surface-muted text-left text-xs text-ink-muted">
@@ -126,7 +126,7 @@ export default async function PlanPage() {
                 ))}
               </tbody>
             </table>
-          </CardBody>
+          </div>
         </Card>
       </div>
     </>

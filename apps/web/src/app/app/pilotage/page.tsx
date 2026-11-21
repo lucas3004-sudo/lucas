@@ -56,7 +56,7 @@ export default async function PilotagePage({ searchParams }: { searchParams: Pro
 
       <Card className="mb-4">
         <CardHeader title="Activité de l'équipe" description={`Période ${period}. Source : journal d'audit (les éléments supprimés depuis restent comptés), agenda (rendez-vous non annulés, déjà passés), affaires (actes signés) et tâches.`} />
-        <div className="overflow-x-auto">
+        <div role="region" aria-label="Activité par membre (défilable)" tabIndex={0} className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs text-ink-muted">

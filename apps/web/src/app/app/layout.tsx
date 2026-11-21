@@ -75,6 +75,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[256px_minmax(0,1fr)] print:block">
+      {/* Lien d'évitement (WCAG 2.4.1) : premier élément atteint au clavier, visible seulement quand il a le focus. */}
+      <a
+        href="#contenu"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-[var(--radius-control)] focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-ink focus:shadow-[var(--shadow-card)] print:hidden"
+      >
+        Aller au contenu
+      </a>
       <aside className="hidden print:!hidden border-r border-line bg-surface lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:sticky lg:top-0 lg:px-4 lg:py-5">
         <div className="px-1">
           <Logo />
@@ -99,7 +106,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </details>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+      <main id="contenu" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 focus:outline-none sm:px-8 sm:py-8">
         {remindTwoFactor ? (
           <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-control)] bg-warning-soft px-3.5 py-2.5 text-sm text-warning print:hidden">
             <span>Votre rôle donne accès à toutes les données de l&apos;agence : activez la double authentification.</span>

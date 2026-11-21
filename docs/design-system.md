@@ -18,7 +18,7 @@
 | `canvas` | Fond de page | #f4f5f8 | #0b0f17 |
 | `surface` | Cartes, panneaux | #ffffff | #121826 |
 | `line` / `line-strong` | Bordures | #e2e6ec / #c9d0da | #232c3d / #344057 |
-| `ink` / `ink-muted` / `ink-subtle` | Texte principal, secondaire, discret | #111827 / #556074 / #8791a3 | #e8ecf3 / #a3adbf / #77829a |
+| `ink` / `ink-muted` / `ink-subtle` | Texte principal, secondaire, discret | #111827 / #556074 / #626b7e | #e8ecf3 / #a3adbf / #8390a6 |
 | `brand` | Bleu marine (actions principales) | #17325c | #3d6fc4 |
 | `success` / `warning` / `danger` | États | vert / ambre / rouge, chacun avec une variante `-soft` pour les fonds | — |
 

@@ -147,7 +147,7 @@ export default async function InvestmentPage({ searchParams }: { searchParams: P
 
               <Card>
                 <CardHeader title="Sensibilité au prix et au loyer" description="Cash-flow mensuel (et rendement net) si le prix ou le loyer varie. Les frais et l'emprunt suivent le prix ; l'apport reste fixe." />
-                <div className="overflow-x-auto px-5 py-4">
+                <div role="region" aria-label="Sensibilité (défilable)" tabIndex={0} className="overflow-x-auto px-5 py-4">
                   <table className="w-full min-w-[520px] text-sm">
                     <caption className="sr-only">Cash-flow mensuel selon la variation du prix (lignes) et du loyer (colonnes)</caption>
                     <thead>

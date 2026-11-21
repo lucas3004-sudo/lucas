@@ -47,7 +47,7 @@ export default async function AuditPage() {
         {entries.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-ink-muted">Aucune action enregistrée pour le moment.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div role="region" aria-label="Journal d'audit (défilable)" tabIndex={0} className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-line text-[12px] uppercase tracking-wide text-ink-muted">
                 <tr>
