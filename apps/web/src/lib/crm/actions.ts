@@ -5,7 +5,7 @@
  * (identifiants uniquement : un effacement RGPD ne laisse pas de nom dans le journal).
  */
 import { withTenant } from "@immopilot/db";
-import { FEATURE_KEYS, findDuplicates, normalizeEmail, normalizePhone } from "@immopilot/domain";
+import { FEATURE_KEYS, findDuplicates, normalizeEmail, normalizePhone, type PropertyFeature } from "@immopilot/domain";
 import { communesByPostcode, geocode } from "@immopilot/integrations";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { ActionState } from "../agency/actions";
 import { requireAgency, type AgencyContext } from "../agency/context";
 import { audit } from "../audit";
+import { alertMatchingBuyers } from "./alerts";
 import { getTenantPool } from "../server/db";
 import { duplicateCandidates } from "./data";
 
@@ -265,20 +266,31 @@ export async function createPropertyAction(_prev: CrmState, form: FormData): Pro
   if (!address) return { error: "Adresse non reconnue. Choisissez-la dans la liste proposée." };
 
   let id: string;
+  let alerts: string[] = [];
   try {
-    id = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) =>
-      (await c.query<{ id: string }>(
+    ({ id, alerts } = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) => {
+      const newId = (await c.query<{ id: string }>(
         `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, mandate_type, type, address_label, ban_id, insee_code,
            longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
         [ctx.org.id, d.ownerUserId, d.visibility, d.status, d.mandateType, d.type, address.label, address.banId, address.inseeCode,
          address.longitude, address.latitude, d.surface, d.rooms, d.price, d.dpeClass, d.features, d.notes, ctx.user.id],
-      )).rows[0]!.id);
+      )).rows[0]!.id;
+      // Opportunity Finder v1 : les collègues dont un acquéreur correspond sont prévenus.
+      const taskIds = await alertMatchingBuyers(c, {
+        orgId: ctx.org.id, authorUserId: ctx.user.id, authorName: ctx.user.name, propertyId: newId, status: d.status, label: address.label,
+        property: { type: d.type, price: d.price, surface: d.surface, rooms: d.rooms, inseeCode: address.inseeCode, features: d.features as PropertyFeature[] },
+      });
+      return { id: newId, alerts: taskIds };
+    }));
   } catch (e) {
     if (isDenied(e)) return { error: "Vous ne pouvez pas créer ce bien (responsable hors de vos droits)." };
     throw e;
   }
   await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "bien_agence.cree", targetType: "bien", targetId: id });
+  for (const taskId of alerts) {
+    await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "tache.creee", targetType: "tache", targetId: taskId, details: { motif: "alerte_automatique" } });
+  }
   redirect(`/app/proprietes/${id}`);
 }
 
