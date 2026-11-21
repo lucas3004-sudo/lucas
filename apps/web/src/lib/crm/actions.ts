@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { ActionState } from "../agency/actions";
 import { requireAgency, type AgencyContext } from "../agency/context";
 import { audit } from "../audit";
+import { quotaError } from "../billing/plan";
 import { alertMatchingBuyers } from "./alerts";
 import { getTenantPool } from "../server/db";
 import { duplicateCandidates } from "./data";
@@ -58,6 +59,8 @@ export async function createContactAction(_prev: CrmState, form: FormData): Prom
   const parsed = parseContact(form, ctx);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Valeurs invalides." };
   const d = parsed.data;
+  const overQuota = await quotaError(ctx, "contacts");
+  if (overQuota) return { error: overQuota };
 
   // Doublons parmi les contacts visibles (signalés, jamais fusionnés automatiquement).
   if (form.get("confirmDuplicate") !== "1") {

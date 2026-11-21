@@ -18,6 +18,7 @@ const ICONS = {
   bot: "M12 3v3M7 8h10a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3zM9 13h.01M15 13h.01M9.5 17h5",
   chart: "M4 20V10M10 20V4M16 20v-8M22 20H2",
   check: "M4 6h16v14H4zM8 3v5M16 3v5M8.5 13.5l2.5 2.5 4.5-5",
+  plan: "M3 6h18v12H3zM3 10h18M7 15h4",
 } as const;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };

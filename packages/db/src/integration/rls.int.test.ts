@@ -506,6 +506,37 @@ describe("agents : missions, étapes, approbations (migration 0014)", () => {
   });
 });
 
+describe("formule de l'agence (migration 0016)", () => {
+  it("lisible par les membres de l'agence seulement, jamais modifiable par une agence (même le gérant)", async () => {
+    await owner.query(`INSERT INTO app.agency_plans (org_id, plan) VALUES ($1, 'solo') ON CONFLICT (org_id) DO UPDATE SET plan = 'solo'`, [A]);
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) =>
+      expect((await c.query(`SELECT plan FROM app.agency_plans`)).rows).toEqual([{ plan: "solo" }]));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.agency_plans")).toBe(0));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`UPDATE app.agency_plans SET plan = 'agency'`)));
+    await expectDenied(withTenant(pool, { orgId: B, userId: users.gerantB }, (_db, c) =>
+      c.query(`INSERT INTO app.agency_plans (org_id, plan) VALUES ($1, 'agency')`, [B])));
+  });
+
+  it("consommation : compte les éléments privés des collègues sans les révéler, jamais ceux d'une autre agence", async () => {
+    const monthStart = new Date(Date.now() - 31 * 86_400_000);
+    const usage = (ctx: { orgId: string; userId: string }) =>
+      withTenant(pool, ctx, async (_db, c) => (await c.query(`SELECT * FROM app.agency_usage($1)`, [monthStart])).rows[0]);
+    const before = await usage({ orgId: A, userId: users.nego2A });
+    await withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) =>
+      c.query(`INSERT INTO app.contacts (org_id, owner_user_id, visibility, last_name, created_by) VALUES ($1, $2, 'private', 'Compté', $2)`, [A, users.negoA]));
+    const after = await usage({ orgId: A, userId: users.nego2A });
+    expect(after.contacts).toBe(before.contacts + 1); // privé de A1, compté pour A2…
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, async (_db, c) =>
+      expect(await count(c, "app.contacts", "last_name = 'Compté'")).toBe(0)); // …mais toujours invisible
+    expect(after.membres).toBe(4); // gérant, deux négociateurs, lecture seule
+    const other = await usage({ orgId: B, userId: users.gerantB });
+    expect(other.membres).toBe(1);
+    expect(other.contacts).toBe(0);
+    // Hors contexte d'agence (ou agence dont on n'est pas membre) : aucun chiffre.
+    expect(await usage({ orgId: B, userId: users.negoA })).toBeUndefined();
+  });
+});
+
 describe("garde-fou : aucune table d'agence n'échappe à la RLS", () => {
   it("chaque table du schéma app a la RLS activée, forcée, et une politique restrictive d'isolation", async () => {
     const { rows } = await owner.query<{ table: string; enabled: boolean; forced: boolean; restrictive: number }>(`

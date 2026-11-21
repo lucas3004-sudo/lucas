@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildIcs, icsDate, icsEscape, icsFold } from "./ics";
-import { parisLocalToUtc, utcToParisLocal } from "./time";
+import { parisLocalToUtc, parisMonthStart, utcToParisLocal } from "./time";
 
 describe("heure de Paris ⇄ UTC", () => {
   it("hiver : UTC+1", () => {
@@ -21,6 +21,20 @@ describe("heure de Paris ⇄ UTC", () => {
   it("aller-retour et saisies invalides", () => {
     expect(utcToParisLocal(new Date("2026-11-25T13:30:00Z"))).toBe("2026-11-25T14:30");
     for (const bad of ["", "2026-13-01T10:00", "2026-11-25 14:30", "2026-02-30T10:00", "abc"]) expect(parisLocalToUtc(bad), bad).toBeNull();
+  });
+});
+
+describe("début de mois à Paris (remise à zéro des quotas)", () => {
+  it("minuit le 1er, heure de Paris, été comme hiver", () => {
+    expect(parisMonthStart(new Date("2026-11-21T10:00:00Z")).toISOString()).toBe("2026-10-31T23:00:00.000Z");
+    expect(parisMonthStart(new Date("2026-07-15T10:00:00Z")).toISOString()).toBe("2026-06-30T22:00:00.000Z");
+  });
+  it("le 1er à 0 h 30 à Paris est déjà le nouveau mois (encore la veille en UTC)", () => {
+    expect(parisMonthStart(new Date("2026-11-30T23:30:00Z")).toISOString()).toBe("2026-11-30T23:00:00.000Z");
+  });
+  it("mois suivant, passage d'année compris", () => {
+    expect(parisMonthStart(new Date("2026-12-10T12:00:00Z"), 1).toISOString()).toBe("2026-12-31T23:00:00.000Z");
+    expect(parisMonthStart(new Date("2027-03-10T12:00:00Z"), 1).toISOString()).toBe("2027-03-31T22:00:00.000Z");
   });
 });
 

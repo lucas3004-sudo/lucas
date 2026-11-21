@@ -17,12 +17,14 @@ d'acceptation sont vérifiés.
 | 5. Socle agents | 🟡 **Socle sans IA livré et testé (2026-11-21)** : fiches versionnées, passerelle d'outils, missions, approbations, Agent Center, 4 agents déterministes. Reste : modes IA, Copilot, worker (clé Anthropic nécessaire) | [Socle des agents](docs/phase-5-socle-agents.md) |
 | 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio**, **tableau de bord du gérant**, **agenda (.ics)**, **export RGPD** et **import CSV**, **alertes de correspondance**, **suivi des affaires** et **fiche annonce** (mentions obligatoires, sans IA) et **photos des biens** livrés et testés. Phase 6 terminée côté outils, hors IA | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [Affaires](docs/affaires.md), [Annonce](docs/annonce.md), [captures 09 à 15](docs/captures/) |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
-| 8. Monétisation | À faire | — |
+| 8. Monétisation | En cours : formules et quotas appliqués, sans paiement (2026-11-21) | [Formules et quotas](docs/formules-et-quotas.md) |
 | 9. Qualité et sécurité (audit formel) | À faire | — |
 | 10. Espace particuliers | À faire | — |
 | 11. Production | À faire | — |
 
 ## Fonctionnalités opérationnelles (testées)
+**Formules et quotas (sans paiement)** : formule de chaque agence (Essai par défaut), consommation comptée sur toute l'agence, ajout refusé au quota avec un message clair, page « Formule et consommation » ([détails](docs/formules-et-quotas.md), D-048).
+
 **Agents (sans IA)** : Agent Center avec 4 agents déterministes (qualité des données, Opportunity Finder, veille des échéances, détection des doublons) ; passerelle d'outils qui refuse tout ce qui dépasse la fiche ; boîte d'approbations (aucune fusion sans décision humaine).
 
 **Sécurité du compte** : double authentification par application (TOTP) avec codes de secours, essais limités, rappel au gérant et aux managers ([détails](docs/securite-compte.md)).
@@ -37,10 +39,10 @@ d'acceptation sont vérifiés.
 - **Isolation entre agences** dans la base (RLS), avec un garde-fou automatique « aucune table oubliée ».
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
-**Tests** (tous au vert le 2026-11-20) :
-- 141 tests unitaires (domaine, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
-- 34 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents) ;
-- 24 scénarios de bout en bout (Playwright), dont 1 pour les agents et les approbations, 3 pour les en-têtes de sécurité et l'état de santé, dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 1 pour l'import CSV, 1 pour l'annonce et les photos, 1 pour la double authentification et 1 pour l'Investment Studio ;
+**Tests** (tous au vert le 2026-11-21) :
+- 148 tests unitaires (domaine, formules et quotas, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 36 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation) ;
+- 25 scénarios de bout en bout (Playwright), dont 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, et les formules et quotas ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -105,17 +107,19 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
    - puis redéployer ;
    - déconnecter le second projet Vercel relié au dépôt (« saas »), pour éviter des constructions en double.
 
-   La base de préproduction est à jour (13 migrations, schéma identique à celui des tests).
+   La base de préproduction est à jour (15 migrations, schéma identique à celui des tests).
 2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
-3. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
-4. **Stockage des photos avant la production** (D-042) : un stockage d'objets sera nécessaire au-delà d'environ 100 à 150 biens illustrés (compte ou offre selon le volume).
-5. Demandes de devis aux fournisseurs d'annonces : **reportées** (choix du fondateur).
-6. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`).
-7. Consultation d'un avocat avant la commercialisation (questions prêtes dans `docs/legal/fiche-juridique.md`, dont la liste des mentions d'annonce et l'information des salariés sur le pilotage).
+3. **Valider trois hypothèses de quotas** (D-048) : Investisseur avec 100 contacts et 1 membre, quotas de l'Essai, « 1 utilisateur » en Solo et Pro. Ces valeurs sont modifiables en une ligne.
+4. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
+5. **Stockage des photos avant la production** (D-042) : un stockage d'objets sera nécessaire au-delà d'environ 100 à 150 biens illustrés (compte ou offre selon le volume).
+6. Demandes de devis aux fournisseurs d'annonces : **reportées** (choix du fondateur).
+7. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`).
+8. Consultation d'un avocat avant la commercialisation (questions prêtes dans `docs/legal/fiche-juridique.md`, dont la liste des mentions d'annonce et l'information des salariés sur le pilotage).
 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-21, formules et quotas** : grille D-014 appliquée par le logiciel, sans paiement. Formule de l'agence (Essai par défaut), compteurs calculés par la base sans révéler les éléments privés, refus au quota pour les dossiers, les contacts, l'import et les invitations, page « Formule et consommation » (migrations 0016 et 0017, D-048). CSP et contrôle de version fusionnés ([PR n° 17](https://github.com/lucas3004-sudo/lucas/pull/17)).
 - **2026-11-21, contrôle de version de la base** : liste des migrations attendues avec un garde-fou, refus de servir l'application sur une base en retard, état de santé public `/api/health` (D-046, migration 0015).
 - **2026-11-21, sécurité** : politique de sécurité du contenu stricte, avec un nonce par requête, et politique fermée pour les API (D-045) ; une injection XSS typique est bloquée (test de bout en bout et contrôle sans CSP). Socle des agents fusionné ([PR n° 16](https://github.com/lucas3004-sudo/lucas/pull/16)) ; migration 0014 appliquée en préproduction (14 migrations, schéma identique).
 - **2026-11-21, socle des agents (sans IA)** : package `@immopilot/agents` (passerelle, missions), migration 0014 (missions, étapes, approbations sous RLS), Agent Center, boîte d'approbations, fusion de doublons approuvée ; décision D-044. Qualité des données fusionnée ([PR n° 15](https://github.com/lucas3004-sudo/lucas/pull/15)).

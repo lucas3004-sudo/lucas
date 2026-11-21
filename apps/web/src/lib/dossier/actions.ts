@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { ActionState } from "../agency/actions";
 import { requireAgency } from "../agency/context";
 import { audit } from "../audit";
+import { quotaError } from "../billing/plan";
 import { getTenantPool } from "../server/db";
 import { computeDossier } from "./compute";
 
@@ -30,6 +31,8 @@ export async function createDossierAction(_prev: ActionState, form: FormData): P
   const parsed = inputSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Valeurs invalides." };
   const { label, banId, type, surface, rooms } = parsed.data;
+  const overQuota = await quotaError(ctx, "dossiers");
+  if (overQuota) return { error: overQuota };
 
   let address;
   try {
