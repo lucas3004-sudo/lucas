@@ -562,3 +562,67 @@ describe("garde-fou : aucune table d'agence n'échappe à la RLS", () => {
     expect(rows).toEqual([]);
   });
 });
+
+describe("comptes rendus de visite (migration 0018)", () => {
+  const A1 = () => ({ orgId: A, userId: users.negoA });
+  const A2 = () => ({ orgId: A, userId: users.nego2A });
+  const GA = () => ({ orgId: A, userId: users.gerantA });
+  const LA = () => ({ orgId: A, userId: users.lectureA });
+  // Bien confié à A2 ; visite organisée par A1 pour ce bien.
+  const setup = async (kind = "visite") => {
+    const propertyId = await withTenant(pool, A2(), (_db, c) =>
+      c.query(
+        `INSERT INTO app.properties (org_id, owner_user_id, visibility, type, address_label, ban_id, insee_code, created_by)
+         VALUES ($1, $2, 'agency', 'Maison', 'Bien visité', 'ban-visite', '80021', $2) RETURNING id`,
+        [A, users.nego2A],
+      ).then((r) => r.rows[0].id as string));
+    const appointmentId = await withTenant(pool, A1(), (_db, c) =>
+      c.query(
+        `INSERT INTO app.appointments (org_id, organizer_user_id, created_by, kind, title, starts_at, ends_at, property_id)
+         VALUES ($1, $2, $2, $3, 'Visite du bien', now() - interval '2 hours', now() - interval '1 hour', $4) RETURNING id`,
+        [A, users.negoA, kind, propertyId],
+      ).then((r) => r.rows[0].id as string));
+    return { propertyId, appointmentId };
+  };
+  const report = (appointmentId: string, propertyId: string | null, author: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.visit_reports (org_id, appointment_id, property_id, author_user_id, interest, next_step)
+       VALUES ($1, $2, $3, $4, 'fort', 'offre') RETURNING id`,
+      [A, appointmentId, propertyId, author],
+    ).then((r) => r.rows[0].id as string);
+
+  it("visible par l'auteur, le responsable du bien et le gérant ; ni par la lecture seule, ni par l'autre agence", async () => {
+    const { propertyId, appointmentId } = await setup();
+    const id = await withTenant(pool, A1(), report(appointmentId, propertyId, users.negoA));
+    for (const ctx of [A1(), A2(), GA()]) {
+      await withTenant(pool, ctx, async (_db, c) => expect(await count(c, "app.visit_reports", "id = $1", [id])).toBe(1));
+    }
+    await withTenant(pool, LA(), async (_db, c) => expect(await count(c, "app.visit_reports", "id = $1", [id])).toBe(0));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.visit_reports")).toBe(0));
+  });
+
+  it("seulement sur une visite que l'on voit, de type visite, pour le bien de la visite ; jamais en lecture seule", async () => {
+    const { propertyId, appointmentId } = await setup();
+    // A2 ne voit pas la visite organisée par A1 (RLS des rendez-vous).
+    await expectDenied(withTenant(pool, A2(), report(appointmentId, propertyId, users.nego2A)));
+    // Au nom d'un autre, ou en lecture seule : refusé.
+    await expectDenied(withTenant(pool, A1(), report(appointmentId, propertyId, users.nego2A)));
+    await expectDenied(withTenant(pool, LA(), report(appointmentId, propertyId, users.lectureA)));
+    // Bien différent de celui de la visite : refusé.
+    await expectDenied(withTenant(pool, A1(), report(appointmentId, null, users.negoA)));
+    // Une estimation n'est pas une visite.
+    const estimation = await setup("estimation");
+    await expectDenied(withTenant(pool, A1(), report(estimation.appointmentId, estimation.propertyId, users.negoA)));
+  });
+
+  it("le contenu se modifie, jamais la visite, le bien ni l'auteur ; le responsable du bien ne modifie pas", async () => {
+    const { propertyId, appointmentId } = await setup();
+    const id = await withTenant(pool, A1(), report(appointmentId, propertyId, users.negoA));
+    await withTenant(pool, A1(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.visit_reports SET interest = 'moyen', objections = 'Prix' WHERE id = $1`, [id])).rowCount).toBe(1));
+    await expectDenied(withTenant(pool, GA(), (_db, c) => c.query(`UPDATE app.visit_reports SET author_user_id = $2 WHERE id = $1`, [id, users.gerantA])));
+    await expectDenied(withTenant(pool, A1(), (_db, c) => c.query(`UPDATE app.visit_reports SET property_id = NULL WHERE id = $1`, [id])));
+    await withTenant(pool, A2(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.visit_reports SET interest = 'aucun' WHERE id = $1`, [id])).rowCount).toBe(0));
+  });
+});

@@ -1,4 +1,4 @@
-import { CRITERION_LABELS, matchProperty, type CriterionKey } from "@immopilot/domain";
+import { CRITERION_LABELS, INTEREST_LABELS, matchProperty, NEXT_STEP_LABELS, PRICE_OPINION_LABELS, visitStats, type CriterionKey } from "@immopilot/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -34,6 +34,7 @@ import { AppointmentList } from "../../agenda/appointment-list";
 import { listAppointments } from "@/lib/agenda/data";
 import { listDeals } from "@/lib/deals/data";
 import { DEAL_STAGES } from "@/lib/deals/labels";
+import { reportsForProperty } from "@/lib/visits/data";
 
 export const metadata: Metadata = { title: "Bien de l'agence", robots: { index: false } };
 
@@ -48,7 +49,7 @@ export default async function PropertyPage({ params, searchParams }: { params: P
 
   const { weights, custom } = parseWeights(await searchParams);
   const matchable = MATCHABLE_STATUSES.includes(property.status);
-  const [members, profiles, tasks, appointments, deals, photos] = await Promise.all([
+  const [members, profiles, tasks, appointments, deals, photos, visits] = await Promise.all([
     agencyMembers(ctx.org.id),
     matchable ? activeProfiles(ctx) : Promise.resolve([]),
     listTasks(ctx, "team", { propertyId: property.id }),
@@ -58,7 +59,9 @@ export default async function PropertyPage({ params, searchParams }: { params: P
       (await c.query<{ id: string; width: number; height: number }>(
         "SELECT id, width, height FROM app.property_photos WHERE property_id = $1 ORDER BY position, created_at", [property.id],
       )).rows),
+    reportsForProperty(ctx, property.id),
   ]);
+  const vstats = visitStats(visits.map((v) => ({ interest: v.interest, priceOpinion: v.price_opinion, nextStep: v.next_step })));
   const memberIds = new Set(members.map((m) => m.userId));
   const canEdit = canEditRecord(ctx, property.owner_user_id);
 
@@ -308,6 +311,33 @@ export default async function PropertyPage({ params, searchParams }: { params: P
                       <Badge tone={d.stage === "acte" ? "success" : d.stage === "abandon" ? "neutral" : "brand"}>{DEAL_STAGES[d.stage]}</Badge>
                       <span className="flex-1 text-ink-muted">{d.price !== null ? fmt.euros(d.price) : "Prix non renseigné"}</span>
                     </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+
+          {visits.length ? (
+            <Card>
+              <CardHeader
+                title={`Comptes rendus de visite (${vstats.visits})`}
+                description={`${vstats.byInterest.fort} intérêt fort, ${vstats.offersConsidered} offre(s) envisagée(s)${
+                  vstats.priceOpinions ? `, réserve sur le prix ${vstats.priceObjections} fois sur ${vstats.priceOpinions}` : ""
+                }.`}
+              />
+              <ul className="divide-y divide-line">
+                {visits.slice(0, 10).map((v) => (
+                  <li key={v.id} className="px-5 py-2.5 text-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone={v.interest === "fort" ? "success" : v.interest === "aucun" ? "neutral" : "brand"}>{INTEREST_LABELS[v.interest]}</Badge>
+                      <span className="text-ink">{NEXT_STEP_LABELS[v.next_step]}</span>
+                      {v.visit_at ? <span className="text-xs text-ink-muted">{fmt.date(v.visit_at)}</span> : null}
+                    </div>
+                    {v.price_opinion || v.objections ? (
+                      <p className="mt-1 text-[13px] text-ink-muted">
+                        {[v.price_opinion ? PRICE_OPINION_LABELS[v.price_opinion] : null, v.objections].filter(Boolean).join(" · ")}
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
