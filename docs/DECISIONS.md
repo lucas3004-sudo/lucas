@@ -268,3 +268,14 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Raison** : la stratégie (F13) exclut tout classement automatique des personnes. Un tableau de bord sert à repérer ce qui bloque (biens non couverts, relances en retard), pas à noter les gens.
 - **Objection du Devil's Advocate** : même sans tri, un tableau de chiffres par personne permet de comparer les membres, et peut servir de surveillance.
 - **Réponse** : c'est vrai. Les chiffres se limitent à l'activité dans l'outil, sur une période choisie. Il n'y a ni horaires, ni connexions, ni durées. L'accès est réservé au gérant et aux managers. L'information des salariés sur cet outil fera partie des questions à l'avocat (CSE, information préalable).
+
+## D-037 — Rendez-vous : export .ics à télécharger plutôt qu'un abonnement d'agenda
+- **Date** : 2026-11-21 · **Statut** : Acceptée
+- **Décision** :
+  - les rendez-vous s'exportent en fichiers .ics téléchargés par l'utilisateur connecté, un par rendez-vous ou tous ensemble ;
+  - il n'y a pas encore d'adresse d'abonnement que l'agenda interrogerait seul ;
+  - les heures sont saisies en heure de Paris et enregistrées en UTC ; une heure inexistante (passage à l'heure d'été) est refusée ;
+  - la visibilité suit celle des tâches : organisateur, auteur, gérant et managers.
+- **Raison** : un abonnement exige une adresse secrète, lisible sans connexion, qui exposerait des noms et des adresses si elle fuitait. Il faudrait un jeton révocable, à durée limitée et journalisé : c'est à construire avec le socle de sécurité.
+- **Objection du Devil's Advocate** : sans abonnement, un rendez-vous déplacé n'est pas mis à jour dans l'agenda personnel.
+- **Réponse** : c'est vrai. L'identifiant du rendez-vous et sa date de modification sont exportés : un nouvel import met donc à jour l'événement existant au lieu de le dupliquer, et un rendez-vous annulé est retiré. L'abonnement sécurisé est noté pour la phase 9.
