@@ -40,9 +40,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 159 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 161 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 41 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats) ;
-- 32 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite et le suivi des mandats ;
+- 33 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats et l'export de l'agence ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -69,6 +69,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
 - qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
+- export complet de l'agence : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ([détails](docs/export-agence.md)) ;
 - suivi des mandats : numéro unique dans l'agence, dates, rappel 30 jours avant la fin dans « Ma journée », mandats expirés dans « Qualité des données », reprise par l'import CSV ([détails](docs/suivi-mandats.md)) ;
 - compte rendu de visite : texte prêt à envoyer au vendeur, sans IA et sans le nom des visiteurs, synthèse des visites sur la fiche du bien ([détails](docs/compte-rendu-visite.md)) ;
 - fiche annonce : contrôle des mentions obligatoires (DPE, dépenses d'énergie, copropriété, honoraires, barème, Géorisques), copie bloquée s'il en manque une, texte produit sans IA.
@@ -109,7 +110,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
    - puis redéployer ;
    - déconnecter le second projet Vercel relié au dépôt (« saas »), pour éviter des constructions en double.
 
-   La base de préproduction est à jour (18 migrations, schéma identique à celui des tests).
+   La base de préproduction est à jour (19 migrations, schéma identique à celui des tests).
 2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
 3. **Valider trois hypothèses de quotas** (D-048) : Investisseur avec 100 contacts et 1 membre, quotas de l'Essai, « 1 utilisateur » en Solo et Pro. Ces valeurs sont modifiables en une ligne.
 4. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
@@ -121,6 +122,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-21, export complet de l'agence** : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ; décision D-052. Suivi des mandats fusionné ([PR n° 21](https://github.com/lucas3004-sudo/lucas/pull/21)) ; migration 0019 appliquée en préproduction (19 migrations, même empreinte qu'en local).
 - **2026-11-21, suivi des mandats (F5)** : migration 0019 (numéro unique par agence, dates cohérentes), carte « Mandat » sur la fiche du bien, rappel 30 jours avant la fin, mandats expirés dans « Qualité des données » ; décision D-051. Accessibilité fusionnée ([PR n° 20](https://github.com/lucas3004-sudo/lucas/pull/20)).
 - **2026-11-21, accessibilité** : audit automatique axe-core (WCAG 2.1 AA) de 27 pages en thèmes clair et sombre, sur mobile et au clavier, avec un contrôle positif. Corrigés : contraste du texte discret, tableaux défilants inaccessibles au clavier, lien d'évitement ajouté. Compte rendu de visite fusionné ([PR n° 19](https://github.com/lucas3004-sudo/lucas/pull/19)) ; migration 0018 appliquée en préproduction (18 migrations, 72 règles d'accès, même empreinte qu'en local).
 - **2026-11-21, compte rendu de visite (F9, sans IA)** : migration 0018 (comptes rendus sous RLS, lisibles par le responsable du bien), texte pour le vendeur sans le nom des visiteurs, visites à rendre compte en tête de l'agenda, synthèse sur la fiche du bien, inclusion dans l'export RGPD ; décision D-049.

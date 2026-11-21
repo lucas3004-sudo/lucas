@@ -37,7 +37,8 @@ export type AuditAction =
   | "agent.reglage"
   | "approbation.decidee"
   | "visite.compte_rendu"
-  | "bien_agence.mandat";
+  | "bien_agence.mandat"
+  | "agence.export";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -72,6 +73,7 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "approbation.decidee": "Demande d'approbation décidée",
   "visite.compte_rendu": "Compte rendu de visite enregistré",
   "bien_agence.mandat": "Mandat d'un bien modifié",
+  "agence.export": "Données de l'agence exportées (CSV)",
 };
 
 export async function audit(params: {

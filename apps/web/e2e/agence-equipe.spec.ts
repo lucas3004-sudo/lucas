@@ -64,6 +64,11 @@ test.describe.serial("agence et équipe", () => {
     await page.goto("/app/equipe");
     await expect(page.getByRole("button", { name: "Créer l'invitation" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Retirer" })).toHaveCount(0);
+
+    // Export complet de l'agence : réservé au gérant (ni carte, ni accès direct).
+    await page.goto("/app/parametres");
+    await expect(page.getByRole("heading", { name: "Exporter les données de l'agence" })).toHaveCount(0);
+    expect((await page.request.get("/api/v1/export/contacts")).status()).toBe(403);
   });
 
   test("les routes HTTP de gestion d'agence sont fermées, même connecté", async ({ page }) => {

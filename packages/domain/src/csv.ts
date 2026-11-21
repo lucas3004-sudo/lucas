@@ -42,3 +42,22 @@ export function csvRecords<T extends Record<string, string>>(text: string, separ
   if (!header) return [];
   return rows.map((cells) => Object.fromEntries(header.map((name, i) => [name, cells[i] ?? ""])) as T);
 }
+
+export type CsvCell = string | number | null | undefined;
+
+/**
+ * Écriture CSV pour Excel (France) : point-virgule, guillemets si nécessaire, fins de ligne CRLF.
+ * Protection contre l'injection de formules : une cellule de TEXTE qui commence par = + - @,
+ * une tabulation ou un retour chariot est préfixée d'une apostrophe (recommandation OWASP).
+ * Les nombres restent des nombres (virgule décimale française).
+ */
+export function toCsv(rows: readonly (readonly CsvCell[])[], separator = ";"): string {
+  const cell = (v: CsvCell): string => {
+    if (v === null || v === undefined) return "";
+    if (typeof v === "number") return Number.isFinite(v) ? String(v).replace(".", ",") : "";
+    let s = v;
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return /["\n\r]/.test(s) || s.includes(separator) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return rows.map((r) => r.map(cell).join(separator)).join("\r\n") + "\r\n";
+}
