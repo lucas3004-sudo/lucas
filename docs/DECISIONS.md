@@ -432,3 +432,12 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - un contrôle positif garantit que l'audit tourne vraiment.
 - **Conséquence** : la teinte du texte discret est assombrie en thème clair (`#626b7e`) et éclaircie en thème sombre (`#8390a6`) pour atteindre 4,5:1. La hiérarchie visuelle avec le texte secondaire est un peu moins marquée : la lisibilité passe avant.
 - **Limite** : l'audit automatique ne remplace pas un audit manuel, nécessaire pour une déclaration RGAA. Détails : `docs/accessibilite.md`.
+
+## D-051 — Suivi des mandats : rappels sur la date saisie, sans calcul de délai légal ni registre officiel
+- **Date** : 2026-11-21 · **Statut** : Acceptée (décision technique réversible)
+- **Décision** :
+  - chaque bien porte un numéro de mandat (unique dans l'agence), une date de signature et une date de fin (migration 0019) ;
+  - le logiciel prévient 30 jours avant la fin, puis signale le mandat expiré ;
+  - il ne calcule aucun délai légal (irrévocabilité, préavis) et ne se présente pas comme le registre des mandats.
+- **Pourquoi** : le besoin courant est de ne pas laisser filer un mandat. Les délais légaux dépendent du contrat, et la tenue électronique du registre est une question juridique ouverte (fiche juridique, question n° 10).
+- Détails : `docs/suivi-mandats.md`.

@@ -40,9 +40,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 151 tests unitaires (domaine, formules et quotas, comptes rendus de visite, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
-- 39 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite) ;
-- 31 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, et le compte rendu de visite ;
+- 159 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 41 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats) ;
+- 32 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite et le suivi des mandats ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -69,6 +69,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
 - qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
+- suivi des mandats : numéro unique dans l'agence, dates, rappel 30 jours avant la fin dans « Ma journée », mandats expirés dans « Qualité des données », reprise par l'import CSV ([détails](docs/suivi-mandats.md)) ;
 - compte rendu de visite : texte prêt à envoyer au vendeur, sans IA et sans le nom des visiteurs, synthèse des visites sur la fiche du bien ([détails](docs/compte-rendu-visite.md)) ;
 - fiche annonce : contrôle des mentions obligatoires (DPE, dépenses d'énergie, copropriété, honoraires, barème, Géorisques), copie bloquée s'il en manque une, texte produit sans IA.
 
@@ -120,6 +121,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-21, suivi des mandats (F5)** : migration 0019 (numéro unique par agence, dates cohérentes), carte « Mandat » sur la fiche du bien, rappel 30 jours avant la fin, mandats expirés dans « Qualité des données » ; décision D-051. Accessibilité fusionnée ([PR n° 20](https://github.com/lucas3004-sudo/lucas/pull/20)).
 - **2026-11-21, accessibilité** : audit automatique axe-core (WCAG 2.1 AA) de 27 pages en thèmes clair et sombre, sur mobile et au clavier, avec un contrôle positif. Corrigés : contraste du texte discret, tableaux défilants inaccessibles au clavier, lien d'évitement ajouté. Compte rendu de visite fusionné ([PR n° 19](https://github.com/lucas3004-sudo/lucas/pull/19)) ; migration 0018 appliquée en préproduction (18 migrations, 72 règles d'accès, même empreinte qu'en local).
 - **2026-11-21, compte rendu de visite (F9, sans IA)** : migration 0018 (comptes rendus sous RLS, lisibles par le responsable du bien), texte pour le vendeur sans le nom des visiteurs, visites à rendre compte en tête de l'agenda, synthèse sur la fiche du bien, inclusion dans l'export RGPD ; décision D-049.
 - **2026-11-21, formules et quotas** : grille D-014 appliquée par le logiciel, sans paiement. Formule de l'agence (Essai par défaut), compteurs calculés par la base sans révéler les éléments privés, refus au quota pour les dossiers, les contacts, l'import et les invitations, page « Formule et consommation » (migrations 0016 et 0017, D-048). CSP et contrôle de version fusionnés ([PR n° 17](https://github.com/lucas3004-sudo/lucas/pull/17)). Fusionné ([PR n° 18](https://github.com/lucas3004-sudo/lucas/pull/18)) ; migrations 0016 et 0017 appliquées en préproduction (17 migrations, 67 règles d'accès, même empreinte qu'en local).

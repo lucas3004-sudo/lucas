@@ -11,8 +11,8 @@ import { canAssignOwner } from "../../_crm/parts";
 export const metadata: Metadata = { title: "Importer des biens" };
 
 const TEMPLATE =
-  "Adresse;Code postal;Ville;Type;Surface;Pièces;Prix;DPE;Statut;Mandat;Équipements;Notes\r\n" +
-  "8 boulevard du Port;80000;Amiens;Appartement;62;3;250000;D;Mandat;Exclusif;balcon, parking;\r\n";
+  "Adresse;Code postal;Ville;Type;Surface;Pièces;Prix;DPE;Statut;Mandat;N° mandat;Date de mandat;Fin du mandat;Équipements;Notes\r\n" +
+  "8 boulevard du Port;80000;Amiens;Appartement;62;3;250000;D;Mandat;Exclusif;M-2026-042;01/09/2026;01/12/2026;balcon, parking;\r\n";
 
 export default async function ImportPropertiesPage() {
   const ctx = await requireAgency();
@@ -22,7 +22,7 @@ export default async function ImportPropertiesPage() {
     <>
       <PageHeader
         title="Importer des biens"
-        description="Colonnes reconnues : Adresse et Type (obligatoires), Code postal, Ville, Surface, Pièces, Prix, DPE, Statut, Mandat, Équipements, Notes. Chaque adresse est vérifiée auprès de la Base Adresse Nationale (200 biens au maximum par fichier)."
+        description="Colonnes reconnues : Adresse et Type (obligatoires), Code postal, Ville, Surface, Pièces, Prix, DPE, Statut, Mandat, N° mandat, Date de mandat, Fin du mandat (JJ/MM/AAAA), Équipements, Notes. Chaque adresse est vérifiée auprès de la Base Adresse Nationale (200 biens au maximum par fichier)."
       />
       <Card className="max-w-4xl">
         <ImportWizard

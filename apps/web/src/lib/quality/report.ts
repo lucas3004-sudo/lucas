@@ -3,10 +3,10 @@
  * Lectures sous l'identité de l'utilisateur : la RLS s'applique. Signale, ne corrige jamais.
  */
 import { withTenant } from "@immopilot/db";
-import { checkListing, contactsWithoutValidConsent, duplicateGroups, utcToParisLocal, type EnergyClass } from "@immopilot/domain";
+import { checkListing, contactsWithoutValidConsent, duplicateGroups, mandateAlert, mandateAlertLabel, utcToParisLocal, type EnergyClass } from "@immopilot/domain";
 import type { AgencyContext } from "../agency/context";
 import { getAgencySettings } from "../agency/settings";
-import { contactName, type Property } from "../crm/data";
+import { contactName, toProperty } from "../crm/data";
 import { MATCHABLE_STATUSES } from "../crm/labels";
 import { listDeals } from "../deals/data";
 import { dealDeadlines } from "../deals/deadlines";
@@ -22,9 +22,8 @@ export interface QualityReport {
   lateDeals: QualityItem[];
   broad: QualityItem[];
   noDetails: QualityItem[];
+  expiredMandates: QualityItem[];
 }
-
-const NUM = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
 /** scopeAll : toute l'agence (gérant, manager) ; sinon, les éléments dont l'utilisateur est responsable. */
 export async function qualityReport(ctx: AgencyContext, scopeAll: boolean): Promise<QualityReport> {
@@ -39,9 +38,7 @@ export async function qualityReport(ctx: AgencyContext, scopeAll: boolean): Prom
       consents: (await c.query<{ contact_id: string; channel: string; status: "accorde" | "retire"; expires_at: string | null; recorded_at: Date }>(
         "SELECT contact_id, channel, status, expires_at::text, recorded_at FROM app.contact_consents",
       )).rows,
-      properties: (await c.query("SELECT * FROM app.properties WHERE status = ANY($1)", [MATCHABLE_STATUSES])).rows.map(
-        (r) => ({ ...r, surface: NUM(r.surface), rooms: NUM(r.rooms), price: NUM(r.price), fees_percent: NUM(r.fees_percent) }) as Property,
-      ),
+      properties: (await c.query("SELECT * FROM app.properties WHERE status = ANY($1)", [MATCHABLE_STATUSES])).rows.map(toProperty),
       profiles: (await c.query<{ id: string; contact_id: string; owner_user_id: string; budget_max: string | null; insee_codes: string[] }>(
         "SELECT id, contact_id, owner_user_id, budget_max, insee_codes FROM app.buyer_profiles WHERE status = 'actif'",
       )).rows,
@@ -103,7 +100,12 @@ export async function qualityReport(ctx: AgencyContext, scopeAll: boolean): Prom
     .flatMap((d) => dealDeadlines(d, today).filter((dl) => dl.daysLeft < 0).map((dl) => ({ d, dl })))
     .map(({ d, dl }) => ({ key: `${d.id}-${dl.key}`, label: d.property_label, href: `/app/affaires/${d.id}`, detail: `${dl.label} dépassée de ${-dl.daysLeft} j` }));
 
-  return { noConsent, duplicates, listings, incomplete, lateDeals, broad, noDetails };
+  const expiredMandates = scopedProperties
+    .map((p) => ({ p, alert: mandateAlert({ status: p.status, mandateEndsOn: p.mandate_ends_on }, today) }))
+    .filter((x) => x.alert?.kind === "expire")
+    .map(({ p, alert }) => ({ key: p.id, label: p.address_label, href: `/app/proprietes/${p.id}`, detail: mandateAlertLabel(alert!) }));
+
+  return { noConsent, duplicates, listings, incomplete, lateDeals, broad, noDetails, expiredMandates };
 }
 
 export function qualityCounts(r: QualityReport): Record<string, number> {

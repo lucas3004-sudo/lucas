@@ -2,6 +2,7 @@
  * Lectures du CRM. Toutes passent par withTenant() : la base applique elle-même l'isolation
  * par agence et la visibilité privé / agence (migration 0007).
  */
+import { isoDay } from "./dates";
 import { withTenant } from "@immopilot/db";
 import type { MatchProfile, MatchProperty, PropertyFeature } from "@immopilot/domain";
 import { headers } from "next/headers";
@@ -59,6 +60,10 @@ export interface Property {
   visibility: "private" | "agency";
   status: PropertyStatus;
   mandate_type: "simple" | "exclusif" | null;
+  /** Suivi des mandats (migration 0019) ; dates au format AAAA-MM-JJ. */
+  mandate_number: string | null;
+  mandate_signed_on: string | null;
+  mandate_ends_on: string | null;
   type: "Appartement" | "Maison";
   address_label: string;
   ban_id: string;
@@ -157,8 +162,11 @@ function toProfile(r: Record<string, unknown>): BuyerProfile {
   };
 }
 
-function toProperty(r: Record<string, unknown>): Property {
-  return { ...(r as unknown as Property), surface: NUM(r.surface), rooms: NUM(r.rooms), price: NUM(r.price), fees_percent: NUM(r.fees_percent) };
+export function toProperty(r: Record<string, unknown>): Property {
+  return {
+    ...(r as unknown as Property), surface: NUM(r.surface), rooms: NUM(r.rooms), price: NUM(r.price), fees_percent: NUM(r.fees_percent),
+    mandate_signed_on: isoDay(r.mandate_signed_on), mandate_ends_on: isoDay(r.mandate_ends_on),
+  };
 }
 
 /** État courant du consentement par canal : la dernière ligne enregistrée fait foi. */

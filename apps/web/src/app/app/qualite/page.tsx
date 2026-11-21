@@ -37,8 +37,8 @@ export default async function QualityPage({ searchParams }: { searchParams: Prom
   const seesAll = ctx.role === "gerant" || ctx.role === "manager";
   const scopeAll = seesAll && (await searchParams).vue === "agence";
   const r = await qualityReport(ctx, scopeAll);
-  const { noConsent, duplicates, listings, incomplete, lateDeals, broad, noDetails } = r;
-  const total = noConsent.length + noDetails.length + duplicates.length + incomplete.length + listings.length + broad.length + lateDeals.length;
+  const { noConsent, duplicates, listings, incomplete, lateDeals, broad, noDetails, expiredMandates } = r;
+  const total = noConsent.length + noDetails.length + duplicates.length + incomplete.length + listings.length + broad.length + lateDeals.length + expiredMandates.length;
   const tab = (active: boolean) =>
     cn("rounded-[var(--radius-control)] px-3 py-1.5 text-sm", active ? "bg-brand-soft font-medium text-brand-text" : "text-ink-muted hover:bg-surface-muted");
 
@@ -66,6 +66,7 @@ export default async function QualityPage({ searchParams }: { searchParams: Prom
         <Section title="Affaires avec une échéance dépassée" why="Rétractation, prêt ou signature de l'acte : à mettre à jour ou à traiter." items={lateDeals} />
         <Section title="Profils de recherche trop larges" why="Sans budget ni secteur, le profil correspond à presque tous les biens." items={broad} />
         <Section title="Contacts sans coordonnées" why="Ni e-mail ni téléphone : impossible de les recontacter." items={noDetails} />
+        <Section title="Mandats expirés" why="Biens encore affichés sous mandat alors que la date de fin est passée : renouvelez le mandat ou changez le statut." items={expiredMandates} />
       </div>
     </>
   );

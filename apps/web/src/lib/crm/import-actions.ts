@@ -185,8 +185,11 @@ const MIN_GEOCODE_SCORE = 0.5;
 async function analyzeProperties(ctx: AgencyContext, text: string) {
   const parsed = parsePropertiesCsv(text);
   if (parsed.fatal) return { fatal: parsed.fatal } as const;
-  const existing = await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) =>
-    new Set((await c.query<{ ban_id: string }>("SELECT ban_id FROM app.properties")).rows.map((r) => r.ban_id)));
+  const { existing, numbers } = await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) => {
+    const rows = (await c.query<{ ban_id: string; mandate_number: string | null }>("SELECT ban_id, mandate_number FROM app.properties")).rows;
+    return { existing: new Set(rows.map((r) => r.ban_id)), numbers: new Set(rows.flatMap((r) => (r.mandate_number ? [r.mandate_number] : []))) };
+  });
+  const seenNumbers = new Set<string>();
   const geocoded = await mapLimit(parsed.rows, 5, async (row) => {
     if (!row.data) return null;
     try {
@@ -205,6 +208,11 @@ async function analyzeProperties(ctx: AgencyContext, text: string) {
     if (!a || a === "introuvable") return { line: row.line, label: row.data.addressQuery, status: "erreur", message: "Adresse non reconnue par la Base Adresse Nationale." };
     if (existing.has(a.banId)) return { line: row.line, label: a.label, status: "doublon", message: "Un bien existe déjà à cette adresse." };
     if (seen.has(a.banId)) return { line: row.line, label: a.label, status: "doublon", message: "Adresse répétée dans le fichier." };
+    const num = row.data.mandateNumber;
+    if (num && (numbers.has(num) || seenNumbers.has(num))) {
+      return { line: row.line, label: a.label, status: "erreur", message: `Numéro de mandat « ${num} » déjà utilisé${numbers.has(num) ? " dans l'agence" : " dans le fichier"}.` };
+    }
+    if (num) seenNumbers.add(num);
     seen.add(a.banId);
     toInsert.push({ d: row.data, a });
     return { line: row.line, label: a.label, status: "ok", message: `${row.data.type}${row.data.surface ? `, ${row.data.surface} m²` : ""} · adresse reconnue à ${Math.round(a.score * 100)} %` };
@@ -251,10 +259,11 @@ export async function importPropertiesAction(_prev: ImportState, form: FormData)
       for (const { d, a } of result.toInsert) {
         const id = (await c.query<{ id: string }>(
           `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, mandate_type, type, address_label, ban_id, insee_code,
-             longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+             longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by, mandate_number, mandate_signed_on, mandate_ends_on)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING id`,
           [ctx.org.id, ownerUserId, visibility, d.status, d.mandateType, d.type, a.label, a.banId, a.inseeCode,
-           a.longitude, a.latitude, d.surface, d.rooms, d.price, d.dpeClass, d.features, d.notes, ctx.user.id],
+           a.longitude, a.latitude, d.surface, d.rooms, d.price, d.dpeClass, d.features, d.notes, ctx.user.id,
+           d.mandateNumber, d.mandateSignedOn, d.mandateEndsOn],
         )).rows[0]!.id;
         taskIds.push(...(await alertMatchingBuyers(c, {
           orgId: ctx.org.id, authorUserId: ctx.user.id, authorName: ctx.user.name, propertyId: id, status: d.status, label: a.label,
@@ -265,6 +274,10 @@ export async function importPropertiesAction(_prev: ImportState, form: FormData)
     });
   } catch (e) {
     if ((e as { code?: string }).code === "42501") return { error: "Import refusé : vous ne pouvez pas attribuer ces biens à ce membre." };
+    // Numéro déjà porté par un bien qu'on ne voit pas (bien privé d'un collègue) : rien n'est importé.
+    if ((e as { code?: string }).code === "23505") {
+      return { error: "Import annulé : un numéro de mandat du fichier est déjà utilisé dans l'agence (sur un bien que vous ne voyez pas). Corrigez-le ou retirez-le, puis recommencez." };
+    }
     throw e;
   }
   await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "biens.importes", details: { lignes: result.toInsert.length } });
