@@ -31,10 +31,14 @@ const MESSAGES: Record<string, string> = {
   TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: "Trop d'essais : patientez avant de réessayer.",
   ACCOUNT_TEMPORARILY_LOCKED: "Trop d'essais incorrects : compte bloqué temporairement. Réessayez plus tard.",
   TOTP_ALREADY_ENABLED: "La double authentification est déjà activée.",
+  INVALID_ORIGIN: "Cette adresse du site n'est pas reconnue pour la connexion : utilisez l'adresse principale du site.",
 };
 
 export function authErrorMessage(error: { code?: string; status?: number } | null | undefined): string {
   if (!error) return "Une erreur est survenue.";
   if (error.status === 429) return "Trop de tentatives. Patientez une minute avant de réessayer.";
-  return (error.code && MESSAGES[error.code]) || "Une erreur est survenue. Réessayez.";
+  if (error.code && MESSAGES[error.code]) return MESSAGES[error.code]!;
+  // Code technique affiché (jamais de détail sensible) : il permet de diagnostiquer à distance.
+  const code = error.code ?? (error.status ? `HTTP ${error.status}` : null);
+  return `Une erreur est survenue. Réessayez.${code ? ` (code : ${code})` : ""}`;
 }

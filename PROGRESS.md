@@ -40,7 +40,7 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 162 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 166 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 41 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats) ;
 - 33 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats et l'export de l'agence ;
 - lint, types, build de production.
@@ -104,13 +104,8 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 ## Décisions en attente du fondateur
 Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui suit demande une action ou un accord du fondateur, du plus urgent au moins urgent.
 
-1. **Mise en ligne (Vercel)** — à faire depuis un ordinateur, la page ne s'ouvre pas sur son téléphone. C'est elle qui permettra d'essayer tout ce qui a été construit :
-   - [Root Directory](https://vercel.com/lucasblaevoet30-7777s-projects/lucas/settings/build-and-deployment) = `apps/web` ;
-   - [variables d'environnement](https://vercel.com/lucasblaevoet30-7777s-projects/lucas/settings/environment-variables) : coller le fichier `vercel-variables.env` transmis le 2026-11-20 ;
-   - puis redéployer ;
-   - déconnecter le second projet Vercel relié au dépôt (« saas »), pour éviter des constructions en double.
+1. **Mise en ligne (Vercel)** : ✅ faite le 2026-11-22 par le fondateur (dossier `apps/web`, variables collées, déploiement « Ready », `/api/health` à « ok »). Reste à faire : déconnecter le second projet Vercel « saas », qui échoue à chaque modification (https://vercel.com/lucasblaevoet30-7777s-projects/saas/settings/git).
 
-   La base de préproduction est à jour (19 migrations, schéma identique à celui des tests).
 2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
 3. **Valider trois hypothèses de quotas** (D-048) : Investisseur avec 100 contacts et 1 membre, quotas de l'Essai, « 1 utilisateur » en Solo et Pro. Ces valeurs sont modifiables en une ligne.
 4. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
@@ -122,6 +117,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-22, mise en ligne (Vercel)** : réglages faits par le fondateur ; construction réussie ; `/api/health` répond « ok » avec 19 migrations sur 19. L'inscription échouait sur l'adresse du déploiement (origine refusée) : corrigé (D-053).
 - **2026-11-21, agent « Veille des mandats »** : 5e agent déterministe (L1). Il crée un rappel pour le responsable de chaque mandat qui se termine dans 30 jours ou a expiré, sans doublon. Export de l'agence fusionné ([PR n° 22](https://github.com/lucas3004-sudo/lucas/pull/22)).
 - **2026-11-21, export complet de l'agence** : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ; décision D-052. Suivi des mandats fusionné ([PR n° 21](https://github.com/lucas3004-sudo/lucas/pull/21)) ; migration 0019 appliquée en préproduction (19 migrations, même empreinte qu'en local).
 - **2026-11-21, suivi des mandats (F5)** : migration 0019 (numéro unique par agence, dates cohérentes), carte « Mandat » sur la fiche du bien, rappel 30 jours avant la fin, mandats expirés dans « Qualité des données » ; décision D-051. Accessibilité fusionnée ([PR n° 20](https://github.com/lucas3004-sudo/lucas/pull/20)).

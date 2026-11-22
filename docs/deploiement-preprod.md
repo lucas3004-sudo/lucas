@@ -46,7 +46,7 @@ Contrôle effectué le 20/11/2026 après les migrations 0001 à 0004 : test d'at
 - **Vercel Hobby : usage non commercial uniquement.** Il faudra changer d'offre ou d'hébergeur avant toute vente.
 - **Supabase gratuit : mise en veille après une semaine sans activité.** On la réactive depuis le tableau de bord.
 - **Pas de vérification d'e-mail** (D-023) : la préproduction ne doit contenir **que des comptes de test**, jamais de données réelles d'agence.
-- Les adresses de prévisualisation de Vercel (une par modification) ne permettent pas de se connecter. Seule l'adresse de production est reconnue par l'authentification.
+- Connexion : l'authentification accepte l'adresse principale, l'adresse propre au déploiement (`VERCEL_URL`) et celle de sa branche (`VERCEL_BRANCH_URL`), fournies par Vercel pour ce projet seulement. Toute autre origine est refusée (403 « INVALID_ORIGIN »). Pour un domaine personnalisé, ajouter la variable `AUTH_TRUSTED_ORIGINS` (adresses en https, séparées par des virgules).
 
 ## 5. Répartiteur de connexions (identifié le 20/11/2026)
 L'hôte du répartiteur n'est pas déductible de la référence du projet. Il a été identifié par une tentative de connexion volontairement fausse, depuis GitHub Actions (aucun secret utilisé) :

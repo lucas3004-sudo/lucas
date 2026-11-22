@@ -452,3 +452,13 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - les formules sont neutralisées (injection CSV).
 - **Pourquoi** : la réversibilité rassure les agences et répond au RGPD. Exiger la double authentification limite le risque principal, l'exfiltration par un compte compromis.
 - Détails : `docs/export-agence.md`.
+
+## D-053 — Connexion acceptée depuis les adresses Vercel du projet (et seulement elles)
+- **Date** : 2026-11-22 · **Statut** : Acceptée (correctif constaté en préproduction)
+- **Constat** : le fondateur a ouvert le site par l'adresse propre au déploiement. L'inscription échouait (« Une erreur est survenue »). La cause, reproduite en local : l'authentification n'acceptait que l'adresse principale (403 « Invalid origin »).
+- **Décision** :
+  - sont acceptées l'adresse principale, l'adresse du déploiement (`VERCEL_URL`) et celle de sa branche (`VERCEL_BRANCH_URL`), fournies par Vercel et propres à ce projet ;
+  - aucun joker sur `vercel.app`, où n'importe qui peut créer un site ;
+  - ajout possible par `AUTH_TRUSTED_ORIGINS` (https uniquement) ;
+  - un code d'erreur s'affiche désormais à côté du message générique, pour diagnostiquer à distance.
+- **Vérification** : en local, l'adresse du projet passe (200), une adresse étrangère est refusée (403). 4 tests unitaires.
