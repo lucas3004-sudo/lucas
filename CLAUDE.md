@@ -2,6 +2,7 @@
 
 ## Communication avec le fondateur
 - Le fondateur n'est pas développeur. Écrire en français, simplement, sans jargon inutile.
+- **Toujours donner les liens directs et cliquables** vers chaque page à ouvrir (Vercel, Supabase, GitHub, le site…), jamais seulement le nom d'un menu : le fondateur ne trouve pas les pages sans lien (demande du 2026-11-22).
 - **Toute question ou décision à lui soumettre passe par l'outil de questions à choix (AskUserQuestion)**, jamais par une question ouverte dans le texte :
   - des options claires à cocher (oui / non, option A / B / C…), la recommandation en premier avec « (Recommandé) » ;
   - une courte explication des conséquences de chaque option ;
