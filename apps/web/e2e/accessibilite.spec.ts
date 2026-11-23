@@ -18,6 +18,10 @@ const APP_PAGES = [
 async function audit(page: Page, path: string | null) {
   if (path) await page.goto(path);
   await page.waitForLoadState("networkidle");
+  // Attendre la fin des animations d'entrée (les animations sans fin, comme les lueurs, sont ignorées).
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().filter((a) => Number.isFinite(a.effect?.getComputedTiming().endTime ?? Infinity)).map((a) => a.finished.catch(() => null))),
+  );
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   for (const v of results.violations) if (process.env.A11Y_VERBOSE) console.log(`[a11y] ${path ?? page.url()} ${v.id} ${v.impact} ${v.nodes.length}`);
   return results.violations
@@ -99,6 +103,18 @@ for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     const problems: string[] = [];
     for (const path of PUBLIC_PAGES) problems.push(...(await audit(page, path)));
+    // Page d'accueil entière : on la parcourt pour révéler chaque section, puis on l'audite.
+    await page.goto("/");
+    for (let y = 0; y < (await page.evaluate(() => document.documentElement.scrollHeight)); y += 600) {
+      await page.evaluate((top) => window.scrollTo(0, top), y);
+      await page.waitForTimeout(120);
+    }
+    await page.waitForTimeout(1500);
+    problems.push(...(await audit(page, null)));
+    // Mouvements réduits : la mise en page statique doit rester accessible.
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
+    problems.push(...(await audit(page, "/")));
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: "no-preference" });
 
     await page.goto("/inscription");
     await page.getByLabel("Nom et prénom").fill("Alix Accessible");
