@@ -1,0 +1,63 @@
+# Chargement des données publiques (DVF, loyers ANIL, zonage ABC) dans la base de préproduction.
+# Lancement manuel uniquement (bouton « Run workflow »), avec le rôle app_ingest : il ne peut écrire
+# que dans le schéma ref (données publiques), jamais dans les données des agences.
+# Le secret PREPROD_DATABASE_URL_INGEST est ajouté par le fondateur dans les réglages GitHub.
+name: Ingestion préproduction
+
+on:
+  workflow_dispatch:
+    inputs:
+      donnees:
+        description: "Données à charger"
+        type: choice
+        options: ["tout", "dvf", "loyers", "zonage"]
+        default: "tout"
+      departements:
+        description: "Départements pour les ventes DVF (séparés par des virgules)"
+        type: string
+        default: "80"
+
+concurrency:
+  group: ingestion-preprod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ingestion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      DATABASE_URL_INGEST: ${{ secrets.PREPROD_DATABASE_URL_INGEST }}
+      DONNEES: ${{ inputs.donnees }}
+      DEPARTEMENTS: ${{ inputs.departements }}
+    steps:
+      - name: Vérifier le secret
+        run: |
+          if [ -z "$DATABASE_URL_INGEST" ]; then
+            echo "::error::Secret PREPROD_DATABASE_URL_INGEST absent (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+      - name: Vérifier les départements
+        run: |
+          if ! printf '%s' "$DEPARTEMENTS" | grep -Eq '^[0-9AB]{2,3}(,[0-9AB]{2,3})*$'; then
+            echo "::error::Départements invalides : « $DEPARTEMENTS » (exemple : 80,60)."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Zonage ABC
+        if: env.DONNEES == 'tout' || env.DONNEES == 'zonage'
+        run: pnpm --filter @immopilot/integrations ingest zonage
+      - name: Loyers ANIL
+        if: env.DONNEES == 'tout' || env.DONNEES == 'loyers'
+        run: pnpm --filter @immopilot/integrations ingest loyers
+      - name: Ventes DVF
+        if: env.DONNEES == 'tout' || env.DONNEES == 'dvf'
+        run: pnpm --filter @immopilot/integrations ingest dvf --departements "$DEPARTEMENTS"
