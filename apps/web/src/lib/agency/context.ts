@@ -19,7 +19,7 @@ export interface SessionUser {
 
 export interface AgencyContext {
   user: SessionUser;
-  org: { id: string; name: string; slug: string };
+  org: { id: string; name: string; slug: string; createdAt: Date };
   role: AgencyRole;
 }
 
@@ -58,5 +58,5 @@ export const requireAgency = cache(async (): Promise<AgencyContext> => {
   const org = orgs.find((o) => o.id === orgId);
   if (!org) redirect("/agence");
 
-  return { user, org: { id: org.id, name: org.name, slug: org.slug }, role };
+  return { user, org: { id: org.id, name: org.name, slug: org.slug, createdAt: new Date(org.createdAt) }, role };
 });

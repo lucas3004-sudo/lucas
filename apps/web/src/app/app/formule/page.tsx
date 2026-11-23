@@ -1,5 +1,6 @@
 import { METRIC_LABELS, monthlyPrice, MONTHLY_METRICS, parisMonthStart, PLANS, type Plan, type QuotaMetric } from "@immopilot/domain";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireAgency } from "@/lib/agency/context";
 import { agencyPlanAndUsage, quotaFor } from "@/lib/billing/plan";
 import { fmt } from "@/lib/format";
@@ -37,11 +38,8 @@ export default async function PlanPage() {
       />
       <div className="space-y-4">
         <Alert tone="brand">
-          Préproduction : aucun paiement n&apos;est encaissé.{" "}
-          {current.assigned
-            ? "Votre formule a été attribuée par l'équipe ImmoPilot."
-            : "Sans formule attribuée, votre agence est en Essai."}{" "}
-          Le changement de formule se fera ici à l&apos;ouverture du paiement en ligne.
+          {current.assigned ? "Formule active de votre agence." : "Votre agence est en essai gratuit."}{" "}
+          <Link href="/abonnement" className="font-medium underline">Choisir ou gérer l&apos;abonnement</Link>
         </Alert>
 
         <Card>

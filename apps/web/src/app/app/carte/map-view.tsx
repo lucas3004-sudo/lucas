@@ -147,7 +147,8 @@ export function MapView({ properties }: { properties: MapProperty[] }) {
         map.addControl(new lib.ScaleControl({ unit: "metric" }), "bottom-left");
         map.getCanvas().setAttribute("aria-label", "Carte des biens de l'agence et des ventes réelles");
 
-        map.on("load", () => {
+        // « style.load » : le style est prêt (sources et calques ajoutables) sans attendre toutes les tuiles du fond.
+        map.once("style.load", () => {
           map.addSource("ortho", { type: "raster", tiles: [ORTHO_TILES], tileSize: 256, maxzoom: 19, attribution: "© IGN" });
           map.addLayer({ id: "ortho", type: "raster", source: "ortho", layout: { visibility: "none" } });
           map.addSource("rayon", { type: "geojson", data: { type: "FeatureCollection", features: [] } });

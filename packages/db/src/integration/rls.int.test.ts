@@ -658,3 +658,39 @@ describe("suivi des mandats (migration 0019)", () => {
       expect((await c.query(`UPDATE app.properties SET mandate_ends_on = '2027-03-01' WHERE id = $1`, [id])).rowCount).toBe(1));
   });
 });
+
+describe("abonnements (migration 0020)", () => {
+  const apply = (org: string, status: string, plan: string, sub: string | null) => (_db: unknown, c: pg.PoolClient) =>
+    c.query("SELECT app.apply_subscription($1, $2, $3, 0, 'cus_Test123', $4, now() + interval '30 days')", [org, status, plan, sub]);
+
+  it("le site ne peut pas écrire un abonnement directement ; seule la fonction le fait, et aligne la formule", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>
+      c.query(`INSERT INTO app.agency_subscriptions (org_id, status, plan) VALUES ($1, 'actif', 'agency')`, [A])));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, apply(A, "actif", "pro", "sub_TestA1"));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => {
+      expect((await c.query("SELECT status, plan, past_due_since FROM app.agency_subscriptions")).rows).toEqual([{ status: "actif", plan: "pro", past_due_since: null }]);
+      expect((await c.query("SELECT plan FROM app.agency_plans")).rows).toEqual([{ plan: "pro" }]);
+      // Lecture seule pour le site.
+      expect((await c.query(`UPDATE app.agency_subscriptions SET status = 'actif'`).catch((e) => e)).code).toBe("42501");
+    });
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.agency_subscriptions")).toBe(0));
+  });
+
+  it("retard de paiement daté une seule fois (idempotent) ; résiliation : retour aux quotas par défaut", async () => {
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, apply(A, "en_retard", "pro", "sub_TestA1"));
+    const first = await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) =>
+      (await c.query("SELECT past_due_since FROM app.agency_subscriptions")).rows[0].past_due_since as Date);
+    expect(first).toBeInstanceOf(Date);
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, apply(A, "en_retard", "pro", "sub_TestA1"));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) =>
+      expect((await c.query("SELECT past_due_since FROM app.agency_subscriptions")).rows[0].past_due_since).toEqual(first));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, apply(A, "annule", "pro", "sub_TestA1"));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) => {
+      expect((await c.query("SELECT status FROM app.agency_subscriptions")).rows).toEqual([{ status: "annule" }]);
+      expect(await count(c, "app.agency_plans")).toBe(0);
+    });
+    // Agence inconnue : refusée.
+    await expect(withTenant(pool, { orgId: A, userId: users.gerantA }, apply("00000000-0000-4000-8000-000000000000", "actif", "pro", null)))
+      .rejects.toMatchObject({ code: "23503" });
+  });
+});

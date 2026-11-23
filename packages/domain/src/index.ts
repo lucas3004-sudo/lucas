@@ -13,6 +13,7 @@ export * from "./listing/mentions";
 export * from "./media/images";
 export * from "./crm/quality";
 export * from "./billing/plans";
+export * from "./billing/access";
 export * from "./visits/report";
 export * from "./mandates/expiry";
 export * from "./market/position";
