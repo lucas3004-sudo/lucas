@@ -31,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/app", label: "Tableau de bord", icon: "home" },
     { href: "/app/contacts", label: "Contacts", icon: "contacts" },
     { href: "/app/proprietes", label: "Biens de l'agence", icon: "key" },
+    { href: "/app/carte", label: "Carte", icon: "map" },
     { href: "/app/biens", label: "Dossiers de biens", icon: "building" },
     { href: "/app/affaires", label: "Affaires", icon: "deal" },
     { href: "/app/agenda", label: "Agenda", icon: "calendar" },

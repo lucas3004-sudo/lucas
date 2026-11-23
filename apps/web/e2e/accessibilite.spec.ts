@@ -12,7 +12,7 @@ const PUBLIC_PAGES = ["/connexion", "/inscription"];
 const APP_PAGES = [
   "/app", "/app/contacts", "/app/contacts/nouveau", "/app/proprietes", "/app/proprietes/nouveau", "/app/biens", "/app/biens/nouveau",
   "/app/affaires", "/app/agenda", "/app/taches", "/app/investissement", "/app/qualite", "/app/agents", "/app/agents/approbations",
-  "/app/equipe", "/app/parametres", "/app/formule", "/app/pilotage", "/app/journal", "/app/securite",
+  "/app/equipe", "/app/parametres", "/app/formule", "/app/pilotage", "/app/journal", "/app/securite", "/app/carte",
 ];
 
 async function audit(page: Page, path: string | null) {
