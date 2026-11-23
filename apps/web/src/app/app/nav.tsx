@@ -23,11 +23,26 @@ const ICONS = {
 } as const;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
+export type NavSection = { label?: string; items: NavItem[] };
 
-export function Nav({ items }: { items: NavItem[] }) {
+/** Menu en sections : l'essentiel d'abord, puis les outils et la gestion de l'agence (D-060). */
+export function Nav({ sections }: { sections: NavSection[] }) {
+  return (
+    <nav aria-label="Navigation principale" className="space-y-5">
+      {sections.map((section, i) => (
+        <div key={section.label ?? i} className="space-y-0.5">
+          {section.label ? <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-subtle">{section.label}</p> : null}
+          <NavLinks items={section.items} />
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function NavLinks({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Navigation principale" className="space-y-0.5">
+    <>
       {items.map((item) => {
         const active = item.href === "/app" ? pathname === "/app" : pathname.startsWith(item.href);
         return (
@@ -47,6 +62,6 @@ export function Nav({ items }: { items: NavItem[] }) {
           </Link>
         );
       })}
-    </nav>
+    </>
   );
 }

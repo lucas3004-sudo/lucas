@@ -40,13 +40,9 @@ function DayList({ title, empty, href, items }: { title: string; empty: string; 
   );
 }
 
-export const metadata: Metadata = { title: "Tableau de bord" };
+export const metadata: Metadata = { title: "Accueil" };
 
 // Feuille de route affichée telle quelle : ce sont des étapes prévues, pas des boutons.
-const ROADMAP = [
-  { title: "Équipe d'agents IA", detail: "Missions, approbations, coûts mesurés dans l'Agent Center.", phase: "Phase 5" },
-  { title: "Photos des biens", detail: "Galerie par bien, reprise dans l'annonce.", phase: "Phase 6" },
-];
 
 export default async function DashboardPage() {
   const ctx = await requireAgency();
@@ -197,20 +193,6 @@ export default async function DashboardPage() {
         </Card>
       ) : null}
 
-      <Card className="mt-4">
-        <CardHeader title="Prochains modules" description="En cours de construction. Ils apparaîtront dans le menu lorsqu'ils seront disponibles et testés." />
-        <ul className="divide-y divide-line">
-          {ROADMAP.map((item) => (
-            <li key={item.title} className="flex flex-wrap items-start gap-x-4 gap-y-1 px-5 py-3.5">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-ink">{item.title}</p>
-                <p className="text-[13px] text-ink-muted">{item.detail}</p>
-              </div>
-              <Badge>{item.phase}</Badge>
-            </li>
-          ))}
-        </ul>
-      </Card>
     </>
   );
 }

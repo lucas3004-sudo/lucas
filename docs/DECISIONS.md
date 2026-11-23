@@ -530,3 +530,12 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - contrastes calculés (tous au-dessus de 4,5:1) puis vérifiés par l'audit d'accessibilité des 27 pages, en thèmes clair et sombre ;
   - animations coupées si l'utilisateur réduit les mouvements ;
   - aucune transformation ne reste appliquée une fois l'animation finie, ce qui évite les effets de bord sur la carte et les menus.
+
+## D-060 — Menu simplifié : 7 entrées principales, outils et agence à part
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : un outil simple à prendre en main, sans hésiter à retirer l'inutile)
+- **Décision** :
+  - **7 entrées pour le travail quotidien** : Accueil, Biens, Carte, Contacts, Agenda, Affaires, Agents ;
+  - **« Outils »** : Estimations (ex-« Dossiers de biens »), Investissement (ex-« Investment Studio »), Tâches, Qualité des données ;
+  - **« Agence »** : Équipe, Formule, Paramètres, puis Pilotage et Journal d'audit pour le gérant et les managers ;
+  - noms en français courant ; la carte « Prochains modules » (en construction) est retirée de l'accueil, car elle n'aide pas l'agent.
+- **Aucune fonction supprimée** : toutes les pages restent accessibles, seul le classement change.

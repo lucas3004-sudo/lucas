@@ -7,7 +7,7 @@ import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Logo } from "@/ui/logo";
 import { agencyAccess } from "@/lib/billing/subscription";
 import { redirect } from "next/navigation";
-import { Nav, type NavItem } from "./nav";
+import { Nav, type NavSection } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Code déployé sans sa migration : on ne sert pas l'application sur une base en retard.
@@ -33,27 +33,42 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const remindTwoFactor = (role === "gerant" || role === "manager") && !twoFactorOn;
 
   // Seuls les modules réellement construits apparaissent (aucun lien vers une page vide).
-  const items: NavItem[] = [
-    { href: "/app", label: "Tableau de bord", icon: "home" },
-    { href: "/app/contacts", label: "Contacts", icon: "contacts" },
-    { href: "/app/proprietes", label: "Biens de l'agence", icon: "key" },
-    { href: "/app/carte", label: "Carte", icon: "map" },
-    { href: "/app/biens", label: "Dossiers de biens", icon: "building" },
-    { href: "/app/affaires", label: "Affaires", icon: "deal" },
-    { href: "/app/agenda", label: "Agenda", icon: "calendar" },
-    { href: "/app/taches", label: "Tâches", icon: "check" },
-    { href: "/app/investissement", label: "Investment Studio", icon: "chart" },
-    { href: "/app/qualite", label: "Qualité des données", icon: "shield" },
-    ...(role !== "lecture" ? [{ href: "/app/agents", label: "Agents", icon: "bot" as const }] : []),
-    { href: "/app/equipe", label: "Équipe", icon: "team" },
-    { href: "/app/parametres", label: "Paramètres", icon: "settings" },
-    { href: "/app/formule", label: "Formule", icon: "plan" },
-    ...(canReadAuditLog(role)
-      ? [
-          { href: "/app/pilotage", label: "Pilotage", icon: "gauge" as const },
-          { href: "/app/journal", label: "Journal d'audit", icon: "journal" as const },
-        ]
-      : []),
+  // Menu simplifié (D-060) : 7 entrées pour le travail de tous les jours, puis outils et agence.
+  const sections: NavSection[] = [
+    {
+      items: [
+        { href: "/app", label: "Accueil", icon: "home" },
+        { href: "/app/proprietes", label: "Biens", icon: "key" },
+        { href: "/app/carte", label: "Carte", icon: "map" },
+        { href: "/app/contacts", label: "Contacts", icon: "contacts" },
+        { href: "/app/agenda", label: "Agenda", icon: "calendar" },
+        { href: "/app/affaires", label: "Affaires", icon: "deal" },
+        ...(role !== "lecture" ? [{ href: "/app/agents", label: "Agents", icon: "bot" as const }] : []),
+      ],
+    },
+    {
+      label: "Outils",
+      items: [
+        { href: "/app/biens", label: "Estimations", icon: "building" },
+        { href: "/app/investissement", label: "Investissement", icon: "chart" },
+        { href: "/app/taches", label: "Tâches", icon: "check" },
+        { href: "/app/qualite", label: "Qualité des données", icon: "shield" },
+      ],
+    },
+    {
+      label: "Agence",
+      items: [
+        { href: "/app/equipe", label: "Équipe", icon: "team" },
+        { href: "/app/formule", label: "Formule", icon: "plan" },
+        { href: "/app/parametres", label: "Paramètres", icon: "settings" },
+        ...(canReadAuditLog(role)
+          ? [
+              { href: "/app/pilotage", label: "Pilotage", icon: "gauge" as const },
+              { href: "/app/journal", label: "Journal d'audit", icon: "journal" as const },
+            ]
+          : []),
+      ],
+    },
   ];
 
   const account = (
@@ -98,7 +113,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <div className="relative">{agency}</div>
         <div className="relative -mx-1 flex-1 overflow-y-auto px-1">
-          <Nav items={items} />
+          <Nav sections={sections} />
         </div>
         <div className="relative">{account}</div>
       </aside>
@@ -111,7 +126,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </summary>
         <div className="space-y-4 px-4 pb-4">
           {agency}
-          <Nav items={items} />
+          <Nav sections={sections} />
           {account}
         </div>
       </details>

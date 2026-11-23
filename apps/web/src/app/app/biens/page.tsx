@@ -11,7 +11,7 @@ import { getTenantPool } from "@/lib/server/db";
 import { LinkButton } from "@/ui/button";
 import { Badge, Card, PageHeader } from "@/ui/surface";
 
-export const metadata: Metadata = { title: "Dossiers de biens" };
+export const metadata: Metadata = { title: "Estimations" };
 
 export default async function DossiersPage() {
   const ctx = await requireAgency();
@@ -24,7 +24,7 @@ export default async function DossiersPage() {
   return (
     <>
       <PageHeader
-        title="Dossiers de biens"
+        title="Estimations"
         description="À partir d'une adresse : ventes comparables (DVF), DPE, risques, loyers et estimation indicative, chaque chiffre sourcé et daté."
         actions={ctx.role !== "lecture" ? <LinkButton href="/app/biens/nouveau">Nouveau dossier</LinkButton> : null}
       />
