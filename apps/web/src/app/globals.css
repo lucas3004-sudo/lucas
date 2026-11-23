@@ -229,6 +229,10 @@ h3 {
 .menu-details[open]::details-content {
   block-size: auto;
 }
+/* Menu fermé : son contenu est réellement retiré de l'affichage (lecteurs d'écran, audits). */
+.menu-details:not([open]) > :not(summary) {
+  display: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .page-in > *,
