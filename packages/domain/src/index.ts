@@ -16,3 +16,4 @@ export * from "./billing/plans";
 export * from "./visits/report";
 export * from "./mandates/expiry";
 export * from "./market/position";
+export * from "./market/verdict";

@@ -40,7 +40,7 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 169 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 181 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 41 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats) ;
 - 34 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats, l'export de l'agence et la carte des biens ;
 - lint, types, build de production.
@@ -69,7 +69,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
 - qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
-- carte des biens : fond IGN, filtres par critères, ventes réelles autour (DVF), repère « bonne affaire » (prix sous la médiane de la commune) ([détails](docs/carte-des-biens.md), [capture](docs/captures/16-carte.jpg)) ;
+- carte des biens v2 : moteur vectoriel MapLibre sur fond IGN épuré, vue satellite, biens regroupés, recherche de lieu et rayon, critères complets, cartes à photo ; fiche du bien avec carrousel et analyse du marché chiffrée (verdict, fourchette, rendement, risques) ([détails](docs/carte-des-biens.md), captures [16](docs/captures/16-carte.jpg) et [17](docs/captures/17-fiche-du-bien.jpg)) ;
 - export complet de l'agence : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ([détails](docs/export-agence.md)) ;
 - suivi des mandats : numéro unique dans l'agence, dates, rappel 30 jours avant la fin dans « Ma journée », mandats expirés dans « Qualité des données », reprise par l'import CSV ([détails](docs/suivi-mandats.md)) ;
 - compte rendu de visite : texte prêt à envoyer au vendeur, sans IA et sans le nom des visiteurs, synthèse des visites sur la fiche du bien ([détails](docs/compte-rendu-visite.md)) ;
@@ -118,6 +118,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, carte v2 et fiche du bien** : à la demande du fondateur (D-055). Décisions du fondateur : IA activée pour l'analyse des annonces (D-056), paiement Stripe avec 14 jours d'essai (D-057) ; comptes Stripe et Anthropic à créer par lui.
 - **2026-11-23, données publiques en préproduction et carte des biens** :
   - chargement depuis GitHub (bouton « Ingestion préproduction ») : 34 875 communes zonées, 139 600 loyers, 16 156 ventes DVF de la Somme (janvier 2024 à juin 2026) ; médiane des appartements à Amiens : 2 527 €/m² ;
   - carte des biens gratuite (D-054).

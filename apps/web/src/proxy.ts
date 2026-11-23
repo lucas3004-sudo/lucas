@@ -14,7 +14,9 @@ export function buildCsp(nonce: string, dev: boolean): string {
     // Fond de carte IGN (Géoplateforme, sans clé) pour la page « Carte ».
     "img-src 'self' data: blob: https://data.geopf.fr",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    // Carte vectorielle IGN : style, tuiles, polices et pictogrammes ; moteur de carte dans un « worker ».
+    "connect-src 'self' https://data.geopf.fr",
+    "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

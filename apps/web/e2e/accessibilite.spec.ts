@@ -140,7 +140,7 @@ for (const scheme of ["light", "dark"] as const) {
     await expect(page.getByText("Estimation indicative, pas une expertise.")).toBeVisible({ timeout: 45_000 });
     const dossierPath = new URL(page.url()).pathname;
 
-    for (const path of [...APP_PAGES, contactPath, propertyPath, `${propertyPath}/annonce`, dossierPath]) problems.push(...(await audit(page, path)));
+    for (const path of [...APP_PAGES, contactPath, propertyPath, `${propertyPath}/annonce`, `${propertyPath}/fiche`, dossierPath]) problems.push(...(await audit(page, path)));
     expect(problems, problems.join("\n")).toEqual([]);
   });
 }
