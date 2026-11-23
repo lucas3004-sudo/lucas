@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/sora";
+@import "@fontsource/instrument-serif/400-italic.css";
 
 /*
  * ImmoPilot AI — jetons du design system (docs/design-system.md).
@@ -29,6 +31,10 @@
   --danger: #b42318;
   --danger-soft: #fdecea;
   --focus: #3b6fd8;
+
+  /* Courbes d'animation (skills animate / apple-design) : sortie franche, déplacement à l'écran. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,6 +66,8 @@
 
 @theme inline {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Sora Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
 
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -81,6 +89,15 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-focus: var(--focus);
+
+  /* Site public (page d'accueil) : couleurs définies dans _site/site.css, sous .site. */
+  --color-s-bg: var(--s-bg);
+  --color-s-bg-2: var(--s-bg-2);
+  --color-s-ink: var(--s-ink);
+  --color-s-muted: var(--s-muted);
+  --color-s-line: var(--s-line);
+  --color-s-acc-ink: var(--s-acc-ink);
+  --color-s-night: var(--s-night);
 
   --radius-card: 12px;
   --radius-control: 8px;

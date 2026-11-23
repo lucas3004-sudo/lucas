@@ -9,13 +9,15 @@ const run = Date.now().toString(36);
 test("un visiteur découvre ImmoPilot, démarre l'essai gratuit et voit les formules", async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: /Trouvez les bonnes affaires/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Des formules simples" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Toute votre agence/ })).toBeVisible();
+  await page.locator("#tarifs").scrollIntoViewIfNeeded();
+  await expect(page.getByRole("heading", { name: "Des tarifs simples." })).toBeVisible();
   for (const [name, price] of [["Solo", "59 €"], ["Pro", "99 €"], ["Agency", "249 €"]] as const) {
-    await expect(page.locator("#formules").getByRole("heading", { name, exact: true })).toBeVisible();
-    await expect(page.locator("#formules").getByText(price, { exact: true })).toBeVisible();
+    await expect(page.locator("#tarifs").getByRole("heading", { name, exact: true })).toBeVisible();
+    await expect(page.locator("#tarifs").getByText(price, { exact: true })).toBeVisible();
   }
-  await page.getByRole("link", { name: "Essayer gratuitement 14 jours" }).click();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("link", { name: "Démarrer l'essai gratuit" }).click();
   await expect(page).toHaveURL(/\/inscription$/);
   await page.getByLabel("Nom et prénom").fill("Paula Paiement");
   await page.getByLabel("Adresse e-mail professionnelle").fill(`abonnement-${run}@test.invalid`);

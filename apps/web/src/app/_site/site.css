@@ -1,0 +1,406 @@
+/*
+ * Site public (page d'accueil) — D-058.
+ * Ambiance « heure dorée » : fond nuit chaud, lueurs terre cuite, verre dépoli.
+ * Le défilement pilote des variables CSS (--intro, --l0…--l3, --s0…--s3) posées par
+ * story.tsx : tout se transforme en continu, sans rien qui s'arrête ni qui bloque le clic.
+ * Mouvements réduits ou JavaScript absent : mise en page statique, tout est lisible.
+ */
+
+.site {
+  --s-bg: #fbf7f2;
+  --s-bg-2: #f3ebe2;
+  --s-ink: #1c1411;
+  --s-muted: #6b5d55;
+  --s-line: rgb(28 20 17 / 0.1);
+  --s-acc: #e2553a;
+  --s-acc-ink: #b23a1f;
+  --s-night: #0f0a08;
+  --s-glass: linear-gradient(155deg, rgb(255 255 255 / 0.74), rgb(255 255 255 / 0.36));
+  --s-glass-line: rgb(255 255 255 / 0.65);
+  --acc-rgb: 226 85 58;
+  background: var(--s-bg);
+  color: var(--s-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  .site {
+    --s-bg: #120d0b;
+    --s-bg-2: #1a1310;
+    --s-ink: #f6eee8;
+    --s-muted: #bcaea5;
+    --s-line: rgb(255 255 255 / 0.1);
+    --s-acc-ink: #ffa184;
+    --s-glass: linear-gradient(155deg, rgb(255 255 255 / 0.11), rgb(255 255 255 / 0.04));
+    --s-glass-line: rgb(255 255 255 / 0.12);
+  }
+}
+
+.font-serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Verre dépoli : dégradé blanc translucide, flou et saturation de ce qui est derrière. */
+.glass {
+  background: var(--s-glass);
+  border: 1px solid var(--s-glass-line);
+  -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  backdrop-filter: blur(40px) saturate(1.5);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--s-bg-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Lueurs d'ambiance : elles dérivent lentement, en permanence (rien ne s'arrête). */
+.glow {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgb(var(--acc-rgb) / 0.55), rgb(var(--acc-rgb) / 0));
+}
+.glow-a {
+  width: 75vmax;
+  height: 75vmax;
+  left: -25vmax;
+  top: -30vmax;
+  animation: glow-drift-a 24s ease-in-out infinite alternate;
+}
+.glow-b {
+  width: 60vmax;
+  height: 60vmax;
+  right: -22vmax;
+  bottom: -26vmax;
+  opacity: 0.8;
+  animation: glow-drift-b 30s ease-in-out infinite alternate;
+}
+.glow-c {
+  width: 40vmax;
+  height: 40vmax;
+  left: 35%;
+  top: 30%;
+  opacity: 0.45;
+  background: radial-gradient(closest-side, rgb(255 196 140 / 0.5), rgb(255 196 140 / 0));
+  animation: glow-drift-c 36s ease-in-out infinite alternate;
+}
+@keyframes glow-drift-a {
+  to {
+    transform: translate3d(12vmax, 8vmax, 0) scale(1.08);
+  }
+}
+@keyframes glow-drift-b {
+  to {
+    transform: translate3d(-10vmax, -6vmax, 0) scale(1.12);
+  }
+}
+@keyframes glow-drift-c {
+  to {
+    transform: translate3d(-14vmax, 10vmax, 0) scale(0.9);
+  }
+}
+
+/* ---------------------------------------------------------------- Scène qui défile (story) */
+
+.story {
+  --intro: 0;
+  --l0: 1;
+  --l1: 0;
+  --l2: 0;
+  --l3: 0;
+  --c0: 0;
+  --c1: 0;
+  --c2: 0;
+  --c3: 0;
+  --s0: 0;
+  --s1: 0;
+  --s2: 0;
+  --s3: 0;
+  --fit: 0.8;
+  --shift-x: 16vw;
+  --drop: 44svh;
+  --rise-y: 0svh;
+  position: relative;
+  height: 560svh;
+  background: var(--s-night);
+  color: #f6eee8;
+}
+.story-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.story-hero {
+  opacity: calc(1 - var(--intro) * 1.8);
+  transform: translateY(calc(var(--intro) * -90px));
+  filter: blur(calc(var(--intro) * 12px));
+}
+
+.story-window {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1000px;
+  height: 640px;
+  margin: -320px 0 0 -500px;
+  transform-origin: 50% 50%;
+  transform: translate3d(calc(var(--shift-x) * var(--intro)), calc((1 - var(--intro)) * var(--drop) + var(--intro) * var(--rise-y)), 0)
+    perspective(1600px) rotateX(calc((1 - var(--intro)) * 22deg)) scale(calc(var(--fit) * (0.86 + 0.14 * var(--intro))));
+  will-change: transform;
+}
+
+/* La fenêtre reste en verre clair et chaud, quel que soit le thème. */
+.story-window .glass {
+  background: linear-gradient(155deg, rgb(255 251 247 / 0.9), rgb(255 241 232 / 0.62));
+  border-color: rgb(255 255 255 / 0.6);
+}
+
+/* « La pièce s'allume » : la fenêtre apparaît en cercle, du flou vers le net. */
+@keyframes light-on {
+  from {
+    clip-path: circle(0% at 50% 45%);
+    filter: blur(22px);
+  }
+  to {
+    clip-path: circle(80% at 50% 45%);
+    filter: blur(0);
+  }
+}
+.light-on {
+  animation: light-on 1500ms cubic-bezier(0.22, 1, 0.36, 1) 250ms both;
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise, 16px));
+    filter: blur(var(--blur, 0px));
+  }
+}
+.hero-in {
+  animation: hero-in 900ms var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Couches de contenu de la fenêtre : fondu enchaîné, léger zoom et flou entre deux états. */
+.story-layer {
+  position: absolute;
+  inset: 0;
+  opacity: var(--l);
+  transform: scale(calc(0.965 + 0.035 * var(--l)));
+  filter: blur(calc((1 - var(--l)) * 10px));
+}
+.story-cap {
+  grid-area: 1 / 1;
+  opacity: var(--c);
+  transform: translateY(calc((1 - var(--c)) * 26px));
+  filter: blur(calc((1 - var(--c)) * 8px));
+}
+.story-nav-pill {
+  opacity: var(--l);
+}
+.story-rail > span > span {
+  transform-origin: left center;
+  transform: scaleX(var(--s));
+}
+
+/* Apparition liée au défilement : --v passe de 0 à 1 quand la progression dépasse le seuil --k. */
+.scrub {
+  --v: clamp(0, calc((var(--sp) - var(--k, 0)) * 7), 1);
+  opacity: var(--v);
+  transform: translateY(calc((1 - var(--v)) * 12px)) scale(calc(0.92 + 0.08 * var(--v)));
+}
+.scrub-bar {
+  --v: clamp(0, calc((var(--sp) - var(--k, 0)) * 2.4), 1);
+  transform-origin: left center;
+  transform: scaleX(var(--v));
+}
+.scrub-ring {
+  stroke-dashoffset: calc(1 - 0.87 * var(--s3));
+}
+.scrub-radius {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(calc(0.35 + 0.65 * var(--s0)));
+}
+
+@media (max-width: 1023px) {
+  .story {
+    --shift-x: -46px;
+    --drop: 38svh;
+    --rise-y: 11svh;
+    --fit: 0.46;
+  }
+}
+
+/* Mouvements réduits ou pas de JavaScript : pas de scène collante, les quatre étapes en clair. */
+@media (prefers-reduced-motion: reduce), (scripting: none) {
+  .story {
+    height: auto;
+  }
+  .story-stage {
+    position: relative;
+    height: auto;
+    overflow: hidden;
+  }
+  .story-hero,
+  .story-cap {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .story-window,
+  .story-rail {
+    display: none;
+  }
+  .story-caps {
+    position: static !important;
+    transform: none !important;
+    display: grid !important;
+    gap: 2.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    padding: 0 1.25rem 6rem;
+    max-width: 72rem;
+    margin: 0 auto;
+    width: auto !important;
+  }
+  .story-cap {
+    grid-area: auto;
+  }
+  .glow,
+  .hero-in,
+  .light-on {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------- Apparitions au défilement */
+
+/* « Tout est animé » : basculement 3D, flou vers net, en vague (délai --d par élément). */
+.tilt-in {
+  transition:
+    opacity 1150ms var(--ease-out),
+    transform 1150ms var(--ease-out),
+    filter 1150ms var(--ease-out);
+  transition-delay: var(--d, 0ms);
+}
+.rise-in {
+  transition:
+    opacity 800ms var(--ease-out),
+    transform 800ms var(--ease-out);
+  transition-delay: var(--d, 0ms);
+}
+.reveal-circle {
+  transition:
+    clip-path 1400ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1400ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--d, 0ms);
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-reveal]:not([data-shown]) .tilt-in {
+    opacity: 0;
+    transform: perspective(1000px) rotateX(18deg) translateY(28px);
+    filter: blur(18px);
+  }
+  [data-reveal]:not([data-shown]) .rise-in {
+    opacity: 0;
+    transform: translateY(var(--rise, 18px));
+  }
+  [data-reveal]:not([data-shown]) .reveal-circle {
+    clip-path: circle(0% at 50% 50%);
+    filter: blur(20px);
+  }
+}
+.reveal-circle {
+  clip-path: circle(75% at 50% 50%);
+}
+
+/* Galerie des vraies captures : elle glisse de côté pendant qu'on descend. */
+.gallery {
+  --g: 0.5;
+}
+.gallery-track {
+  transform: translate3d(calc((0.5 - var(--g)) * var(--travel, 46vw)), 0, 0);
+  will-change: transform;
+}
+.gallery-shot {
+  transform: perspective(1400px) rotateY(calc((0.5 - var(--g)) * var(--turn, 10deg)));
+}
+@media (max-width: 767px) {
+  .gallery {
+    --travel: 120vw;
+  }
+}
+@media (prefers-reduced-motion: reduce), (scripting: none) {
+  .gallery-track {
+    transform: none;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .gallery-shot {
+    transform: none;
+    width: 100% !important;
+  }
+}
+
+/* Questions fréquentes : ouverture en douceur là où le navigateur sait animer la hauteur. */
+.site-faq {
+  interpolate-size: allow-keywords;
+}
+.site-faq details::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 360ms var(--ease-out),
+    content-visibility 360ms allow-discrete;
+}
+.site-faq details[open]::details-content {
+  block-size: auto;
+}
+.site-faq summary::-webkit-details-marker {
+  display: none;
+}
+.site-faq .faq-plus {
+  transition: transform 300ms var(--ease-out);
+}
+.site-faq details[open] .faq-plus {
+  transform: rotate(45deg);
+}
+
+/* Boutons : légère pression au clic, flèche qui avance au survol. */
+.press {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 200ms ease,
+    color 200ms ease,
+    box-shadow 200ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+}
+.press .arrow {
+  transition: transform 220ms var(--ease-out);
+}
+@media (hover: hover) {
+  .press:hover .arrow {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt-in,
+  .rise-in,
+  .reveal-circle,
+  .site-faq details::details-content,
+  .site-faq .faq-plus,
+  .press,
+  .press .arrow {
+    transition: none;
+  }
+}

@@ -500,3 +500,17 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - paiement par **Stripe** (compte créé par le fondateur), construit et testé d'abord en **mode test** (fausses cartes) ;
   - passage au paiement réel après validation du fondateur.
 - **Coût** : commission Stripe par paiement (environ 1,5 % + 0,25 € par carte européenne standard selon sa page de tarifs, à vérifier dans le tableau de bord). Aucun abonnement fixe.
+
+## D-058 — Page d'accueil refaite : scène animée au défilement, verre dépoli, ambiance « heure dorée »
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : un site « comme iko-os », puis comme le SaaS montré dans une vidéo TikTok d'agence web, « où tout se transforme » au défilement, avec les skills Apple)
+- **Décision** :
+  - **scène d'ouverture collante** : le titre s'efface, la fenêtre du logiciel « s'allume » (ouverture en cercle, du flou vers le net) puis se transforme au fil du défilement : carte → analyse (les courbes se déforment de 1 à 5 ans) → acquéreurs → mandats ; la couleur d'accent glisse d'une étape à l'autre ;
+  - le défilement est converti en quelques variables CSS (aucun rendu React pendant le défilement) ; seules la transparence, la position et l'échelle sont animées, plus un flou court entre deux états ;
+  - ensuite une **feuille claire** glisse par-dessus : vraies captures qui défilent de côté, fonctions en **verre dépoli** qui basculent en 3D à l'apparition, compteurs, tarifs, questions, appel final ;
+  - polices : Sora (titres), Instrument Serif en italique (mots mis en valeur), Inter (texte), toutes hébergées par le site ;
+  - pages de connexion et d'inscription au même style.
+- **Garde-fous** :
+  - **mouvements réduits** (réglage du système) ou JavaScript absent : mise en page statique, tout reste lisible ;
+  - la maquette animée porte la mention « Exemple » ; les captures réelles sont signalées comme telles ; les quotas d'IA affichent « bientôt » tant que l'IA n'est pas ouverte ;
+  - audit d'accessibilité étendu à **toute** la page d'accueil (après défilement complet, et en mouvements réduits), en thèmes clair et sombre.
+- **Inspiration, pas copie** : ni le nom, ni les textes, ni la marque des sites d'inspiration ne sont repris ; palette et contenus propres à ImmoPilot.
