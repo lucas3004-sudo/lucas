@@ -79,7 +79,7 @@ export default async function PlanPage() {
                       className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-muted"
                     >
                       <div
-                        className={cn("h-full rounded-full", full ? "bg-danger" : ratio >= 0.8 ? "bg-warning" : "bg-brand")}
+                        className={cn("bar-in h-full rounded-full", full ? "bg-danger" : ratio >= 0.8 ? "bg-warning" : "bg-brand")}
                         style={{ width: `${Math.round(ratio * 100)}%` }}
                       />
                     </div>

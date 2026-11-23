@@ -514,3 +514,19 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - la maquette animée porte la mention « Exemple » ; les captures réelles sont signalées comme telles ; les quotas d'IA affichent « bientôt » tant que l'IA n'est pas ouverte ;
   - audit d'accessibilité étendu à **toute** la page d'accueil (après défilement complet, et en mouvements réduits), en thèmes clair et sombre.
 - **Inspiration, pas copie** : ni le nom, ni les textes, ni la marque des sites d'inspiration ne sont repris ; palette et contenus propres à ImmoPilot.
+
+## D-059 — Le même style et les mêmes animations dans tout le logiciel
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : « que tout le site soit animé comme ça », avec des animations pas trop longues)
+- **Décision** :
+  - **une seule palette** pour la page d'accueil et le logiciel : crème chaud, encre brune, terre cuite ; thème sombre « nuit » chaude ;
+  - **barre latérale et menu mobile « nuit »** avec une lueur chaude, comme le haut de la page d'accueil ;
+  - **titres en Sora**, mots mis en valeur en italique (Instrument Serif), boutons en pilule, cartes plus arrondies ;
+  - **animations courtes**, adaptées à un outil utilisé toute la journée :
+    - chaque page entre en une vague brève (340 ms, décalages de 40 ms, terminée en moins de 0,5 s) ;
+    - les boutons s'enfoncent légèrement au clic ;
+    - les messages apparaissent en douceur, le menu mobile s'ouvre en glissant, les barres de consommation se remplissent ;
+    - les longues animations restent réservées à la page d'accueil.
+- **Garde-fous** :
+  - contrastes calculés (tous au-dessus de 4,5:1) puis vérifiés par l'audit d'accessibilité des 27 pages, en thèmes clair et sombre ;
+  - animations coupées si l'utilisateur réduit les mouvements ;
+  - aucune transformation ne reste appliquée une fois l'animation finie, ce qui évite les effets de bord sur la carte et les menus.

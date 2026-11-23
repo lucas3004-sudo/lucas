@@ -86,7 +86,14 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader title={`Bonjour ${user.name.split(" ")[0]}`} description={`Espace de l'agence ${org.name}.`} />
+      <PageHeader
+        title={
+          <>
+            Bonjour <span className="font-serif text-[1.12em] font-normal italic tracking-normal text-brand-text">{user.name.split(" ")[0]}</span>
+          </>
+        }
+        description={`Espace de l'agence ${org.name}.`}
+      />
 
       <section aria-label="Ma journée" className="mb-4 grid gap-4 lg:grid-cols-2">
         <DayList

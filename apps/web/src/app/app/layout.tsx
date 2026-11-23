@@ -72,7 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 
   const agency = (
-    <div className="rounded-[var(--radius-control)] border border-line bg-surface-muted px-3 py-2.5">
+    <div className="rounded-2xl border border-line bg-surface-muted px-3.5 py-3">
       <p className="truncate text-sm font-medium text-ink" title={org.name}>
         {org.name}
       </p>
@@ -89,18 +89,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         Aller au contenu
       </a>
-      <aside className="hidden print:!hidden border-r border-line bg-surface lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:sticky lg:top-0 lg:px-4 lg:py-5">
-        <div className="px-1">
+      {/* Barre latérale « nuit », comme le haut de la page d'accueil (D-059). */}
+      <aside className="night relative hidden overflow-hidden print:!hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:px-4 lg:py-5">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-[radial-gradient(closest-side,rgb(226_85_58/0.35),transparent)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-24 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(236_150_60/0.18),transparent)]" />
+        <div className="relative px-1">
           <Logo />
         </div>
-        {agency}
-        <div className="flex-1">
+        <div className="relative">{agency}</div>
+        <div className="relative -mx-1 flex-1 overflow-y-auto px-1">
           <Nav items={items} />
         </div>
-        {account}
+        <div className="relative">{account}</div>
       </aside>
 
-      <details className="group border-b border-line bg-surface lg:hidden print:hidden">
+      <details className="night menu-details group sticky top-0 z-30 lg:hidden print:hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
           <Logo />
           <span className="text-sm font-medium text-ink-muted group-open:hidden">Menu</span>
@@ -113,9 +116,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </details>
 
-      <main id="contenu" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 focus:outline-none sm:px-8 sm:py-8">
+      <main id="contenu" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 focus:outline-none sm:px-8 sm:py-10">
         {access.reason === "essai" && role === "gerant" ? (
-          <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-control)] bg-brand-soft px-3.5 py-2.5 text-sm text-brand-text print:hidden">
+          <div role="status" className="pop-in mb-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-brand-soft px-4 py-3 text-sm text-brand-text print:hidden">
             <span>Essai gratuit : {access.daysLeft} jour(s) restant(s).</span>
             <Link href="/abonnement" className="font-medium underline">Choisir une formule</Link>
           </div>

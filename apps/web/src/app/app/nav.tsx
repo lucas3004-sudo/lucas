@@ -36,11 +36,11 @@ export function Nav({ items }: { items: NavItem[] }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-2.5 rounded-[var(--radius-control)] px-2.5 py-2 text-sm transition-colors",
-              active ? "bg-brand-soft font-medium text-brand-text" : "text-ink-muted hover:bg-surface-muted hover:text-ink",
+              "group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-[background-color,color,transform] duration-200 active:scale-[0.98]",
+              active ? "bg-white/[0.09] font-medium text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]" : "text-ink-muted hover:bg-white/[0.05] hover:text-ink",
             )}
           >
-            <svg viewBox="0 0 24 24" className="size-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg viewBox="0 0 24 24" className={cn("size-[18px] shrink-0 transition-colors", active ? "text-brand-text" : "")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d={ICONS[item.icon]} />
             </svg>
             {item.label}
