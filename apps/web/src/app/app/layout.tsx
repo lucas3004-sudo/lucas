@@ -5,6 +5,8 @@ import { schemaStatus } from "@/lib/server/schema-check";
 import { canReadAuditLog } from "@/lib/agency/rules";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Logo } from "@/ui/logo";
+import { agencyAccess } from "@/lib/billing/subscription";
+import { redirect } from "next/navigation";
 import { Nav, type NavItem } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +23,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
     );
   }
-  const { user, org, role } = await requireAgency();
+  const ctx = await requireAgency();
+  const { user, org, role } = ctx;
+  // Après l'essai de 14 jours, il faut un abonnement payé (D-057). Les données restent conservées.
+  const { access } = await agencyAccess(ctx);
+  if (!access.allowed) redirect("/abonnement");
   const session = await getSession();
   const twoFactorOn = Boolean((session?.user as { twoFactorEnabled?: boolean | null } | undefined)?.twoFactorEnabled);
   const remindTwoFactor = (role === "gerant" || role === "manager") && !twoFactorOn;
@@ -108,6 +114,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </details>
 
       <main id="contenu" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 focus:outline-none sm:px-8 sm:py-8">
+        {access.reason === "essai" && role === "gerant" ? (
+          <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-control)] bg-brand-soft px-3.5 py-2.5 text-sm text-brand-text print:hidden">
+            <span>Essai gratuit : {access.daysLeft} jour(s) restant(s).</span>
+            <Link href="/abonnement" className="font-medium underline">Choisir une formule</Link>
+          </div>
+        ) : null}
+        {access.reason === "paiement_en_retard" && role === "gerant" ? (
+          <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-control)] bg-warning-soft px-3.5 py-2.5 text-sm text-warning print:hidden">
+            <span>Le dernier paiement a échoué : accès maintenu encore {access.daysLeft} jour(s).</span>
+            <Link href="/abonnement" className="font-medium underline">Mettre à jour la carte</Link>
+          </div>
+        ) : null}
         {remindTwoFactor ? (
           <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-control)] bg-warning-soft px-3.5 py-2.5 text-sm text-warning print:hidden">
             <span>Votre rôle donne accès à toutes les données de l&apos;agence : activez la double authentification.</span>

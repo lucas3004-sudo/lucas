@@ -27,7 +27,8 @@ test("une nouvelle agence est en Essai : consommation affichée, invitation refu
 
   await page.getByRole("link", { name: "Formule" }).first().click();
   await expect(page.getByRole("heading", { name: "Formule et consommation" })).toBeVisible();
-  await expect(page.getByText("Sans formule attribuée, votre agence est en Essai.")).toBeVisible();
+  await expect(page.getByText("Votre agence est en essai gratuit.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Choisir ou gérer l'abonnement" })).toHaveAttribute("href", "/abonnement");
   await expect(page.getByTestId("usage-contacts")).toHaveText("1 sur 500");
   await expect(page.getByTestId("usage-dossiers")).toHaveText("0 sur 30");
   await expect(page.getByTestId("usage-membres")).toHaveText("1 sur 5");

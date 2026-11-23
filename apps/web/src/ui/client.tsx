@@ -11,9 +11,12 @@ export function SubmitButton({
   size = "md",
   className,
   pending,
+  disabled = false,
 }: {
   children: React.ReactNode;
   pendingLabel?: string;
+  /** Bouton inactif (action indisponible). */
+  disabled?: boolean;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md";
   className?: string;
@@ -23,7 +26,7 @@ export function SubmitButton({
   const status = useFormStatus();
   const busy = pending ?? status.pending;
   return (
-    <button type="submit" disabled={busy} aria-busy={busy} className={buttonClass(variant, size, className)}>
+    <button type="submit" disabled={busy || disabled} aria-busy={busy} className={buttonClass(variant, size, className)}>
       {busy ? (pendingLabel ?? "Un instant…") : children}
     </button>
   );

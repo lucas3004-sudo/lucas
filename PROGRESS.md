@@ -17,7 +17,7 @@ d'acceptation sont vérifiés.
 | 5. Socle agents | 🟡 **Socle sans IA livré et testé (2026-11-21)** : fiches versionnées, passerelle d'outils, missions, approbations, Agent Center, 5 agents déterministes. Reste : modes IA, Copilot, worker (clé Anthropic nécessaire) | [Socle des agents](docs/phase-5-socle-agents.md) |
 | 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio**, **tableau de bord du gérant**, **agenda (.ics)**, **export RGPD** et **import CSV**, **alertes de correspondance**, **suivi des affaires** et **fiche annonce** (mentions obligatoires, sans IA) et **photos des biens** livrés et testés. Phase 6 terminée côté outils, hors IA | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [Affaires](docs/affaires.md), [Annonce](docs/annonce.md), [captures 09 à 15](docs/captures/) |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
-| 8. Monétisation | En cours : formules et quotas appliqués, sans paiement (2026-11-21) | [Formules et quotas](docs/formules-et-quotas.md) |
+| 8. Monétisation | En cours : formules et quotas (2026-11-21) ; essai de 14 jours et paiement Stripe prêts (2026-11-23), en attente de la clé de test | [Formules et quotas](docs/formules-et-quotas.md) |
 | 9. Qualité et sécurité (audit formel) | En cours : audit automatique d'accessibilité WCAG 2.1 AA en CI (2026-11-21) ; CSP stricte, contrôle de version de la base | [Accessibilité](docs/accessibilite.md) |
 | 10. Espace particuliers | À faire | — |
 | 11. Production | À faire | — |
@@ -40,9 +40,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 181 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
-- 41 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats) ;
-- 34 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats, l'export de l'agence et la carte des biens ;
+- 188 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 43 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats, abonnements) ;
+- 35 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats, l'export de l'agence et la carte des biens ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -69,6 +69,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
 - qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
+- page d'accueil publique, essai gratuit de 14 jours, page « Abonnement » et paiement Stripe (prêt, activé dès la clé de test), blocage après l'essai sans perte de données ([détails](docs/abonnements.md)) ;
 - carte des biens v2 : moteur vectoriel MapLibre sur fond IGN épuré, vue satellite, biens regroupés, recherche de lieu et rayon, critères complets, cartes à photo ; fiche du bien avec carrousel et analyse du marché chiffrée (verdict, fourchette, rendement, risques) ([détails](docs/carte-des-biens.md), captures [16](docs/captures/16-carte.jpg) et [17](docs/captures/17-fiche-du-bien.jpg)) ;
 - export complet de l'agence : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ([détails](docs/export-agence.md)) ;
 - suivi des mandats : numéro unique dans l'agence, dates, rappel 30 jours avant la fin dans « Ma journée », mandats expirés dans « Qualité des données », reprise par l'import CSV ([détails](docs/suivi-mandats.md)) ;
@@ -118,6 +119,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, abonnements** : page d'accueil publique, essai de 14 jours, page « Abonnement », paiement Stripe et réception de ses événements (migration 0020) ; en attente de la clé de test Stripe.
 - **2026-11-23, carte v2 et fiche du bien** : à la demande du fondateur (D-055). Décisions du fondateur : IA activée pour l'analyse des annonces (D-056), paiement Stripe avec 14 jours d'essai (D-057) ; comptes Stripe et Anthropic à créer par lui.
 - **2026-11-23, données publiques en préproduction et carte des biens** :
   - chargement depuis GitHub (bouton « Ingestion préproduction ») : 34 875 communes zonées, 139 600 loyers, 16 156 ventes DVF de la Somme (janvier 2024 à juin 2026) ; médiane des appartements à Amiens : 2 527 €/m² ;

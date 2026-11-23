@@ -77,3 +77,20 @@ Elles se chargent depuis GitHub, car l'environnement de développement ne peut p
 1. Une seule fois : ajouter le secret `PREPROD_DATABASE_URL_INGEST` sur https://github.com/lucas3004-sudo/lucas/settings/secrets/actions/new. La valeur est l'adresse de connexion du rôle `app_ingest`, par le répartiteur en mode session (port 5432), en connexion chiffrée.
 2. Lancer « Ingestion préproduction » : https://github.com/lucas3004-sudo/lucas/actions/workflows/ingestion-preprod.yml (bouton « Run workflow »), en choisissant les données (tout, dvf, loyers, zonage) et les départements.
 3. Contrôler `ref.source_runs` : une ligne par chargement (lignes lues, retenues, exclusions par règle, statut).
+
+## 8. Paiement (Stripe, D-057)
+Le code est prêt. Le paiement s'active dès que ces variables sont renseignées chez Vercel (https://vercel.com/lucasblaevoet30-7777s-projects/lucas/settings/environment-variables) :
+
+| Variable | Valeur |
+|---|---|
+| `STRIPE_SECRET_KEY` | Clé secrète **de test** (`sk_test_…`) d'abord, puis la clé réelle après validation |
+| `STRIPE_WEBHOOK_SECRET` | Secret du point de réception (`whsec_…`) |
+
+- **Prix** : un prix mensuel par formule, retrouvé par sa clé `immopilot_<formule>_mensuel` (investisseur, solo, pro, agency). Ils se créent une fois, avec l'API Stripe ou dans le tableau de bord.
+- **Point de réception** : `https://<adresse du site>/api/v1/stripe/webhook`, avec les événements `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated` et `customer.subscription.deleted`.
+- **Fonctionnement** :
+  - une agence a 14 jours d'essai à partir de sa création ;
+  - si le gérant choisit une formule pendant l'essai, sa carte n'est débitée qu'à la fin de l'essai ;
+  - après l'essai, sans abonnement payé, l'accès au logiciel est redirigé vers `/abonnement`, et les données sont conservées ;
+  - en cas de paiement en échec, l'accès est maintenu 7 jours.
+- **Écriture des abonnements** : seule la fonction `app.apply_subscription` peut les enregistrer, et le site ne l'appelle qu'après avoir vérifié la signature Stripe.
