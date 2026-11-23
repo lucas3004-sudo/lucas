@@ -15,6 +15,7 @@ import { listDeals } from "@/lib/deals/data";
 import { dealDeadlines } from "@/lib/deals/deadlines";
 import { fmt } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
+import { RecapCard } from "./recap-card";
 
 const timeFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
 
@@ -44,7 +45,8 @@ export const metadata: Metadata = { title: "Accueil" };
 
 // Feuille de route affichée telle quelle : ce sont des étapes prévues, pas des boutons.
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ recap?: string }> }) {
+  const recapPeriod = (await searchParams).recap === "semaine" ? "semaine" : "jour";
   const ctx = await requireAgency();
   const { user, org, role } = ctx;
   const settings = await getAgencySettings(ctx);
@@ -90,6 +92,8 @@ export default async function DashboardPage() {
         }
         description={`Espace de l'agence ${org.name}.`}
       />
+
+      <RecapCard ctx={ctx} period={recapPeriod} />
 
       <section aria-label="Ma journée" className="mb-4 grid gap-4 lg:grid-cols-2">
         <DayList

@@ -31,7 +31,8 @@ test("un négociateur baisse le prix d'un bien mis en vente et retrouve tout l'h
   await expect(page.getByLabel("Statut du bien")).toHaveValue("mandat");
   await page.getByLabel("Prix affiché (€)").fill("239000");
   await page.getByRole("button", { name: "Modifier le prix" }).click();
-  await expect(page.getByLabel("Prix affiché (€)")).toHaveValue("239000");
+  // Attendre la page mise à jour (le prix affiché change), pas seulement la valeur saisie.
+  await expect(page.getByTestId("prix-affiche")).toHaveText(/^239\s000\s€/);
   await page.getByLabel("Statut du bien").selectOption("sous_offre");
   await page.getByRole("button", { name: "Changer le statut" }).click();
   await expect(page.getByLabel("Statut du bien")).toHaveValue("sous_offre");
@@ -46,6 +47,17 @@ test("un négociateur baisse le prix d'un bien mis en vente et retrouve tout l'h
   await expect(timeline.getByText(/^Prix : 250\s000\s€ → 239\s000\s€$/)).toBeVisible();
   await expect(timeline.getByText("Statut : Sous mandat → Sous offre")).toBeVisible();
   await expect(timeline.getByText(/^Bien ajouté, à 250\s000\s€$/)).toBeVisible();
+
+  // Le récap de l'accueil reprend ces événements (24 heures, puis 7 jours).
+  await page.goto("/app");
+  const recap = page.getByTestId("recap");
+  await expect(recap.getByRole("link", { name: "1 bien passé sous offre" })).toBeVisible();
+  await expect(recap.getByRole("link", { name: "1 nouveau bien" })).toBeVisible();
+  await expect(recap.getByRole("link", { name: "1 baisse de prix" })).toBeVisible();
+  await expect(page.getByTestId("recap-titre")).toHaveText("Depuis hier : 1 bien passé sous offre, 1 nouveau bien et 1 baisse de prix.");
+  await page.getByRole("link", { name: "7 derniers jours" }).click();
+  await expect(page.getByTestId("recap-titre")).toHaveText(/^Cette semaine : /);
+  await expect(page.getByRole("link", { name: "7 derniers jours" })).toHaveAttribute("aria-current", "page");
 
   // La modification est tracée dans le journal d'audit, sans donnée personnelle.
   await page.goto("/app/journal");

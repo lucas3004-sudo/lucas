@@ -273,7 +273,7 @@ export default async function PropertyPage({ params, searchParams }: { params: P
               </p>
               <p>
                 <span className="text-ink-muted">Prix : </span>
-                {property.price !== null ? fmt.euros(property.price) : "—"}
+                <span data-testid="prix-affiche">{property.price !== null ? fmt.euros(property.price) : "—"}</span>
                 {property.price !== null && property.surface ? (
                   <span className="text-ink-muted"> ({fmt.perSqm(property.price / property.surface)})</span>
                 ) : null}

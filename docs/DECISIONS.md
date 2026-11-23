@@ -549,3 +549,12 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - sur la fiche du bien, une section « Historique et activité » montre la durée en vente, l'évolution du prix, les acquéreurs de l'agence qui correspondent, les visites (avec l'intérêt exprimé), les affaires et une chronologie datée ;
   - on peut désormais modifier le prix d'un bien (avant, impossible après sa création) ; chaque modification est tracée dans le journal d'audit.
 - **Limite** : cela concerne les biens de l'agence. Les annonces des autres agences attendent un fournisseur de données autorisé (voir `docs/research/fournisseurs-annonces.md`).
+
+## D-062 — Récap de l'activité sur l'accueil (sans IA)
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : « des récaps de ce qui s'est passé les dernières journées »)
+- **Décision** :
+  - en tête de l'accueil, « Le récap » montre ce qui s'est passé sur les dernières 24 heures ou les 7 derniers jours : ventes signées, biens vendus ou passés sous offre, offres, visites (intérêt fort), nouveaux biens et contacts, baisses de prix, tâches terminées ;
+  - il montre aussi ce qui demande une action : tâches en retard, propositions d'agents à valider, mandats qui se terminent sous 30 jours ;
+  - une phrase d'accroche résume les faits marquants, et chaque ligne mène à la page où agir ;
+  - les chiffres sont comptés sous RLS : chacun voit le récap de ce qu'il a le droit de voir, et les éléments privés d'un collègue ne sont ni montrés ni comptés.
+- **Suite** : quand la clé Anthropic sera là, l'IA pourra rédiger ce récap en quelques phrases, à partir de ces mêmes chiffres réels.
