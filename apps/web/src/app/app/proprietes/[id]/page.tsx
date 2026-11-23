@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireAgency } from "@/lib/agency/context";
-import { deletePropertyAction, notifyColleagueAction, setPropertyStatusAction } from "@/lib/crm/actions";
+import { deletePropertyAction, notifyColleagueAction, setPropertyStatusAction, updatePropertyPriceAction } from "@/lib/crm/actions";
 import { activeProfiles, agencyMembers, asMatchProfile, asMatchProperty, getProperty, listTasks } from "@/lib/crm/data";
 import { MATCHABLE_STATUSES, PROPERTY_STATUS } from "@/lib/crm/labels";
 import { parseWeights, WEIGHT_KEYS } from "@/lib/crm/weights";
@@ -273,7 +273,7 @@ export default async function PropertyPage({ params, searchParams }: { params: P
               </p>
               <p>
                 <span className="text-ink-muted">Prix : </span>
-                {property.price !== null ? fmt.euros(property.price) : "—"}
+                <span data-testid="prix-affiche">{property.price !== null ? fmt.euros(property.price) : "—"}</span>
                 {property.price !== null && property.surface ? (
                   <span className="text-ink-muted"> ({fmt.perSqm(property.price / property.surface)})</span>
                 ) : null}
@@ -300,6 +300,16 @@ export default async function PropertyPage({ params, searchParams }: { params: P
                 </Select>
                 <SubmitButton variant="secondary" size="sm">
                   Changer le statut
+                </SubmitButton>
+              </form>
+            ) : null}
+            {canEdit ? (
+              <form action={updatePropertyPriceAction} className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3">
+                <input type="hidden" name="id" value={property.id} />
+                <label htmlFor="nouveau-prix" className="text-[13px] text-ink-muted">Prix affiché (€)</label>
+                <Input id="nouveau-prix" name="price" inputMode="numeric" defaultValue={property.price ?? ""} className="h-8 w-36 text-[13px]" />
+                <SubmitButton variant="secondary" size="sm">
+                  Modifier le prix
                 </SubmitButton>
               </form>
             ) : null}

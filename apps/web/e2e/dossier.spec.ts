@@ -23,7 +23,7 @@ test("un négociateur crée un dossier de bien sourcé depuis une adresse", asyn
   await page.getByRole("button", { name: "Créer l'agence" }).click();
   await expect(page.getByRole("heading", { name: "Bonjour Nina" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Dossiers de biens" }).first().click();
+  await page.getByRole("link", { name: "Estimations" }).first().click();
   await expect(page.getByText("Aucun dossier pour le moment.")).toBeVisible();
   await page.getByRole("link", { name: "Nouveau dossier" }).click();
 
@@ -54,7 +54,7 @@ test("un négociateur crée un dossier de bien sourcé depuis une adresse", asyn
   }
 
   // Le dossier apparaît dans la liste et dans le journal d'audit.
-  await page.getByRole("link", { name: "Dossiers de biens" }).first().click();
+  await page.getByRole("link", { name: "Estimations" }).first().click();
   await expect(page.getByRole("link", { name: /8 Boulevard du Port 80000 Amiens/ })).toBeVisible();
   await page.goto("/app/journal");
   await expect(page.getByRole("cell", { name: "Dossier de bien créé", exact: true })).toBeVisible();

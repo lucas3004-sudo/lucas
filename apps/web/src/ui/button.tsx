@@ -5,20 +5,22 @@ import { cn } from "./cn";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md";
 
+// Boutons en pilule, comme sur la page d'accueil ; légère pression au clic (D-059).
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium transition-colors " +
-  "disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap";
+  "inline-flex items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap " +
+  "transition-[transform,background-color,color,border-color,box-shadow] duration-150 ease-[var(--ease-out)] " +
+  "active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-brand text-brand-ink hover:bg-brand-hover shadow-[var(--shadow-card)]",
+  primary: "bg-ink text-canvas hover:bg-ink/85 shadow-[var(--shadow-card)]",
   secondary: "bg-surface text-ink border border-line-strong hover:bg-surface-muted",
   ghost: "text-ink-muted hover:text-ink hover:bg-surface-muted",
   danger: "bg-surface text-danger border border-line-strong hover:bg-danger-soft",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-8 px-3 text-[13px]",
-  md: "h-10 px-4 text-sm",
+  sm: "h-8 px-3.5 text-[13px]",
+  md: "h-10 px-5 text-sm",
 };
 
 export function buttonClass(variant: Variant = "primary", size: Size = "md", extra?: string) {

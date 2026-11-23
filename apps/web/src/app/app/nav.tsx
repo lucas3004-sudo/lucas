@@ -20,14 +20,30 @@ const ICONS = {
   check: "M4 6h16v14H4zM8 3v5M16 3v5M8.5 13.5l2.5 2.5 4.5-5",
   plan: "M3 6h18v12H3zM3 10h18M7 15h4",
   map: "M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14",
+  sparkle: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z",
 } as const;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };
+export type NavSection = { label?: string; items: NavItem[] };
 
-export function Nav({ items }: { items: NavItem[] }) {
+/** Menu en sections : l'essentiel d'abord, puis les outils et la gestion de l'agence (D-060). */
+export function Nav({ sections }: { sections: NavSection[] }) {
+  return (
+    <nav aria-label="Navigation principale" className="space-y-5">
+      {sections.map((section, i) => (
+        <div key={section.label ?? i} className="space-y-0.5">
+          {section.label ? <p className="px-3 pb-1 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-subtle">{section.label}</p> : null}
+          <NavLinks items={section.items} />
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function NavLinks({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Navigation principale" className="space-y-0.5">
+    <>
       {items.map((item) => {
         const active = item.href === "/app" ? pathname === "/app" : pathname.startsWith(item.href);
         return (
@@ -36,17 +52,17 @@ export function Nav({ items }: { items: NavItem[] }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-2.5 rounded-[var(--radius-control)] px-2.5 py-2 text-sm transition-colors",
-              active ? "bg-brand-soft font-medium text-brand-text" : "text-ink-muted hover:bg-surface-muted hover:text-ink",
+              "group flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-[background-color,color,transform] duration-200 active:scale-[0.98]",
+              active ? "bg-white/[0.09] font-medium text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]" : "text-ink-muted hover:bg-white/[0.05] hover:text-ink",
             )}
           >
-            <svg viewBox="0 0 24 24" className="size-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg viewBox="0 0 24 24" className={cn("size-[18px] shrink-0 transition-colors", active ? "text-brand-text" : "")} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d={ICONS[item.icon]} />
             </svg>
             {item.label}
           </Link>
         );
       })}
-    </nav>
+    </>
   );
 }

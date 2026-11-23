@@ -14,6 +14,7 @@ import { fmt } from "@/lib/format";
 import { buttonClass } from "@/ui/button";
 import { SubmitButton } from "@/ui/client";
 import { Logo } from "@/ui/logo";
+import { cn } from "@/ui/cn";
 import { Alert, Badge, Card, CardBody } from "@/ui/surface";
 
 export const metadata: Metadata = { title: "Abonnement" };
@@ -33,13 +34,13 @@ export default async function SubscriptionPage({ searchParams }: { searchParams:
   const isManager = ctx.role === "gerant";
 
   return (
-    <div className="min-h-dvh bg-canvas">
-      <header className="flex items-center justify-between border-b border-line bg-surface px-6 py-4">
+    <div className="min-h-dvh">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-surface/80 px-6 py-4 backdrop-blur-xl backdrop-saturate-150">
         <Logo />
         {access.allowed ? <Link href="/app" className={buttonClass("secondary", "sm")}>Retour au logiciel</Link> : null}
       </header>
-      <main id="contenu" className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-ink">Abonnement de {ctx.org.name}</h1>
+      <main id="contenu" className="page-in mx-auto max-w-6xl px-4 py-10 sm:px-8 sm:py-14">
+        <h1 className="font-display text-4xl font-semibold leading-tight tracking-[-0.04em] text-ink sm:text-5xl">Abonnement de {ctx.org.name}</h1>
         <div className="mt-4 space-y-3">
           {sp.statut === "merci" ? <Alert tone="success">Merci ! Votre abonnement est en cours d&apos;activation : cela prend quelques secondes.</Alert> : null}
           {sp.erreur && ERRORS[sp.erreur] ? <Alert tone="danger">{ERRORS[sp.erreur]}</Alert> : null}
@@ -73,21 +74,21 @@ export default async function SubscriptionPage({ searchParams }: { searchParams:
           {!isManager ? <Alert tone="brand">Seul le gérant de l&apos;agence peut choisir la formule.</Alert> : null}
         </div>
 
-        <h2 className="mt-10 text-xl font-semibold text-ink">Les formules</h2>
+        <h2 className="mt-12 font-display text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">Les formules</h2>
         <p className="mt-1 text-sm text-ink-muted">Prix hors taxes, par mois, sans engagement. Résiliable à tout moment.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {PAID_PLANS.map((id) => {
             const plan = PLANS[id];
             const current = subscription?.status !== "annule" && subscription?.plan === id;
             return (
-              <Card key={id} className={current ? "ring-2 ring-brand" : ""}>
+              <Card key={id} className={cn("transition-transform duration-300 ease-[var(--ease-out)] hover:-translate-y-0.5", id === "agency" && "night shadow-[var(--shadow-pop)]", current && "ring-2 ring-brand")}>
                 <CardBody className="flex h-full flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-ink">{plan.name}</h3>
                     {id === "agency" ? <Badge tone="brand">Équipes</Badge> : null}
                   </div>
                   <p>
-                    <span className="text-3xl font-semibold tracking-tight text-ink">{fmt.euros(monthlyPrice(plan) ?? 0)}</span>
+                    <span className="font-display text-4xl font-semibold tracking-[-0.04em] text-ink">{fmt.euros(monthlyPrice(plan) ?? 0)}</span>
                     <span className="text-sm text-ink-muted"> HT / mois</span>
                   </p>
                   <p className="text-sm text-ink-muted">{plan.description}</p>

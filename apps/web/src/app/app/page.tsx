@@ -15,6 +15,7 @@ import { listDeals } from "@/lib/deals/data";
 import { dealDeadlines } from "@/lib/deals/deadlines";
 import { fmt } from "@/lib/format";
 import { Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
+import { RecapCard } from "./recap-card";
 
 const timeFmt = new Intl.DateTimeFormat("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
 
@@ -40,15 +41,12 @@ function DayList({ title, empty, href, items }: { title: string; empty: string; 
   );
 }
 
-export const metadata: Metadata = { title: "Tableau de bord" };
+export const metadata: Metadata = { title: "Accueil" };
 
 // Feuille de route affichée telle quelle : ce sont des étapes prévues, pas des boutons.
-const ROADMAP = [
-  { title: "Équipe d'agents IA", detail: "Missions, approbations, coûts mesurés dans l'Agent Center.", phase: "Phase 5" },
-  { title: "Photos des biens", detail: "Galerie par bien, reprise dans l'annonce.", phase: "Phase 6" },
-];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ recap?: string }> }) {
+  const recapPeriod = (await searchParams).recap === "semaine" ? "semaine" : "jour";
   const ctx = await requireAgency();
   const { user, org, role } = ctx;
   const settings = await getAgencySettings(ctx);
@@ -86,7 +84,16 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader title={`Bonjour ${user.name.split(" ")[0]}`} description={`Espace de l'agence ${org.name}.`} />
+      <PageHeader
+        title={
+          <>
+            Bonjour <span className="font-serif text-[1.12em] font-normal italic tracking-normal text-brand-text">{user.name.split(" ")[0]}</span>
+          </>
+        }
+        description={`Espace de l'agence ${org.name}.`}
+      />
+
+      <RecapCard ctx={ctx} period={recapPeriod} />
 
       <section aria-label="Ma journée" className="mb-4 grid gap-4 lg:grid-cols-2">
         <DayList
@@ -190,20 +197,6 @@ export default async function DashboardPage() {
         </Card>
       ) : null}
 
-      <Card className="mt-4">
-        <CardHeader title="Prochains modules" description="En cours de construction. Ils apparaîtront dans le menu lorsqu'ils seront disponibles et testés." />
-        <ul className="divide-y divide-line">
-          {ROADMAP.map((item) => (
-            <li key={item.title} className="flex flex-wrap items-start gap-x-4 gap-y-1 px-5 py-3.5">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-ink">{item.title}</p>
-                <p className="text-[13px] text-ink-muted">{item.detail}</p>
-              </div>
-              <Badge>{item.phase}</Badge>
-            </li>
-          ))}
-        </ul>
-      </Card>
     </>
   );
 }

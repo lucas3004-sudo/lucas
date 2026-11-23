@@ -12,7 +12,7 @@ const PUBLIC_PAGES = ["/", "/connexion", "/inscription"];
 const APP_PAGES = [
   "/app", "/app/contacts", "/app/contacts/nouveau", "/app/proprietes", "/app/proprietes/nouveau", "/app/biens", "/app/biens/nouveau",
   "/app/affaires", "/app/agenda", "/app/taches", "/app/investissement", "/app/qualite", "/app/agents", "/app/agents/approbations",
-  "/app/equipe", "/app/parametres", "/app/formule", "/app/pilotage", "/app/journal", "/app/securite", "/app/carte", "/abonnement",
+  "/app/equipe", "/app/parametres", "/app/formule", "/app/pilotage", "/app/journal", "/app/securite", "/app/carte", "/app/assistant", "/abonnement",
 ];
 
 async function audit(page: Page, path: string | null) {
@@ -21,6 +21,24 @@ async function audit(page: Page, path: string | null) {
   // Attendre la fin des animations d'entrée (les animations sans fin, comme les lueurs, sont ignorées).
   await page.evaluate(() =>
     Promise.all(document.getAnimations().filter((a) => Number.isFinite(a.effect?.getComputedTiming().endTime ?? Infinity)).map((a) => a.finished.catch(() => null))),
+  );
+  // Certaines transitions (ouverture du menu mobile, sur un pseudo-élément) n'apparaissent pas dans
+  // getAnimations() : on attend aussi que la mise en page ne bouge plus pendant plusieurs images.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let last = "";
+        let stable = 0;
+        const started = performance.now();
+        const tick = () => {
+          const sizes = [...document.querySelectorAll("details")].map((d) => d.getBoundingClientRect().height).join(",") + `|${document.documentElement.scrollHeight}`;
+          stable = sizes === last ? stable + 1 : 0;
+          last = sizes;
+          if (stable >= 5 || performance.now() - started > 3000) resolve();
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
   );
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   for (const v of results.violations) if (process.env.A11Y_VERBOSE) console.log(`[a11y] ${path ?? page.url()} ${v.id} ${v.impact} ${v.nodes.length}`);

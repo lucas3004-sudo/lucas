@@ -119,6 +119,11 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, assistant IA (prêt, éteint sans clé)** : page « Assistant IA », bouton « Besoin d'aide ? », guide « Comment faire… », quotas par formule et plafond de dépenses global (migration 0022, D-063). Menu mobile : il tient maintenant dans l'écran (son bas était inaccessible).
+- **2026-11-23, récap de l'activité** : « Le récap » sur l'accueil, 24 heures ou 7 jours, avec les points d'attention (D-062).
+- **2026-11-23, historique des biens** : migration 0021 (historique tenu par la base), section « Historique et activité » sur la fiche, modification du prix (D-061).
+- **2026-11-23, menu simplifié** : 7 entrées principales, groupes « Outils » et « Agence », noms simplifiés (D-060).
+- **2026-11-23, style commun à tout le logiciel** : même palette chaude que la page d'accueil, barre latérale « nuit », titres Sora, boutons en pilule, animations courtes à chaque page (D-059) ; page « Abonnement » au même style.
 - **2026-11-23, nouvelle page d'accueil** : scène animée au défilement (la fenêtre du logiciel s'allume puis passe de la carte à l'analyse, aux acquéreurs et aux mandats), verre dépoli, vraies captures, tarifs et questions ; connexion et inscription au même style ; version statique si les mouvements sont réduits (D-058). Paiement fusionné ([PR n° 28](https://github.com/lucas3004-sudo/lucas/pull/28)) ; migration 0020 appliquée en préproduction (20 migrations, 75 règles d'accès, même empreinte qu'en local).
 - **2026-11-23, abonnements** : page d'accueil publique, essai de 14 jours, page « Abonnement », paiement Stripe et réception de ses événements (migration 0020) ; en attente de la clé de test Stripe.
 - **2026-11-23, carte v2 et fiche du bien** : à la demande du fondateur (D-055). Décisions du fondateur : IA activée pour l'analyse des annonces (D-056), paiement Stripe avec 14 jours d'essai (D-057) ; comptes Stripe et Anthropic à créer par lui.

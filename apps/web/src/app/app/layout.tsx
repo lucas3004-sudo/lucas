@@ -7,7 +7,8 @@ import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Logo } from "@/ui/logo";
 import { agencyAccess } from "@/lib/billing/subscription";
 import { redirect } from "next/navigation";
-import { Nav, type NavItem } from "./nav";
+import { HelpButton } from "./help-button";
+import { Nav, type NavSection } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Code déployé sans sa migration : on ne sert pas l'application sur une base en retard.
@@ -33,27 +34,43 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const remindTwoFactor = (role === "gerant" || role === "manager") && !twoFactorOn;
 
   // Seuls les modules réellement construits apparaissent (aucun lien vers une page vide).
-  const items: NavItem[] = [
-    { href: "/app", label: "Tableau de bord", icon: "home" },
-    { href: "/app/contacts", label: "Contacts", icon: "contacts" },
-    { href: "/app/proprietes", label: "Biens de l'agence", icon: "key" },
-    { href: "/app/carte", label: "Carte", icon: "map" },
-    { href: "/app/biens", label: "Dossiers de biens", icon: "building" },
-    { href: "/app/affaires", label: "Affaires", icon: "deal" },
-    { href: "/app/agenda", label: "Agenda", icon: "calendar" },
-    { href: "/app/taches", label: "Tâches", icon: "check" },
-    { href: "/app/investissement", label: "Investment Studio", icon: "chart" },
-    { href: "/app/qualite", label: "Qualité des données", icon: "shield" },
-    ...(role !== "lecture" ? [{ href: "/app/agents", label: "Agents", icon: "bot" as const }] : []),
-    { href: "/app/equipe", label: "Équipe", icon: "team" },
-    { href: "/app/parametres", label: "Paramètres", icon: "settings" },
-    { href: "/app/formule", label: "Formule", icon: "plan" },
-    ...(canReadAuditLog(role)
-      ? [
-          { href: "/app/pilotage", label: "Pilotage", icon: "gauge" as const },
-          { href: "/app/journal", label: "Journal d'audit", icon: "journal" as const },
-        ]
-      : []),
+  // Menu simplifié (D-060) : 7 entrées pour le travail de tous les jours, puis outils et agence.
+  const sections: NavSection[] = [
+    {
+      items: [
+        { href: "/app", label: "Accueil", icon: "home" },
+        { href: "/app/proprietes", label: "Biens", icon: "key" },
+        { href: "/app/carte", label: "Carte", icon: "map" },
+        { href: "/app/contacts", label: "Contacts", icon: "contacts" },
+        { href: "/app/agenda", label: "Agenda", icon: "calendar" },
+        { href: "/app/affaires", label: "Affaires", icon: "deal" },
+        ...(role !== "lecture" ? [{ href: "/app/agents", label: "Agents", icon: "bot" as const }] : []),
+      ],
+    },
+    {
+      label: "Outils",
+      items: [
+        { href: "/app/assistant", label: "Assistant IA", icon: "sparkle" },
+        { href: "/app/biens", label: "Estimations", icon: "building" },
+        { href: "/app/investissement", label: "Investissement", icon: "chart" },
+        { href: "/app/taches", label: "Tâches", icon: "check" },
+        { href: "/app/qualite", label: "Qualité des données", icon: "shield" },
+      ],
+    },
+    {
+      label: "Agence",
+      items: [
+        { href: "/app/equipe", label: "Équipe", icon: "team" },
+        { href: "/app/formule", label: "Formule", icon: "plan" },
+        { href: "/app/parametres", label: "Paramètres", icon: "settings" },
+        ...(canReadAuditLog(role)
+          ? [
+              { href: "/app/pilotage", label: "Pilotage", icon: "gauge" as const },
+              { href: "/app/journal", label: "Journal d'audit", icon: "journal" as const },
+            ]
+          : []),
+      ],
+    },
   ];
 
   const account = (
@@ -72,7 +89,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   );
 
   const agency = (
-    <div className="rounded-[var(--radius-control)] border border-line bg-surface-muted px-3 py-2.5">
+    <div className="rounded-2xl border border-line bg-surface-muted px-3.5 py-3">
       <p className="truncate text-sm font-medium text-ink" title={org.name}>
         {org.name}
       </p>
@@ -89,33 +106,37 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         Aller au contenu
       </a>
-      <aside className="hidden print:!hidden border-r border-line bg-surface lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:sticky lg:top-0 lg:px-4 lg:py-5">
-        <div className="px-1">
+      {/* Barre latérale « nuit », comme le haut de la page d'accueil (D-059). */}
+      <aside className="night relative hidden overflow-hidden print:!hidden lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:gap-6 lg:px-4 lg:py-5">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-[radial-gradient(closest-side,rgb(226_85_58/0.35),transparent)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-24 size-80 rounded-full bg-[radial-gradient(closest-side,rgb(236_150_60/0.18),transparent)]" />
+        <div className="relative px-1">
           <Logo />
         </div>
-        {agency}
-        <div className="flex-1">
-          <Nav items={items} />
+        <div className="relative">{agency}</div>
+        <div className="relative -mx-1 flex-1 overflow-y-auto px-1">
+          <Nav sections={sections} />
         </div>
-        {account}
+        <div className="relative">{account}</div>
       </aside>
 
-      <details className="group border-b border-line bg-surface lg:hidden print:hidden">
+      <details className="night menu-details group sticky top-0 z-30 lg:hidden print:hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
           <Logo />
           <span className="text-sm font-medium text-ink-muted group-open:hidden">Menu</span>
           <span className="hidden text-sm font-medium text-ink-muted group-open:inline">Fermer</span>
         </summary>
-        <div className="space-y-4 px-4 pb-4">
+        {/* Le menu ouvert tient dans l'écran et défile à l'intérieur (sinon son bas serait inaccessible). */}
+        <div className="max-h-[calc(100dvh-4rem)] space-y-4 overflow-y-auto overscroll-contain px-4 pb-4">
           {agency}
-          <Nav items={items} />
+          <Nav sections={sections} />
           {account}
         </div>
       </details>
 
-      <main id="contenu" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 focus:outline-none sm:px-8 sm:py-8">
+      <main id="contenu" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 py-6 focus:outline-none sm:px-8 sm:py-10">
         {access.reason === "essai" && role === "gerant" ? (
-          <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-control)] bg-brand-soft px-3.5 py-2.5 text-sm text-brand-text print:hidden">
+          <div role="status" className="pop-in mb-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-brand-soft px-4 py-3 text-sm text-brand-text print:hidden">
             <span>Essai gratuit : {access.daysLeft} jour(s) restant(s).</span>
             <Link href="/abonnement" className="font-medium underline">Choisir une formule</Link>
           </div>
@@ -134,6 +155,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ) : null}
         {children}
       </main>
+      <HelpButton />
     </div>
   );
 }

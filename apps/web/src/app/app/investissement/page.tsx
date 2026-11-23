@@ -9,7 +9,7 @@ import { cn } from "@/ui/cn";
 import { Field, Input } from "@/ui/form";
 import { Alert, Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
 
-export const metadata: Metadata = { title: "Investment Studio" };
+export const metadata: Metadata = { title: "Investissement" };
 
 type Search = Partial<Record<string, string | string[]>>;
 
@@ -40,7 +40,7 @@ export default async function InvestmentPage({ searchParams }: { searchParams: P
   return (
     <>
       <PageHeader
-        title="Investment Studio"
+        title="Investissement"
         description={
           subject
             ? `Simulation locative pour ${subject}. Toutes les hypothèses sont modifiables.`

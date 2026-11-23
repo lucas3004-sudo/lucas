@@ -41,7 +41,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <Logo />
           </Link>
         </div>
-        <div className="mx-auto my-auto w-full max-w-sm py-10">{children}</div>
+        <div className="page-in mx-auto my-auto w-full max-w-sm py-10">{children}</div>
       </main>
     </div>
   );

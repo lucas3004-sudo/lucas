@@ -16,7 +16,7 @@ test("un négociateur simule un investissement locatif, hypothèses visibles et 
   await page.getByRole("button", { name: "Créer l'agence" }).click();
   await expect(page.getByRole("heading", { name: "Bonjour Ivan" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Investment Studio" }).first().click();
+  await page.getByRole("link", { name: "Investissement" }).first().click();
   await expect(page.getByText("Saisissez au moins le prix d'achat")).toBeVisible();
 
   const fill = async (label: string, value: string) => page.getByLabel(label, { exact: false }).fill(value);

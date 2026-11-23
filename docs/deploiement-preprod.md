@@ -94,3 +94,21 @@ Le code est prêt. Le paiement s'active dès que ces variables sont renseignées
   - après l'essai, sans abonnement payé, l'accès au logiciel est redirigé vers `/abonnement`, et les données sont conservées ;
   - en cas de paiement en échec, l'accès est maintenu 7 jours.
 - **Écriture des abonnements** : seule la fonction `app.apply_subscription` peut les enregistrer, et le site ne l'appelle qu'après avoir vérifié la signature Stripe.
+
+## 9. Assistant IA (Anthropic, D-063)
+Sans clé, l'IA est éteinte : la page « Assistant IA » le dit, et seul le guide « Comment faire… » est disponible.
+
+Pour l'activer, dans Vercel (projet « lucas », Settings, Environment Variables, cases Production et Preview) :
+
+| Variable | Valeur | Rôle |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | la clé créée sur https://console.anthropic.com/settings/keys | allume l'assistant |
+| `AI_MODEL` | `claude-haiku-5-5` (facultatif, valeur par défaut) | modèle utilisé |
+| `AI_MONTHLY_BUDGET_USD` | par exemple `20` (facultatif, 20 par défaut) | plafond de dépenses du mois, toutes agences confondues |
+
+Garde-fous :
+- quota mensuel par formule (« Échanges avec le Copilot ») ;
+- plafond global du mois (au-delà, l'assistant se met en pause jusqu'au mois suivant) ;
+- plafond de dépenses à régler aussi chez Anthropic, sur https://console.anthropic.com/settings/limits.
+
+Chaque appel est enregistré dans `app.ai_runs` (jetons et coût en micro-dollars), sans le texte des questions ni des réponses.

@@ -659,6 +659,103 @@ describe("suivi des mandats (migration 0019)", () => {
   });
 });
 
+describe("historique des biens (migration 0021)", () => {
+  const newProperty = (visibility: "private" | "agency") => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, type, address_label, ban_id, insee_code, created_by, price)
+       VALUES ($1, $2, $3, 'mandat', 'Maison', 'Bien historisé', 'ban-hist', '80021', $2, 250000) RETURNING id`,
+      [A, users.negoA, visibility],
+    ).then((r) => r.rows[0].id as string);
+  const events = (c: pg.PoolClient, id: string) =>
+    c.query(`SELECT kind, old_value, new_value, actor_user_id FROM app.property_events WHERE property_id = $1 ORDER BY id`, [id]).then((r) => r.rows);
+
+  it("la base note la création, les changements de prix, de statut et de mandat, avec leur auteur", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty("private"));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => {
+      await c.query(`UPDATE app.properties SET price = 239000 WHERE id = $1`, [id]);
+      await c.query(`UPDATE app.properties SET status = 'sous_offre', mandate_type = 'exclusif' WHERE id = $1`, [id]);
+      await c.query(`UPDATE app.properties SET notes = 'sans effet sur l''historique' WHERE id = $1`, [id]);
+      expect(await events(c, id)).toEqual([
+        { kind: "cree", old_value: null, new_value: "250000", actor_user_id: users.negoA },
+        { kind: "prix", old_value: "250000", new_value: "239000", actor_user_id: users.negoA },
+        { kind: "statut", old_value: "mandat", new_value: "sous_offre", actor_user_id: users.negoA },
+        { kind: "mandat", old_value: null, new_value: "exclusif", actor_user_id: users.negoA },
+      ]);
+    });
+  });
+
+  it("même visibilité que le bien : ni le collègue (bien privé) ni l'autre agence ne lisent l'historique", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty("private"));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) => expect(await count(c, "app.property_events", "property_id = $1", [id])).toBe(1));
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, async (_db, c) => expect(await count(c, "app.property_events", "property_id = $1", [id])).toBe(0));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.property_events", "property_id = $1", [id])).toBe(0));
+    const shared = await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty("agency"));
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, async (_db, c) => expect(await count(c, "app.property_events", "property_id = $1", [shared])).toBe(1));
+  });
+
+  it("le site ne peut ni écrire, ni modifier, ni effacer l'historique, même le gérant", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, newProperty("agency"));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>
+      c.query(`INSERT INTO app.property_events (org_id, property_id, kind, new_value) VALUES ($1, $2, 'prix', '1')`, [A, id])));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>
+      c.query(`UPDATE app.property_events SET new_value = '1' WHERE property_id = $1`, [id])));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>
+      c.query(`DELETE FROM app.property_events WHERE property_id = $1`, [id])));
+    // Contrôle positif : l'historique est bien là.
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) => expect(await count(c, "app.property_events", "property_id = $1", [id])).toBe(1));
+  });
+});
+
+describe("appels à l'IA et quotas (migration 0022)", () => {
+  const monthStart = new Date(Date.now() - 86_400_000).toISOString();
+  const record = (userId: string, feature = "copilot", status = "ok", cost = 1500) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.ai_runs (org_id, user_id, feature, model, status, input_tokens, output_tokens, cost_microusd)
+       VALUES ($1, $2, $3, 'claude-haiku-5-5', $4, 1000, 200, $5)`,
+      [A, userId, feature, status, cost],
+    );
+  const usage = (c: pg.PoolClient) => c.query(`SELECT * FROM app.agency_usage($1)`, [monthStart]).then((r) => r.rows[0]);
+
+  it("chacun enregistre ses propres appels, jamais au nom d'un autre ; la lecture seule n'appelle pas l'IA", async () => {
+    await withTenant(pool, { orgId: A, userId: users.negoA }, record(users.negoA));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.negoA }, record(users.nego2A)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.lectureA }, record(users.lectureA)));
+  });
+
+  it("aucun appel ne se modifie ni ne s'efface (le quota ne se remet pas à zéro)", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`UPDATE app.ai_runs SET status = 'erreur'`)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`DELETE FROM app.ai_runs`)));
+  });
+
+  it("le négociateur voit ses appels, le gérant ceux de l'agence, l'autre agence aucun", async () => {
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, record(users.nego2A));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) =>
+      expect(await count(c, "app.ai_runs", "user_id = $1", [users.nego2A])).toBe(0));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) =>
+      expect(await count(c, "app.ai_runs", "user_id = ANY($1)", [[users.negoA, users.nego2A]])).toBeGreaterThanOrEqual(2));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.ai_runs")).toBe(0));
+  });
+
+  it("la consommation compte les échanges réussis de toute l'agence, et seulement eux", async () => {
+    const before = await withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) => usage(c));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, record(users.negoA, "copilot", "erreur"));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, record(users.negoA, "annonce"));
+    const after = await withTenant(pool, { orgId: A, userId: users.nego2A }, (_db, c) => usage(c));
+    expect(after.copilot).toBe(before.copilot);
+    expect(after.annonces_ia).toBe(before.annonces_ia + 1);
+    expect(before.copilot).toBeGreaterThanOrEqual(2);
+    const other = await withTenant(pool, { orgId: B, userId: users.gerantB }, (_db, c) => usage(c));
+    expect(other.copilot).toBe(0);
+  });
+
+  it("plafond global : oui tant que la dépense du mois reste sous le plafond, non au-delà", async () => {
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => {
+      expect((await c.query(`SELECT app.ai_budget_left($1, $2) AS ok`, [monthStart, 1_000_000_000])).rows[0].ok).toBe(true);
+      expect((await c.query(`SELECT app.ai_budget_left($1, $2) AS ok`, [monthStart, 1])).rows[0].ok).toBe(false);
+    });
+  });
+});
+
 describe("abonnements (migration 0020)", () => {
   const apply = (org: string, status: string, plan: string, sub: string | null) => (_db: unknown, c: pg.PoolClient) =>
     c.query("SELECT app.apply_subscription($1, $2, $3, 0, 'cus_Test123', $4, now() + interval '30 days')", [org, status, plan, sub]);

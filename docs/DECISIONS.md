@@ -514,3 +514,62 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - la maquette animée porte la mention « Exemple » ; les captures réelles sont signalées comme telles ; les quotas d'IA affichent « bientôt » tant que l'IA n'est pas ouverte ;
   - audit d'accessibilité étendu à **toute** la page d'accueil (après défilement complet, et en mouvements réduits), en thèmes clair et sombre.
 - **Inspiration, pas copie** : ni le nom, ni les textes, ni la marque des sites d'inspiration ne sont repris ; palette et contenus propres à ImmoPilot.
+
+## D-059 — Le même style et les mêmes animations dans tout le logiciel
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : « que tout le site soit animé comme ça », avec des animations pas trop longues)
+- **Décision** :
+  - **une seule palette** pour la page d'accueil et le logiciel : crème chaud, encre brune, terre cuite ; thème sombre « nuit » chaude ;
+  - **barre latérale et menu mobile « nuit »** avec une lueur chaude, comme le haut de la page d'accueil ;
+  - **titres en Sora**, mots mis en valeur en italique (Instrument Serif), boutons en pilule, cartes plus arrondies ;
+  - **animations courtes**, adaptées à un outil utilisé toute la journée :
+    - chaque page entre en une vague brève (340 ms, décalages de 40 ms, terminée en moins de 0,5 s) ;
+    - les boutons s'enfoncent légèrement au clic ;
+    - les messages apparaissent en douceur, le menu mobile s'ouvre en glissant, les barres de consommation se remplissent ;
+    - les longues animations restent réservées à la page d'accueil.
+- **Garde-fous** :
+  - contrastes calculés (tous au-dessus de 4,5:1) puis vérifiés par l'audit d'accessibilité des 27 pages, en thèmes clair et sombre ;
+  - animations coupées si l'utilisateur réduit les mouvements ;
+  - aucune transformation ne reste appliquée une fois l'animation finie, ce qui évite les effets de bord sur la carte et les menus.
+
+## D-060 — Menu simplifié : 7 entrées principales, outils et agence à part
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : un outil simple à prendre en main, sans hésiter à retirer l'inutile)
+- **Décision** :
+  - **7 entrées pour le travail quotidien** : Accueil, Biens, Carte, Contacts, Agenda, Affaires, Agents ;
+  - **« Outils »** : Estimations (ex-« Dossiers de biens »), Investissement (ex-« Investment Studio »), Tâches, Qualité des données ;
+  - **« Agence »** : Équipe, Formule, Paramètres, puis Pilotage et Journal d'audit pour le gérant et les managers ;
+  - noms en français courant ; la carte « Prochains modules » (en construction) est retirée de l'accueil, car elle n'aide pas l'agent.
+- **Aucune fonction supprimée** : toutes les pages restent accessibles, seul le classement change.
+
+## D-061 — Historique de chaque bien, tenu par la base
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : savoir depuis quand une annonce existe, s'il y a des intéressés, des visites)
+- **Décision** :
+  - migration 0021 : la base note elle-même, par un déclencheur, la création du bien, chaque changement de prix, de statut et de mandat, avec l'auteur et la date ;
+  - le site ne peut ni écrire, ni modifier, ni effacer cet historique, même le gérant ;
+  - l'historique a la même visibilité que le bien ;
+  - sur la fiche du bien, une section « Historique et activité » montre la durée en vente, l'évolution du prix, les acquéreurs de l'agence qui correspondent, les visites (avec l'intérêt exprimé), les affaires et une chronologie datée ;
+  - on peut désormais modifier le prix d'un bien (avant, impossible après sa création) ; chaque modification est tracée dans le journal d'audit.
+- **Limite** : cela concerne les biens de l'agence. Les annonces des autres agences attendent un fournisseur de données autorisé (voir `docs/research/fournisseurs-annonces.md`).
+
+## D-062 — Récap de l'activité sur l'accueil (sans IA)
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : « des récaps de ce qui s'est passé les dernières journées »)
+- **Décision** :
+  - en tête de l'accueil, « Le récap » montre ce qui s'est passé sur les dernières 24 heures ou les 7 derniers jours : ventes signées, biens vendus ou passés sous offre, offres, visites (intérêt fort), nouveaux biens et contacts, baisses de prix, tâches terminées ;
+  - il montre aussi ce qui demande une action : tâches en retard, propositions d'agents à valider, mandats qui se terminent sous 30 jours ;
+  - une phrase d'accroche résume les faits marquants, et chaque ligne mène à la page où agir ;
+  - les chiffres sont comptés sous RLS : chacun voit le récap de ce qu'il a le droit de voir, et les éléments privés d'un collègue ne sont ni montrés ni comptés.
+- **Suite** : quand la clé Anthropic sera là, l'IA pourra rédiger ce récap en quelques phrases, à partir de ces mêmes chiffres réels.
+
+## D-063 — Assistant IA, quotas et plafond de dépenses
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demandes du fondateur : un chat IA pour aider les agents et répondre à leurs questions, des quotas pour éviter les abus et maîtriser le coût). Prêt, mais éteint tant que la clé Anthropic n'est pas ajoutée.
+- **Décision** :
+  - page « Assistant IA » et bouton « Besoin d'aide ? » sur toutes les pages du logiciel ;
+  - l'assistant explique comment faire dans ImmoPilot (à partir du guide intégré) et répond sur les données de l'agence, telles que l'utilisateur les voit (biens, recherches d'acquéreurs anonymes, activité de la semaine) ;
+  - **aucune donnée personnelle de contact n'est envoyée** à l'IA (ni nom, ni téléphone, ni e-mail) ;
+  - modèle **Claude Haiku 5.5** (0,10 $ / 0,50 $ par million de jetons), réponses courtes, sans réflexion longue : quelques centièmes de centime par question ;
+  - **trois garde-fous** :
+    - le quota mensuel de la formule (échanges réussis de toute l'agence, comptés par la base) ;
+    - un plafond de dépenses global (`AI_MONTHLY_BUDGET_USD`, 20 $ par défaut) ;
+    - la lecture seule exclue ;
+  - migration 0022 : `app.ai_runs` enregistre chaque appel (jetons, coût), jamais le texte. Personne ne peut modifier ni effacer un appel, sinon on pourrait remettre son quota à zéro.
+- **Sans clé** : l'assistant est éteint et le dit ; le guide « Comment faire… » reste disponible.
+- **À faire au passage en réel** : mentionner Anthropic comme sous-traitant dans la politique de confidentialité (partie légale) ; vérifier le premier appel réel (coût, qualité des réponses).

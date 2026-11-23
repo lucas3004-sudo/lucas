@@ -23,7 +23,7 @@ const ORTHO_TILES =
   "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal" +
   "&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg";
 const SALES_MIN_ZOOM = 13;
-const COLORS = { sous_marche: "#0f7258", dans_marche: "#1d4380", au_dessus: "#b45309", inconnu: "#626b7e", vente: "#7c3aed", marque: "#17325c" } as const;
+const COLORS = { sous_marche: "#0f7258", dans_marche: "#1d4380", au_dessus: "#b45309", inconnu: "#626b7e", vente: "#7c3aed", marque: "#1c1411" } as const;
 const RADII = [null, 0.5, 1, 2, 5, 10, 20] as const;
 
 const euros = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
@@ -51,7 +51,7 @@ function propertyPopup(p: MapProperty): HTMLElement {
   root.append(el("p", "text-xs text-[#556074]", `${p.type}${p.surface ? ` · ${num.format(p.surface)} m²` : ""}${p.rooms ? ` · ${p.rooms} pièces` : ""}`));
   root.append(el("p", "mt-0.5 truncate text-xs text-[#556074]", p.label));
   root.append(el("p", "mt-1 text-xs font-medium text-[#111827]", marketPositionLabel(p.position)));
-  const link = el("a", "mt-2 inline-block rounded-md bg-[#17325c] px-3 py-1.5 text-xs font-medium text-white", "Voir la fiche");
+  const link = el("a", "mt-2 inline-block rounded-md bg-[#1c1411] px-3 py-1.5 text-xs font-medium text-white", "Voir la fiche");
   link.href = sheetUrl(p.id);
   root.append(link);
   return root;

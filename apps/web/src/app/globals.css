@@ -9,28 +9,31 @@
  * n'utilisent QUE ces jetons (bg-surface, text-ink, border-line…), jamais de couleurs en dur.
  */
 :root {
-  --canvas: #f4f5f8;
-  --surface: #ffffff;
-  --surface-muted: #f0f2f6;
-  --line: #e2e6ec;
-  --line-strong: #c9d0da;
-  --ink: #111827;
-  --ink-muted: #556074;
-  --ink-subtle: #626b7e;
+  /* Palette « heure dorée » (D-059), la même que la page d'accueil : crème chaud, encre brune, terre cuite. */
+  --canvas: #f6f1eb;
+  --surface: #fffcf9;
+  --surface-muted: #f1e9e0;
+  --line: #e8dfd5;
+  --line-strong: #d6c8ba;
+  --ink: #1c1411;
+  --ink-muted: #66574f;
+  --ink-subtle: #6e5f57;
 
-  --brand: #17325c;
-  --brand-hover: #0f2548;
-  --brand-soft: #e7eef8;
+  --brand: #b13f20;
+  --brand-hover: #96331a;
+  --brand-soft: #fbe6dd;
   --brand-ink: #ffffff;
-  --brand-text: #1d4380;
+  --brand-text: #9c361a;
 
-  --success: #0f7258;
-  --success-soft: #e3f3ec;
-  --warning: #8f5b00;
-  --warning-soft: #fbf0d9;
+  --success: #0d6b50;
+  --success-soft: #e2f1e9;
+  --warning: #855000;
+  --warning-soft: #faeed6;
   --danger: #b42318;
-  --danger-soft: #fdecea;
-  --focus: #3b6fd8;
+  --danger-soft: #fdeae7;
+  --focus: #c2410c;
+
+  --glow: 226 85 58;
 
   /* Courbes d'animation (skills animate / apple-design) : sortie franche, déplacement à l'écran. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -39,29 +42,49 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #0b0f17;
-    --surface: #121826;
-    --surface-muted: #182033;
-    --line: #232c3d;
-    --line-strong: #344057;
-    --ink: #e8ecf3;
-    --ink-muted: #a3adbf;
-    --ink-subtle: #8390a6;
+    --canvas: #0f0a08;
+    --surface: #18120f;
+    --surface-muted: #221a16;
+    --line: #2e2520;
+    --line-strong: #43372f;
+    --ink: #f6eee8;
+    --ink-muted: #bcaea5;
+    --ink-subtle: #a99b93;
 
-    --brand: #3d6fc4;
-    --brand-hover: #4b7dd2;
-    --brand-soft: #1a2741;
-    --brand-ink: #ffffff;
-    --brand-text: #9dbcf0;
+    --brand: #f0896b;
+    --brand-hover: #f49c80;
+    --brand-soft: #36190f;
+    --brand-ink: #1c1411;
+    --brand-text: #ffab8f;
 
     --success: #4cc59c;
-    --success-soft: #11291f;
+    --success-soft: #10261c;
     --warning: #e8b35a;
-    --warning-soft: #2c2210;
+    --warning-soft: #2b200f;
     --danger: #f2877e;
-    --danger-soft: #2f1513;
-    --focus: #7aa2f0;
+    --danger-soft: #2e1512;
+    --focus: #ff9a7a;
   }
+}
+
+/* Zone « nuit » (barre latérale) : mêmes jetons, valeurs sombres, quel que soit le thème. */
+.night {
+  --canvas: #0f0a08;
+  --surface: #0f0a08;
+  --surface-muted: #1d1512;
+  --line: #2a211c;
+  --line-strong: #43372f;
+  --ink: #f6eee8;
+  --ink-muted: #bcaea5;
+  --ink-subtle: #a99b93;
+  --brand: #f0896b;
+  --brand-hover: #f49c80;
+  --brand-soft: #3a1d13;
+  --brand-ink: #1c1411;
+  --brand-text: #ffb79e;
+  --focus: #ff9a7a;
+  background-color: var(--canvas);
+  color: var(--ink);
 }
 
 @theme inline {
@@ -99,10 +122,10 @@
   --color-s-acc-ink: var(--s-acc-ink);
   --color-s-night: var(--s-night);
 
-  --radius-card: 12px;
-  --radius-control: 8px;
-  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
-  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.18);
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --shadow-card: 0 1px 2px rgb(60 30 20 / 0.04), 0 10px 30px -18px rgb(60 30 20 / 0.22);
+  --shadow-pop: 0 18px 40px -12px rgb(60 30 20 / 0.28);
 }
 
 html {
@@ -110,7 +133,12 @@ html {
 }
 
 body {
-  background: var(--canvas);
+  /* Lueur chaude très légère en haut de page, comme sur la page d'accueil. */
+  background:
+    radial-gradient(900px 420px at 88% -8%, rgb(var(--glow) / 0.09), transparent 70%),
+    radial-gradient(700px 380px at 0% 0%, rgb(236 150 60 / 0.06), transparent 70%),
+    var(--canvas);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans);
   font-feature-settings: "cv11", "ss01";
@@ -118,6 +146,12 @@ body {
 }
 
 /* Données chiffrées : chiffres de largeur fixe pour l'alignement en colonnes. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }
@@ -131,4 +165,87 @@ body {
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------------------------------
+ * Animations du logiciel (D-059). Courtes (≤ 350 ms) parce qu'on les voit cent fois par jour :
+ * entrée de page en vague brève, pression des boutons, ouverture des menus, barres qui se
+ * remplissent. Rien ne bloque le clic ; tout est coupé si l'utilisateur réduit les mouvements.
+ * ------------------------------------------------------------------------------------------ */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.page-in > * {
+  /* « backwards » : aucun effet une fois l'animation finie (pas de transformation résiduelle). */
+  animation: page-in 340ms var(--ease-out) backwards;
+}
+.page-in > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.page-in > *:nth-child(3) {
+  animation-delay: 75ms;
+}
+.page-in > *:nth-child(4) {
+  animation-delay: 105ms;
+}
+.page-in > *:nth-child(n + 5) {
+  animation-delay: 130ms;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+.pop-in {
+  animation: pop-in 220ms var(--ease-out) backwards;
+}
+
+@keyframes bar-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+.bar-in {
+  transform-origin: left center;
+  animation: bar-in 600ms var(--ease-out) 120ms backwards;
+}
+
+/* Menu mobile : il s'ouvre en douceur là où le navigateur sait animer la hauteur. */
+.menu-details {
+  interpolate-size: allow-keywords;
+}
+.menu-details::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 280ms var(--ease-out),
+    content-visibility 280ms allow-discrete;
+}
+.menu-details[open]::details-content {
+  block-size: auto;
+}
+/* Menu fermé : son contenu est réellement retiré de l'affichage (lecteurs d'écran, audits). */
+.menu-details:not([open]) > :not(summary) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-in > *,
+  .pop-in,
+  .bar-in {
+    animation: none;
+  }
+  .menu-details::details-content {
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+  }
 }
