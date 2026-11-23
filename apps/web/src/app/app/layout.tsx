@@ -7,6 +7,7 @@ import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Logo } from "@/ui/logo";
 import { agencyAccess } from "@/lib/billing/subscription";
 import { redirect } from "next/navigation";
+import { HelpButton } from "./help-button";
 import { Nav, type NavSection } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     {
       label: "Outils",
       items: [
+        { href: "/app/assistant", label: "Assistant IA", icon: "sparkle" },
         { href: "/app/biens", label: "Estimations", icon: "building" },
         { href: "/app/investissement", label: "Investissement", icon: "chart" },
         { href: "/app/taches", label: "Tâches", icon: "check" },
@@ -124,7 +126,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="text-sm font-medium text-ink-muted group-open:hidden">Menu</span>
           <span className="hidden text-sm font-medium text-ink-muted group-open:inline">Fermer</span>
         </summary>
-        <div className="space-y-4 px-4 pb-4">
+        {/* Le menu ouvert tient dans l'écran et défile à l'intérieur (sinon son bas serait inaccessible). */}
+        <div className="max-h-[calc(100dvh-4rem)] space-y-4 overflow-y-auto overscroll-contain px-4 pb-4">
           {agency}
           <Nav sections={sections} />
           {account}
@@ -152,6 +155,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         ) : null}
         {children}
       </main>
+      <HelpButton />
     </div>
   );
 }

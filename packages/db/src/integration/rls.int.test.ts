@@ -706,6 +706,56 @@ describe("historique des biens (migration 0021)", () => {
   });
 });
 
+describe("appels à l'IA et quotas (migration 0022)", () => {
+  const monthStart = new Date(Date.now() - 86_400_000).toISOString();
+  const record = (userId: string, feature = "copilot", status = "ok", cost = 1500) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.ai_runs (org_id, user_id, feature, model, status, input_tokens, output_tokens, cost_microusd)
+       VALUES ($1, $2, $3, 'claude-haiku-5-5', $4, 1000, 200, $5)`,
+      [A, userId, feature, status, cost],
+    );
+  const usage = (c: pg.PoolClient) => c.query(`SELECT * FROM app.agency_usage($1)`, [monthStart]).then((r) => r.rows[0]);
+
+  it("chacun enregistre ses propres appels, jamais au nom d'un autre ; la lecture seule n'appelle pas l'IA", async () => {
+    await withTenant(pool, { orgId: A, userId: users.negoA }, record(users.negoA));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.negoA }, record(users.nego2A)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.lectureA }, record(users.lectureA)));
+  });
+
+  it("aucun appel ne se modifie ni ne s'efface (le quota ne se remet pas à zéro)", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`UPDATE app.ai_runs SET status = 'erreur'`)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query(`DELETE FROM app.ai_runs`)));
+  });
+
+  it("le négociateur voit ses appels, le gérant ceux de l'agence, l'autre agence aucun", async () => {
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, record(users.nego2A));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) =>
+      expect(await count(c, "app.ai_runs", "user_id = $1", [users.nego2A])).toBe(0));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) =>
+      expect(await count(c, "app.ai_runs", "user_id = ANY($1)", [[users.negoA, users.nego2A]])).toBeGreaterThanOrEqual(2));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.ai_runs")).toBe(0));
+  });
+
+  it("la consommation compte les échanges réussis de toute l'agence, et seulement eux", async () => {
+    const before = await withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) => usage(c));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, record(users.negoA, "copilot", "erreur"));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, record(users.negoA, "annonce"));
+    const after = await withTenant(pool, { orgId: A, userId: users.nego2A }, (_db, c) => usage(c));
+    expect(after.copilot).toBe(before.copilot);
+    expect(after.annonces_ia).toBe(before.annonces_ia + 1);
+    expect(before.copilot).toBeGreaterThanOrEqual(2);
+    const other = await withTenant(pool, { orgId: B, userId: users.gerantB }, (_db, c) => usage(c));
+    expect(other.copilot).toBe(0);
+  });
+
+  it("plafond global : oui tant que la dépense du mois reste sous le plafond, non au-delà", async () => {
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => {
+      expect((await c.query(`SELECT app.ai_budget_left($1, $2) AS ok`, [monthStart, 1_000_000_000])).rows[0].ok).toBe(true);
+      expect((await c.query(`SELECT app.ai_budget_left($1, $2) AS ok`, [monthStart, 1])).rows[0].ok).toBe(false);
+    });
+  });
+});
+
 describe("abonnements (migration 0020)", () => {
   const apply = (org: string, status: string, plan: string, sub: string | null) => (_db: unknown, c: pg.PoolClient) =>
     c.query("SELECT app.apply_subscription($1, $2, $3, 0, 'cus_Test123', $4, now() + interval '30 days')", [org, status, plan, sub]);

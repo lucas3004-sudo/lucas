@@ -558,3 +558,18 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - une phrase d'accroche résume les faits marquants, et chaque ligne mène à la page où agir ;
   - les chiffres sont comptés sous RLS : chacun voit le récap de ce qu'il a le droit de voir, et les éléments privés d'un collègue ne sont ni montrés ni comptés.
 - **Suite** : quand la clé Anthropic sera là, l'IA pourra rédiger ce récap en quelques phrases, à partir de ces mêmes chiffres réels.
+
+## D-063 — Assistant IA, quotas et plafond de dépenses
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demandes du fondateur : un chat IA pour aider les agents et répondre à leurs questions, des quotas pour éviter les abus et maîtriser le coût). Prêt, mais éteint tant que la clé Anthropic n'est pas ajoutée.
+- **Décision** :
+  - page « Assistant IA » et bouton « Besoin d'aide ? » sur toutes les pages du logiciel ;
+  - l'assistant explique comment faire dans ImmoPilot (à partir du guide intégré) et répond sur les données de l'agence, telles que l'utilisateur les voit (biens, recherches d'acquéreurs anonymes, activité de la semaine) ;
+  - **aucune donnée personnelle de contact n'est envoyée** à l'IA (ni nom, ni téléphone, ni e-mail) ;
+  - modèle **Claude Haiku 5.5** (0,10 $ / 0,50 $ par million de jetons), réponses courtes, sans réflexion longue : quelques centièmes de centime par question ;
+  - **trois garde-fous** :
+    - le quota mensuel de la formule (échanges réussis de toute l'agence, comptés par la base) ;
+    - un plafond de dépenses global (`AI_MONTHLY_BUDGET_USD`, 20 $ par défaut) ;
+    - la lecture seule exclue ;
+  - migration 0022 : `app.ai_runs` enregistre chaque appel (jetons, coût), jamais le texte. Personne ne peut modifier ni effacer un appel, sinon on pourrait remettre son quota à zéro.
+- **Sans clé** : l'assistant est éteint et le dit ; le guide « Comment faire… » reste disponible.
+- **À faire au passage en réel** : mentionner Anthropic comme sous-traitant dans la politique de confidentialité (partie légale) ; vérifier le premier appel réel (coût, qualité des réponses).

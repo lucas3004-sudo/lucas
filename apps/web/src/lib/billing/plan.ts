@@ -21,7 +21,7 @@ export type Usage = Record<QuotaMetric, number>;
 export async function agencyPlanAndUsage(ctx: AgencyContext, now = new Date()): Promise<{ current: AgencyPlan; usage: Usage }> {
   return withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) => {
     const row = (await c.query<{ plan: string; extra_seats: number }>("SELECT plan, extra_seats FROM app.agency_plans")).rows[0];
-    const counts = (await c.query<{ dossiers: number; contacts: number; membres: number; invitations: number }>(
+    const counts = (await c.query<{ dossiers: number; contacts: number; membres: number; invitations: number; copilot: number; annonces_ia: number }>(
       "SELECT * FROM app.agency_usage($1)", // quotas mensuels : depuis le 1er à minuit, heure de Paris
       [parisMonthStart(now)],
     )).rows[0];
@@ -35,9 +35,9 @@ export async function agencyPlanAndUsage(ctx: AgencyContext, now = new Date()): 
         contacts: counts?.contacts ?? 0,
         // Une invitation en attente réserve une place : sinon on dépasserait le quota à l'acceptation.
         membres: (counts?.membres ?? 0) + (counts?.invitations ?? 0),
-        // Aucune IA activée (D-047) : rien n'est consommé.
-        copilot: 0,
-        annonces_ia: 0,
+        // Appels à l'IA réussis ce mois-ci, pour toute l'agence (D-063).
+        copilot: counts?.copilot ?? 0,
+        annonces_ia: counts?.annonces_ia ?? 0,
       },
     };
   });

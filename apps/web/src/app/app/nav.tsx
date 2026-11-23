@@ -20,6 +20,7 @@ const ICONS = {
   check: "M4 6h16v14H4zM8 3v5M16 3v5M8.5 13.5l2.5 2.5 4.5-5",
   plan: "M3 6h18v12H3zM3 10h18M7 15h4",
   map: "M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14",
+  sparkle: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z",
 } as const;
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS };

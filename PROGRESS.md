@@ -119,6 +119,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, assistant IA (prêt, éteint sans clé)** : page « Assistant IA », bouton « Besoin d'aide ? », guide « Comment faire… », quotas par formule et plafond de dépenses global (migration 0022, D-063). Menu mobile : il tient maintenant dans l'écran (son bas était inaccessible).
 - **2026-11-23, récap de l'activité** : « Le récap » sur l'accueil, 24 heures ou 7 jours, avec les points d'attention (D-062).
 - **2026-11-23, historique des biens** : migration 0021 (historique tenu par la base), section « Historique et activité » sur la fiche, modification du prix (D-061).
 - **2026-11-23, menu simplifié** : 7 entrées principales, groupes « Outils » et « Agence », noms simplifiés (D-060).
