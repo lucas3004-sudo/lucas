@@ -497,6 +497,26 @@ describe("agents : missions, étapes, approbations (migration 0014)", () => {
     await expectDenied(withTenant(pool, A2(), newApproval(m1, users.nego2A)));
   });
 
+  it("passage automatique (migration 0023) : un seul par agent, par utilisateur et par jour ; une date est obligatoire", async () => {
+    const auto = (by: string, day: string) => (_db: unknown, c: pg.PoolClient) =>
+      c.query(
+        `INSERT INTO app.missions (org_id, agent_id, agent_version, requested_by, trigger, run_on) VALUES ($1, 'mandate-watcher', '1.0.0', $2, 'auto', $3)
+         ON CONFLICT (org_id, agent_id, requested_by, run_on) WHERE trigger = 'auto' DO NOTHING RETURNING id`,
+        [A, by, day],
+      ).then((r) => r.rowCount);
+    expect(await withTenant(pool, A1(), auto(users.negoA, "2026-11-23"))).toBe(1);
+    expect(await withTenant(pool, A1(), auto(users.negoA, "2026-11-23"))).toBe(0);
+    // Un autre jour, ou un collègue le même jour : nouveau passage.
+    expect(await withTenant(pool, A1(), auto(users.negoA, "2026-11-24"))).toBe(1);
+    expect(await withTenant(pool, A2(), auto(users.nego2A, "2026-11-23"))).toBe(1);
+    // Les lancements à la main restent illimités ; un passage automatique sans date est refusé.
+    await withTenant(pool, A1(), newMission(users.negoA));
+    await withTenant(pool, A1(), newMission(users.negoA));
+    await expect(withTenant(pool, A1(), (_db, c) =>
+      c.query(`INSERT INTO app.missions (org_id, agent_id, agent_version, requested_by, trigger) VALUES ($1, 'mandate-watcher', '1.0.0', $2, 'auto')`, [A, users.negoA])))
+      .rejects.toMatchObject({ code: "23514" });
+  });
+
   it("activation d'un agent : réservée au gérant", async () => {
     await expectDenied(withTenant(pool, A1(), (_db, c) =>
       c.query(`INSERT INTO app.agent_settings (org_id, agent_id, enabled, updated_by) VALUES ($1, 'data-quality', false, $2)`, [A, users.negoA])));

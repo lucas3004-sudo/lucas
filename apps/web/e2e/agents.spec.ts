@@ -18,6 +18,16 @@ test("le gérant fait travailler les agents et approuve une fusion de doublons",
   await page.getByRole("button", { name: "Créer l'agence" }).click();
   await expect(page.getByRole("heading", { name: "Bonjour Gina" })).toBeVisible();
 
+  // Passage automatique du jour (D-064) : les 5 agents ont tourné seuls, une seule fois, et la page
+  // explique pourquoi ils n'ont rien trouvé (agence encore vide).
+  await page.goto("/app/agents");
+  await expect(page.getByText("Les agents n'ont encore rien à traiter.")).toBeVisible();
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByRole("cell", { name: "Automatique (Gina Agents)" })).toHaveCount(5, { timeout: 1000 });
+  }).toPass({ timeout: 20_000 });
+  await expect(page.getByText("Dernière mission (automatique)").first()).toBeVisible();
+
   // Deux fiches pour la même personne : la seconde est créée malgré l'avertissement.
   for (const [first, phone, confirm] of [["Jean", "06 11 22 33 44", false], ["J.", "", true]] as const) {
     await page.goto("/app/contacts/nouveau");

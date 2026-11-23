@@ -7,6 +7,8 @@ import { ROLE_LABELS } from "@/lib/auth/roles";
 import { Logo } from "@/ui/logo";
 import { agencyAccess } from "@/lib/billing/subscription";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { runDailyAgents } from "@/lib/agents/run";
 import { HelpButton } from "./help-button";
 import { Nav, type NavSection } from "./nav";
 
@@ -29,6 +31,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Après l'essai de 14 jours, il faut un abonnement payé (D-057). Les données restent conservées.
   const { access } = await agencyAccess(ctx);
   if (!access.allowed) redirect("/abonnement");
+  // Passage automatique des agents (D-064) : une fois par jour, après l'envoi de la page.
+  after(() => runDailyAgents(ctx).catch((error) => console.error("Passage automatique des agents impossible", error)));
   const session = await getSession();
   const twoFactorOn = Boolean((session?.user as { twoFactorEnabled?: boolean | null } | undefined)?.twoFactorEnabled);
   const remindTwoFactor = (role === "gerant" || role === "manager") && !twoFactorOn;
