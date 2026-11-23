@@ -75,7 +75,7 @@ export default async function SubscriptionPage({ searchParams }: { searchParams:
         </div>
 
         <h2 className="mt-12 font-display text-2xl font-semibold tracking-[-0.03em] text-ink sm:text-3xl">Les formules</h2>
-        <p className="mt-1 text-sm text-ink-muted">Prix hors taxes, par mois, sans engagement. Résiliable à tout moment.</p>
+        <p className="mt-1 text-sm text-ink-muted">Prix hors taxes, par mois, sans engagement. Résiliable à tout moment. Au-delà des échanges IA inclus : 2 € les 100, avec un plafond que vous choisissez.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {PAID_PLANS.map((id) => {
             const plan = PLANS[id];

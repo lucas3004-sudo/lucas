@@ -5,7 +5,10 @@
  * (identifiants uniquement : un effacement RGPD ne laisse pas de nom dans le journal).
  */
 import { withTenant } from "@immopilot/db";
-import { FEATURE_KEYS, findDuplicates, normalizeEmail, normalizePhone, type PropertyFeature } from "@immopilot/domain";
+import {
+  cleanListingUrl, FEATURE_KEYS, findDuplicates, normalizeEmail, normalizePhone, PORTAL_IDS, portalsToRemove, REMOVAL_TASK_PREFIX,
+  removalTaskTitle, utcToParisLocal, type PortalId, type PortalListing, type PropertyFeature,
+} from "@immopilot/domain";
 import { communesByPostcode, geocode } from "@immopilot/integrations";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -301,9 +304,69 @@ export async function setPropertyStatusAction(form: FormData): Promise<void> {
   const ctx = await requireAgency();
   const id = UUID.parse(form.get("id"));
   const status = z.enum(["prospect", "mandat", "sous_offre", "vendu", "retire"]).parse(form.get("status"));
-  await withTenant(getTenantPool(), tenant(ctx), (_db, c) =>
-    c.query("UPDATE app.properties SET status = $2, updated_at = now() WHERE id = $1", [id, status]));
+  // Bien vendu ou retiré encore en ligne : rappel au responsable pour retirer ses annonces (D-066).
+  const removalTask = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) => {
+    await c.query("UPDATE app.properties SET status = $2, updated_at = now() WHERE id = $1", [id, status]);
+    const prop = (await c.query<{ owner_user_id: string; address_label: string; status: string }>(
+      "SELECT owner_user_id, address_label, status FROM app.properties WHERE id = $1", [id],
+    )).rows[0];
+    if (!prop || ctx.role === "lecture") return null;
+    const listed = (await c.query<PortalListing>("SELECT portal, status FROM app.property_portals WHERE property_id = $1", [id])).rows;
+    const portals = portalsToRemove(prop.status, listed);
+    if (!portals.length) return null;
+    const open = await c.query("SELECT 1 FROM app.tasks WHERE property_id = $1 AND status = 'a_faire' AND title LIKE $2", [id, `${REMOVAL_TASK_PREFIX}%`]);
+    if (open.rowCount) return null;
+    return (await c.query<{ id: string }>(
+      `INSERT INTO app.tasks (org_id, assignee_user_id, created_by, title, details, property_id, due_on) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [ctx.org.id, prop.owner_user_id, ctx.user.id, removalTaskTitle(portals, prop.address_label),
+       "Le bien n'est plus à vendre : retirez ses annonces de ces sites, puis indiquez-le dans « Annonce », partie « Diffusion ».",
+       id, utcToParisLocal(new Date()).slice(0, 10)],
+    )).rows[0]!.id;
+  });
+  if (removalTask) {
+    await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "tache.creee", targetType: "tache", targetId: removalTask, details: { motif: "retrait_annonce" } });
+  }
   revalidatePath(`/app/proprietes/${id}`);
+}
+
+/** Diffusion d'un bien sur un portail (D-066) : publié (avec le lien), retiré, ou ligne supprimée (erreur). */
+export async function setPortalAction(form: FormData): Promise<void> {
+  const ctx = await requireAgency();
+  const id = UUID.parse(form.get("id"));
+  const portal = z.enum(PORTAL_IDS as [PortalId, ...PortalId[]]).parse(form.get("portal"));
+  const op = z.enum(["publier", "retirer", "supprimer"]).parse(form.get("op"));
+  const back = `/app/proprietes/${id}/annonce`;
+  const today = utcToParisLocal(new Date()).slice(0, 10);
+  const url = op === "publier" ? cleanListingUrl(String(form.get("url") ?? "")) : null;
+  if (url === undefined) redirect(`${back}?diffusion=lien#diffusion`);
+  let changed = 0;
+  try {
+    changed = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) => {
+      if (op === "publier") {
+        return (await c.query(
+          `INSERT INTO app.property_portals (org_id, property_id, portal, status, url, published_on, updated_by) VALUES ($1, $2, $3, 'publie', $4, $5, $6)
+           ON CONFLICT (property_id, portal) DO UPDATE SET
+             status = 'publie', url = coalesce(EXCLUDED.url, app.property_portals.url),
+             published_on = CASE WHEN app.property_portals.status = 'retire' THEN EXCLUDED.published_on ELSE app.property_portals.published_on END,
+             removed_on = NULL, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+          [ctx.org.id, id, portal, url, today, ctx.user.id],
+        )).rowCount ?? 0;
+      }
+      if (op === "retirer") {
+        return (await c.query(
+          `UPDATE app.property_portals SET status = 'retire', removed_on = greatest($3::date, published_on), updated_by = $4, updated_at = now()
+           WHERE property_id = $1 AND portal = $2 AND status = 'publie'`,
+          [id, portal, today, ctx.user.id],
+        )).rowCount ?? 0;
+      }
+      return (await c.query("DELETE FROM app.property_portals WHERE property_id = $1 AND portal = $2", [id, portal])).rowCount ?? 0;
+    });
+  } catch (e) {
+    if (isDenied(e)) redirect(`${back}?diffusion=droits#diffusion`);
+    throw e;
+  }
+  if (changed) await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "bien_agence.diffusion", targetType: "bien", targetId: id, details: { portail: portal, action: op } });
+  redirect(`${back}?diffusion=${changed ? "ok" : "droits"}#diffusion`);
 }
 
 /** Nouveau prix d'un bien (baisse ou hausse) : la base le note dans l'historique du bien (D-061). */

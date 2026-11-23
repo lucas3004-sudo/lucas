@@ -25,7 +25,11 @@ d'acceptation sont vérifiés.
 ## Fonctionnalités opérationnelles (testées)
 **Formules et quotas (sans paiement)** : formule de chaque agence (Essai par défaut), consommation comptée sur toute l'agence, ajout refusé au quota avec un message clair, page « Formule et consommation » ([détails](docs/formules-et-quotas.md), D-048).
 
-**Agents (sans IA)** : Agent Center avec 5 agents déterministes (qualité des données, Opportunity Finder, veille des échéances, veille des mandats, détection des doublons) ; passerelle d'outils qui refuse tout ce qui dépasse la fiche ; boîte d'approbations (aucune fusion sans décision humaine).
+**Agents (sans IA)** : Agent Center avec 5 agents déterministes (qualité des données, Opportunity Finder, veille des échéances, veille des mandats, détection des doublons) ; passerelle d'outils qui refuse tout ce qui dépasse la fiche ; boîte d'approbations (aucune fusion sans décision humaine). **Passage automatique une fois par jour** à la première connexion de chaque utilisateur (D-064).
+
+**Crédits IA à l'usage** : au-delà du forfait, 2 € les 100 échanges et 0,20 € l'annonce IA, plafond mensuel choisi par le gérant (30 € par défaut), ligne ajoutée à la facture Stripe de renouvellement (D-065). Côté Stripe, à vérifier avec une vraie clé de test.
+
+**Diffusion des annonces** : Pack annonce (titre, description, ZIP du texte et des photos), suivi des portails où le bien est en ligne, rappel de retrait quand le bien est vendu (D-066). Envoi automatique : en attente d'un partenariat de multidiffusion.
 
 **Sécurité du compte** : double authentification par application (TOTP) avec codes de secours, essais limités, rappel au gérant et aux managers ([détails](docs/securite-compte.md)).
 
@@ -110,15 +114,16 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 
 2. **Compte Brevo** (e-mails), choisi le 2026-11-20. Il permettra la vérification des adresses, l'envoi des invitations et la récupération de compte, nécessaire pour rendre la double authentification obligatoire (D-043).
 3. **Valider trois hypothèses de quotas** (D-048) : Investisseur avec 100 contacts et 1 membre, quotas de l'Essai, « 1 utilisateur » en Solo et Pro. Ces valeurs sont modifiables en une ligne.
-4. **Clé API Anthropic** : **reportée** (« rien dépenser pour l'instant », D-047). Le compte est gratuit, avec des crédits d'essai, et un plafond mensuel arrête l'IA quand il est atteint. Elle débloquera le Copilot et la rédaction par IA.
+4. **Clé API Anthropic** : à ajouter par le fondateur dans Vercel (`ANTHROPIC_API_KEY`, décision du 2026-11-23), puis redéployer. C'est le seul blocage de l'assistant IA (D-063).
 5. **Stockage des photos avant la production** (D-042) : un stockage d'objets sera nécessaire au-delà d'environ 100 à 150 biens illustrés (compte ou offre selon le volume).
-6. Demandes de devis aux fournisseurs d'annonces : **reportées** (choix du fondateur).
+6. Demandes de devis aux fournisseurs d'annonces (pige légale des annonces de particuliers sur la carte) : e-mails prêts dans `docs/research/fournisseurs-annonces.md`, à envoyer par le fondateur s'il le souhaite. Demande de partenariat de multidiffusion : e-mail prêt dans `docs/partenaires/multidiffusion-ubiflow.md`.
 7. Entretiens avec 1 ou 2 agents ou gérants d'agence (guide prêt dans `docs/research/guide-entretien.md`).
 8. Consultation d'un avocat avant la commercialisation (questions prêtes dans `docs/legal/fiche-juridique.md`, dont la liste des mentions d'annonce et l'information des salariés sur le pilotage).
 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, agents automatiques, crédits IA, diffusion** : les agents passent seuls chaque jour (ils marchaient, mais seulement au clic, et l'agence de test était vide) ; crédits IA à l'usage avec plafond du gérant ; Pack annonce et suivi des portails avec rappel de retrait (migrations 0023 à 0025, D-064 à D-066).
 - **2026-11-23, assistant IA (prêt, éteint sans clé)** : page « Assistant IA », bouton « Besoin d'aide ? », guide « Comment faire… », quotas par formule et plafond de dépenses global (migration 0022, D-063). Menu mobile : il tient maintenant dans l'écran (son bas était inaccessible).
 - **2026-11-23, récap de l'activité** : « Le récap » sur l'accueil, 24 heures ou 7 jours, avec les points d'attention (D-062).
 - **2026-11-23, historique des biens** : migration 0021 (historique tenu par la base), section « Historique et activité » sur la fiche, modification du prix (D-061).

@@ -87,7 +87,7 @@ Le code est prêt. Le paiement s'active dès que ces variables sont renseignées
 | `STRIPE_WEBHOOK_SECRET` | Secret du point de réception (`whsec_…`) |
 
 - **Prix** : un prix mensuel par formule, retrouvé par sa clé `immopilot_<formule>_mensuel` (investisseur, solo, pro, agency). Ils se créent une fois, avec l'API Stripe ou dans le tableau de bord.
-- **Point de réception** : `https://<adresse du site>/api/v1/stripe/webhook`, avec les événements `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated` et `customer.subscription.deleted`.
+- **Point de réception** : `https://<adresse du site>/api/v1/stripe/webhook`, avec les événements `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` et `invoice.created` (ce dernier ajoute les crédits IA à l'usage à la facture de renouvellement, D-065).
 - **Fonctionnement** :
   - une agence a 14 jours d'essai à partir de sa création ;
   - si le gérant choisit une formule pendant l'essai, sa carte n'est débitée qu'à la fin de l'essai ;

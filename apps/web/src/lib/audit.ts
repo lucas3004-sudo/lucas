@@ -41,7 +41,9 @@ export type AuditAction =
   | "bien_agence.mandat"
   | "agence.export"
   | "abonnement.paiement_ouvert"
-  | "abonnement.portail_ouvert";
+  | "abonnement.portail_ouvert"
+  | "ia.plafond_modifie"
+  | "bien_agence.diffusion";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -80,6 +82,8 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.export": "Données de l'agence exportées (CSV)",
   "abonnement.paiement_ouvert": "Page de paiement d'abonnement ouverte",
   "abonnement.portail_ouvert": "Gestion de l'abonnement ouverte",
+  "ia.plafond_modifie": "Plafond des crédits IA modifié",
+  "bien_agence.diffusion": "Diffusion d'un bien sur un portail",
 };
 
 export async function audit(params: {

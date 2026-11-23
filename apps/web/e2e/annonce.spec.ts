@@ -86,6 +86,45 @@ test("un gérant complète l'annonce d'un bien jusqu'à ce que toutes les mentio
   await expect(text).toContainText("Logement à consommation énergétique excessive");
   await expect(text).toContainText("Nombre de lots : 24.");
   await expect(text).toContainText("www.georisques.gouv.fr");
+
+  // Diffusion (D-066) : pack annonce (texte et photos), portails suivis, rappel de retrait à la vente.
+  await expect(page.getByRole("button", { name: "Copier le titre" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copier la description" })).toBeVisible();
+  const pack = await page.request.get(new URL(`${propertyPath.replace("/app/proprietes", "/api/v1/proprietes")}/pack`, page.url()).toString());
+  expect(pack.status()).toBe(200);
+  expect(pack.headers()["content-type"]).toBe("application/zip");
+  expect(pack.headers()["content-disposition"]).toMatch(/^attachment; filename="annonce-.+\.zip"$/);
+  const zip = await pack.body();
+  expect(zip.subarray(0, 2).toString()).toBe("PK");
+  for (const name of ["annonce.txt", "titre.txt", "description.txt"]) expect(zip.includes(Buffer.from(name))).toBe(true);
+  const seloger = page.getByTestId("portail-seloger");
+  await seloger.getByLabel("Lien de l'annonce sur SeLoger (facultatif)").fill("http://non-securise.example/annonce/1");
+  await seloger.getByRole("button", { name: "Publiée sur SeLoger" }).click();
+  await expect(page.getByText("Lien invalide : copiez l'adresse complète de l'annonce, qui commence par https://.")).toBeVisible();
+  await page.getByTestId("portail-seloger").getByLabel("Lien de l'annonce sur SeLoger (facultatif)").fill("https://www.portail.example/annonce/123");
+  await page.getByTestId("portail-seloger").getByRole("button", { name: "Publiée sur SeLoger" }).click();
+  await expect(page.getByText("Diffusion mise à jour.")).toBeVisible();
+  await expect(page.getByTestId("portail-seloger")).toContainText("En ligne");
+  await expect(page.getByTestId("portail-seloger").getByRole("link", { name: "Voir l'annonce" })).toHaveAttribute("href", "https://www.portail.example/annonce/123");
+  await page.getByTestId("portail-leboncoin").getByRole("button", { name: "Publiée sur Leboncoin" }).click();
+  await expect(page.getByTestId("portail-leboncoin")).toContainText("En ligne");
+  await expect(page.getByTestId("portail-bienici")).toContainText("Non publié");
+
+  // Le bien est vendu : un rappel est créé pour retirer les deux annonces encore en ligne.
+  await page.goto(propertyPath);
+  await page.getByLabel("Statut du bien").selectOption("vendu");
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes(propertyPath)),
+    page.getByRole("button", { name: "Changer le statut" }).click(),
+  ]);
+  await page.goto("/app/taches");
+  await expect(page.getByText(/Retirer l'annonce de SeLoger, Leboncoin : /).first()).toBeVisible();
+  await page.goto(`${propertyPath}/annonce`);
+  await page.getByTestId("portail-seloger").getByRole("button", { name: "Annonce retirée de SeLoger" }).click();
+  await expect(page.getByTestId("portail-seloger")).toContainText("Retirée le");
+  await expect(page.getByTestId("portail-seloger").getByRole("button", { name: "Publiée sur SeLoger" })).toHaveText("Republiée");
+  await page.goto("/app/journal");
+  await expect(page.getByRole("cell", { name: "Diffusion d'un bien sur un portail", exact: true }).first()).toBeVisible();
   if (process.env.E2E_CAPTURES) {
     await page.setViewportSize({ width: 1360, height: 900 });
     await page.screenshot({ path: `${process.env.E2E_CAPTURES}/15-annonce.png`, fullPage: true });
