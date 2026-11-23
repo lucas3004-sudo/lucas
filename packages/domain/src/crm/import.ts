@@ -203,6 +203,9 @@ export interface PropertyDraft {
   mandateEndsOn: string | null;
   features: PropertyFeature[];
   notes: string | null;
+  /** Titre et texte de l'annonce, quand le fichier les fournit (export Poliris). */
+  listingTitle?: string | null;
+  listingDescription?: string | null;
 }
 
 const PROPERTY_COLUMNS = {

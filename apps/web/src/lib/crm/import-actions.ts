@@ -11,12 +11,15 @@ import {
   normalizeEmail,
   normalizePhone,
   parseContactsCsv,
+  isPolirisText,
+  parsePolirisCsv,
   parsePropertiesCsv,
   type ContactDraft,
   type ImportRow,
   type PropertyDraft,
 } from "@immopilot/domain";
 import { geocode, type Address } from "@immopilot/integrations";
+import { unzipSync } from "fflate";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAgency, type AgencyContext } from "../agency/context";
@@ -27,6 +30,7 @@ import { getTenantPool } from "../server/db";
 import { duplicateCandidates } from "./data";
 
 const MAX_BYTES = 1_000_000;
+const MAX_ZIP_BYTES = 20_000_000;
 
 export type RowStatus = "ok" | "doublon" | "erreur";
 export interface PreviewRow {
@@ -55,8 +59,23 @@ export interface ImportState {
 async function readCsv(form: FormData): Promise<{ text: string; encoding: string } | { error: string }> {
   const file = form.get("file");
   if (file instanceof File && file.size > 0) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    // Export Poliris d'un logiciel d'agence : un ZIP qui contient Annonces.csv (D-068). Seul ce
+    // fichier est extrait (les photos ne sont pas reprises), avec une limite de taille.
+    if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
+      if (file.size > MAX_ZIP_BYTES) return { error: "Fichier ZIP trop volumineux (20 Mo au maximum)." };
+      let csv: Uint8Array | undefined;
+      try {
+        const files = unzipSync(bytes, { filter: (f) => /(^|\/)annonces\.csv$/i.test(f.name) && f.originalSize <= MAX_BYTES });
+        csv = Object.values(files)[0];
+      } catch {
+        return { error: "Fichier ZIP illisible." };
+      }
+      if (!csv) return { error: "Ce ZIP ne contient pas de fichier Annonces.csv (export Poliris) de moins de 1 Mo." };
+      return decodeCsvBytes(csv);
+    }
     if (file.size > MAX_BYTES) return { error: "Fichier trop volumineux (1 Mo au maximum)." };
-    return decodeCsvBytes(new Uint8Array(await file.arrayBuffer()));
+    return decodeCsvBytes(bytes);
   }
   const text = form.get("csv");
   if (typeof text === "string" && text.length > 0 && text.length <= MAX_BYTES * 1.2) return { text, encoding: "utf-8" };
@@ -183,7 +202,8 @@ async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) 
 const MIN_GEOCODE_SCORE = 0.5;
 
 async function analyzeProperties(ctx: AgencyContext, text: string) {
-  const parsed = parsePropertiesCsv(text);
+  // Export Poliris (logiciel de transaction) ou tableau Excel enregistré en CSV.
+  const parsed = isPolirisText(text) ? parsePolirisCsv(text) : parsePropertiesCsv(text);
   if (parsed.fatal) return { fatal: parsed.fatal } as const;
   const { existing, numbers } = await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) => {
     const rows = (await c.query<{ ban_id: string; mandate_number: string | null }>("SELECT ban_id, mandate_number FROM app.properties")).rows;
@@ -259,11 +279,12 @@ export async function importPropertiesAction(_prev: ImportState, form: FormData)
       for (const { d, a } of result.toInsert) {
         const id = (await c.query<{ id: string }>(
           `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, mandate_type, type, address_label, ban_id, insee_code,
-             longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by, mandate_number, mandate_signed_on, mandate_ends_on)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING id`,
+             longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by, mandate_number, mandate_signed_on, mandate_ends_on,
+             listing_title, listing_description)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) RETURNING id`,
           [ctx.org.id, ownerUserId, visibility, d.status, d.mandateType, d.type, a.label, a.banId, a.inseeCode,
            a.longitude, a.latitude, d.surface, d.rooms, d.price, d.dpeClass, d.features, d.notes, ctx.user.id,
-           d.mandateNumber, d.mandateSignedOn, d.mandateEndsOn],
+           d.mandateNumber, d.mandateSignedOn, d.mandateEndsOn, d.listingTitle ?? null, d.listingDescription ?? null],
         )).rows[0]!.id;
         taskIds.push(...(await alertMatchingBuyers(c, {
           orgId: ctx.org.id, authorUserId: ctx.user.id, authorName: ctx.user.name, propertyId: id, status: d.status, label: a.label,

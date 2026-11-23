@@ -624,3 +624,13 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - migration 0026 : `app.agency_public_pages`, `app.public_lead_attempts`, et deux fonctions ouvertes au visiteur. Le rôle propriétaire n'est autorisé à créer que des lignes marquées « Estimation en ligne ».
 - **Plus tard, si le fondateur le décide** : afficher les annonces de particuliers via un fournisseur sous licence (pige légale, payante), sans numéro de téléphone (devis : `docs/research/fournisseurs-annonces.md`).
 - **À faire valider par l'avocat** : texte d'information RGPD de la page (l'agence est responsable du traitement, ImmoPilot sous-traitant) et durée de conservation.
+
+## D-068 — Reprendre les biens de l'ancien logiciel (export Poliris)
+- **Date** : 2026-11-23 · **Statut** : Acceptée (choix du fondateur : « Import auto des agences », pour que la carte se remplisse sans saisie).
+- **Contexte** : les logiciels de transaction exportent les annonces de l'agence vers les portails au format SeLoger « Poliris » (ZIP contenant `Annonces.csv` : champs entre guillemets séparés par `!#`, un bien par ligne). Ce sont les propres annonces de l'agence : les reprendre est légal.
+- **Décision** :
+  - l'import des biens accepte, en plus du CSV Excel, ce **ZIP** (ou `Annonces.csv` seul) ; le format est reconnu automatiquement ;
+  - champs repris (rangs de la spécification 4.09) : référence, adresse, code postal, ville, prix, surface, pièces, DPE, mandat exclusif, ascenseur, balcon ou terrasse, cave, parking, titre et texte de l'annonce ;
+  - seules les **ventes d'appartements et de maisons** sont reprises (les autres lignes sont écartées avec la raison) ; les biens arrivent « sous mandat », adresse vérifiée par la Base Adresse Nationale, puis apparaissent sur la carte ;
+  - les photos ne sont pas reprises (stockage limité, D-042), et seul `Annonces.csv` est extrait du ZIP (20 Mo au plus).
+- **Suite** : synchronisation régulière (mise à jour des prix et retraits d'après les références), quand une passerelle ou une adresse de flux sera disponible.
