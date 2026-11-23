@@ -71,3 +71,9 @@ COMMIT;
 ```
 
 Supprimer la ligne remet l'agence en Essai. Une baisse de formule ne supprime rien : les éléments déjà créés restent. Seuls les nouveaux ajouts au-delà du quota sont refusés.
+
+## 7. Charger les données publiques (DVF, loyers, zonage)
+Elles se chargent depuis GitHub, car l'environnement de développement ne peut pas joindre la base directement. Le chargement utilise le rôle `app_ingest`, qui n'écrit que dans le schéma `ref` (données publiques).
+1. Une seule fois : ajouter le secret `PREPROD_DATABASE_URL_INGEST` sur https://github.com/lucas3004-sudo/lucas/settings/secrets/actions/new. La valeur est l'adresse de connexion du rôle `app_ingest`, par le répartiteur en mode session (port 5432), en connexion chiffrée.
+2. Lancer « Ingestion préproduction » : https://github.com/lucas3004-sudo/lucas/actions/workflows/ingestion-preprod.yml (bouton « Run workflow »), en choisissant les données (tout, dvf, loyers, zonage) et les départements.
+3. Contrôler `ref.source_runs` : une ligne par chargement (lignes lues, retenues, exclusions par règle, statut).
