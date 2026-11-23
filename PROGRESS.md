@@ -13,7 +13,7 @@ d'acceptation sont vérifiés.
 | 1. Recherche et stratégie | ✅ Terminée (2026-11-20) : prix d'entrée et cible « petites agences » choisis par le fondateur | [Stratégie, prix, MVP](docs/phase-1-strategie.md), [Concurrents](docs/research/concurrents.md), [Fournisseurs d'annonces](docs/research/fournisseurs-annonces.md), [Données complémentaires](docs/research/donnees-complementaires.md), [Fiche juridique](docs/legal/fiche-juridique.md), [Guide d'entretien](docs/research/guide-entretien.md) |
 | 2. Architecture détaillée | ✅ Terminée (2026-11-20) | [Architecture](docs/phase-2/architecture.md), [Modèle de données](docs/phase-2/modele-donnees.md), [Permissions](docs/phase-2/permissions.md), [Moteur d'agents](docs/phase-2/moteur-agents.md), [Ingestion](docs/phase-2/ingestion.md) ; prototypes [RLS](prototypes/rls/run.sh) (12 tests sur 12) et [nettoyage DVF](prototypes/dvf/clean_dvf.py) |
 | 3. Fondation (+ préproduction) | ✅ Fondation livrée, testée (CI au vert), fusionnée dans `main`. Base de préproduction Supabase prête et testée. ⏸️ **Mise en ligne Vercel en attente d'un réglage par le fondateur, depuis un ordinateur** | [Design system](docs/design-system.md), [captures](docs/captures/), code dans `apps/web` et `packages/db` |
-| 4. Intelligence immobilière | ✅ Dossier de bien livré et testé (2026-11-20) ; données publiques à charger en préproduction une fois le site en ligne | [Phase 4](docs/phase-4-dossier-de-bien.md), [capture](docs/captures/08-dossier-de-bien.png) |
+| 4. Intelligence immobilière | ✅ Dossier de bien livré et testé (2026-11-20) ; données publiques chargées en préproduction le 2026-11-23 (Somme pour DVF, France entière pour loyers et zonage) | [Phase 4](docs/phase-4-dossier-de-bien.md), [capture](docs/captures/08-dossier-de-bien.png) |
 | 5. Socle agents | 🟡 **Socle sans IA livré et testé (2026-11-21)** : fiches versionnées, passerelle d'outils, missions, approbations, Agent Center, 5 agents déterministes. Reste : modes IA, Copilot, worker (clé Anthropic nécessaire) | [Socle des agents](docs/phase-5-socle-agents.md) |
 | 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio**, **tableau de bord du gérant**, **agenda (.ics)**, **export RGPD** et **import CSV**, **alertes de correspondance**, **suivi des affaires** et **fiche annonce** (mentions obligatoires, sans IA) et **photos des biens** livrés et testés. Phase 6 terminée côté outils, hors IA | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [Affaires](docs/affaires.md), [Annonce](docs/annonce.md), [captures 09 à 15](docs/captures/) |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
@@ -40,9 +40,9 @@ d'acceptation sont vérifiés.
 - **Design** : thème clair et sombre, affichage mobile, navigation limitée aux modules construits.
 
 **Tests** (tous au vert le 2026-11-21) :
-- 166 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
+- 169 tests unitaires (domaine, formules et quotas, comptes rendus de visite, mandats, matching, doublons, simulation d'investissement sur 12 cas calculés à la main, intégrations, rôles, garde-fous), plus 1 test de référence sur le vrai fichier DVF ;
 - 41 tests d'intégration sur PostgreSQL (isolation, dossiers immuables, CRM, réattribution, rendez-vous, affaires, photos, agents, formules et consommation, comptes rendus de visite, mandats) ;
-- 33 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats et l'export de l'agence ;
+- 34 scénarios de bout en bout (Playwright), dont 5 pour l'accessibilité (27 pages, thèmes clair et sombre, mobile, clavier, contrôle positif), 10 pour le CRM, le matching, les alertes, le pilotage et les affaires, 3 pour les en-têtes de sécurité et l'état de santé, et 1 chacun pour les agents et les approbations, l'import CSV, l'annonce et les photos, la double authentification, l'Investment Studio, les formules et quotas, le compte rendu de visite, le suivi des mandats, l'export de l'agence et la carte des biens ;
 - lint, types, build de production.
 
 **Dossier de bien (phase 4)** :
@@ -69,6 +69,7 @@ Testé sur une vraie adresse d'Amiens : 82 comparables, 114 000 à 169 000 €.
 - accueil « Ma journée » : tâches en retard et du jour, rendez-vous d'aujourd'hui et de demain, échéances d'affaires à 7 jours, biens signalés ;
 - qualité des données : consentements manquants, doublons probables, annonces et biens incomplets, échéances dépassées, profils trop larges, contacts sans coordonnées ;
 - photos des biens : galerie de 15 photos, réduites dans le navigateur, revérifiées par le serveur (JPEG ou PNG, métadonnées et GPS retirés) ;
+- carte des biens : fond IGN, filtres par critères, ventes réelles autour (DVF), repère « bonne affaire » (prix sous la médiane de la commune) ([détails](docs/carte-des-biens.md), [capture](docs/captures/16-carte.jpg)) ;
 - export complet de l'agence : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ([détails](docs/export-agence.md)) ;
 - suivi des mandats : numéro unique dans l'agence, dates, rappel 30 jours avant la fin dans « Ma journée », mandats expirés dans « Qualité des données », reprise par l'import CSV ([détails](docs/suivi-mandats.md)) ;
 - compte rendu de visite : texte prêt à envoyer au vendeur, sans IA et sans le nom des visiteurs, synthèse des visites sur la fiche du bien ([détails](docs/compte-rendu-visite.md)) ;
@@ -117,6 +118,9 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, données publiques en préproduction et carte des biens** :
+  - chargement depuis GitHub (bouton « Ingestion préproduction ») : 34 875 communes zonées, 139 600 loyers, 16 156 ventes DVF de la Somme (janvier 2024 à juin 2026) ; médiane des appartements à Amiens : 2 527 €/m² ;
+  - carte des biens gratuite (D-054).
 - **2026-11-22, mise en ligne (Vercel)** : réglages faits par le fondateur ; construction réussie ; `/api/health` répond « ok » avec 19 migrations sur 19. L'inscription échouait sur l'adresse du déploiement (origine refusée) : corrigé (D-053).
 - **2026-11-21, agent « Veille des mandats »** : 5e agent déterministe (L1). Il crée un rappel pour le responsable de chaque mandat qui se termine dans 30 jours ou a expiré, sans doublon. Export de l'agence fusionné ([PR n° 22](https://github.com/lucas3004-sudo/lucas/pull/22)).
 - **2026-11-21, export complet de l'agence** : 8 fichiers CSV pour Excel, réservé au gérant avec double authentification, formules neutralisées, journalisé ; décision D-052. Suivi des mandats fusionné ([PR n° 21](https://github.com/lucas3004-sudo/lucas/pull/21)) ; migration 0019 appliquée en préproduction (19 migrations, même empreinte qu'en local).

@@ -68,6 +68,8 @@ export interface Property {
   address_label: string;
   ban_id: string;
   insee_code: string;
+  longitude: number | null;
+  latitude: number | null;
   surface: number | null;
   rooms: number | null;
   price: number | null;

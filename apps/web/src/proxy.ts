@@ -11,7 +11,8 @@ export function buildCsp(nonce: string, dev: boolean): string {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    // Fond de carte IGN (Géoplateforme, sans clé) pour la page « Carte ».
+    "img-src 'self' data: blob: https://data.geopf.fr",
     "font-src 'self' data:",
     "connect-src 'self'",
     "object-src 'none'",

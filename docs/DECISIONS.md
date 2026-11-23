@@ -462,3 +462,13 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - ajout possible par `AUTH_TRUSTED_ORIGINS` (https uniquement) ;
   - un code d'erreur s'affiche désormais à côté du message générique, pour diagnostiquer à distance.
 - **Vérification** : en local, l'adresse du projet passe (200), une adresse étrangère est refusée (403). 4 tests unitaires.
+
+## D-054 — Carte des biens : fond IGN, Leaflet, repère « bonne affaire » par médiane DVF communale
+- **Date** : 2026-11-23 · **Statut** : Acceptée (choix du fondateur : « carte gratuite »)
+- **Décision** :
+  - carte Leaflet sur fond IGN (public, sans clé ni coût) ;
+  - biens de l'agence filtrables, et ventes DVF de la zone affichée, sans adresse ;
+  - repère « bonne affaire » : écart du prix affiché au m² avec la médiane DVF de la commune (même type, 24 mois). Seuil ±10 % ; pas de verdict sous 10 ventes.
+- **Pourquoi** : le fondateur veut chercher des biens sur une carte selon ses critères et repérer les meilleures offres. Sans annonces du marché (payantes, D-002), la carte s'appuie sur les biens de l'agence et les ventes réelles.
+- **Limite affichée à l'écran** : c'est un repère, pas une estimation. L'état, l'étage et la vue ne sont pas pris en compte.
+- Détails : `docs/carte-des-biens.md`.
