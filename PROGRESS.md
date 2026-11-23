@@ -29,6 +29,8 @@ d'acceptation sont vérifiés.
 
 **Crédits IA à l'usage** : au-delà du forfait, 2 € les 100 échanges et 0,20 € l'annonce IA, plafond mensuel choisi par le gérant (30 € par défaut), ligne ajoutée à la facture Stripe de renouvellement (D-065). Côté Stripe, à vérifier avec une vraie clé de test.
 
+**Page « Estimez votre bien »** : page publique de chaque agence (ouverte par le gérant ou un manager), fourchette indicative tirée des ventes DVF, demande de rappel avec accord par canal ; la demande devient contact vendeur, bien « prospect » et tâche (D-067).
+
 **Diffusion des annonces** : Pack annonce (titre, description, ZIP du texte et des photos), suivi des portails où le bien est en ligne, rappel de retrait quand le bien est vendu (D-066). Envoi automatique : en attente d'un partenariat de multidiffusion.
 
 **Sécurité du compte** : double authentification par application (TOTP) avec codes de secours, essais limités, rappel au gérant et aux managers ([détails](docs/securite-compte.md)).
@@ -123,6 +125,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, page « Estimez votre bien »** : la façon légale et gratuite de trouver des vendeurs (les annonces de particuliers des portails ne peuvent pas être copiées, et le démarchage téléphonique demande un accord préalable). Migration 0026, D-067.
 - **2026-11-23, agents automatiques, crédits IA, diffusion** : les agents passent seuls chaque jour (ils marchaient, mais seulement au clic, et l'agence de test était vide) ; crédits IA à l'usage avec plafond du gérant ; Pack annonce et suivi des portails avec rappel de retrait (migrations 0023 à 0025, D-064 à D-066).
 - **2026-11-23, assistant IA (prêt, éteint sans clé)** : page « Assistant IA », bouton « Besoin d'aide ? », guide « Comment faire… », quotas par formule et plafond de dépenses global (migration 0022, D-063). Menu mobile : il tient maintenant dans l'écran (son bas était inaccessible).
 - **2026-11-23, récap de l'activité** : « Le récap » sur l'accueil, 24 heures ou 7 jours, avec les points d'attention (D-062).

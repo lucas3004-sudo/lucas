@@ -43,7 +43,8 @@ export type AuditAction =
   | "abonnement.paiement_ouvert"
   | "abonnement.portail_ouvert"
   | "ia.plafond_modifie"
-  | "bien_agence.diffusion";
+  | "bien_agence.diffusion"
+  | "agence.page_estimation";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -84,6 +85,7 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "abonnement.portail_ouvert": "Gestion de l'abonnement ouverte",
   "ia.plafond_modifie": "Plafond des crédits IA modifié",
   "bien_agence.diffusion": "Diffusion d'un bien sur un portail",
+  "agence.page_estimation": "Page « Estimez votre bien » ouverte ou fermée",
 };
 
 export async function audit(params: {

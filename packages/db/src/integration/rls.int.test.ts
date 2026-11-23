@@ -915,3 +915,65 @@ describe("diffusion sur les portails (migration 0025)", () => {
       expect((await c.query(`UPDATE app.property_portals SET status = 'retire', removed_on = '2026-11-22', updated_by = $2 WHERE property_id = $1`, [priv, users.negoA])).rowCount).toBe(1));
   });
 });
+
+describe("page publique « Estimez votre bien » (migration 0026)", () => {
+  const slugA = `agence-a-${A}`;
+  const ip = (n: number) => n.toString(16).padStart(64, "0");
+  const setPage = (userId: string, enabled: boolean, ownerId: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.agency_public_pages (org_id, estimation_enabled, lead_owner_user_id, updated_by) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (org_id) DO UPDATE SET estimation_enabled = EXCLUDED.estimation_enabled, lead_owner_user_id = EXCLUDED.lead_owner_user_id, updated_by = EXCLUDED.updated_by`,
+      [A, enabled, ownerId, userId],
+    );
+  const capture = (ipHash: string, channels: string[] = ["email"], last = "Propriétaire") =>
+    pool.query(
+      `SELECT app.capture_public_lead($1, $2, 'Lucie', $3, 'lucie@test.invalid', '06 12 34 56 78', $4,
+         '8 Boulevard du Port 80000 Amiens', '80021_test_8', '80021', 2.29, 49.89, 'Appartement', 62, 3, 230000, 260000) AS id`,
+      [A, ipHash, last, channels],
+    ).then((r) => r.rows[0].id as string);
+  const page = (slug: string) => pool.query("SELECT * FROM app.public_estimation_page($1)", [slug]).then((r) => r.rows);
+
+  it("réglage : gérant ou manager seulement, destinataire membre de l'agence ; lu par l'agence, pas par l'autre", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.negoA }, setPage(users.negoA, true, users.negoA)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, setPage(users.gerantA, true, users.gerantB)));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, setPage(users.gerantA, false, users.negoA));
+    await withTenant(pool, { orgId: A, userId: users.lectureA }, async (_db, c) => expect(await count(c, "app.agency_public_pages")).toBe(1));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.agency_public_pages")).toBe(0));
+  });
+
+  it("page fermée : introuvable et aucune demande acceptée ; ouverte : retrouvée par son identifiant public", async () => {
+    expect(await page(slugA)).toEqual([]);
+    await expect(capture(ip(1))).rejects.toMatchObject({ code: "P0002" });
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, setPage(users.gerantA, true, users.negoA));
+    expect(await page(slugA)).toEqual([{ org_id: A, name: "Agence A" }]);
+    expect(await page("agence-inconnue")).toEqual([]);
+  });
+
+  it("une demande crée contact vendeur, consentement prouvé, bien à prospecter et tâche pour le destinataire", async () => {
+    const id = await capture(ip(2), ["email", "telephone"], "Demande1");
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => {
+      const contact = (await c.query("SELECT owner_user_id, roles, source, visibility FROM app.contacts WHERE id = $1", [id])).rows[0];
+      expect(contact).toEqual({ owner_user_id: users.negoA, roles: ["vendeur"], source: "Estimation en ligne", visibility: "agency" });
+      expect((await c.query("SELECT channel, status FROM app.contact_consents WHERE contact_id = $1 ORDER BY channel", [id])).rows)
+        .toEqual([{ channel: "email", status: "accorde" }, { channel: "telephone", status: "accorde" }]);
+      expect((await c.query("SELECT status, owner_user_id FROM app.properties WHERE seller_contact_id = $1", [id])).rows).toEqual([{ status: "prospect", owner_user_id: users.negoA }]);
+      expect(await count(c, "app.tasks", "contact_id = $1 AND assignee_user_id = $2", [id, users.negoA])).toBe(1);
+    });
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.contacts", "id = $1", [id])).toBe(0));
+  });
+
+  it("sans consentement valable : refusé ; au-delà de 3 demandes par heure depuis la même connexion : refusé", async () => {
+    await expect(capture(ip(3), [])).rejects.toMatchObject({ code: "23514" });
+    await expect(capture(ip(3), ["sms"])).rejects.toMatchObject({ code: "23514" });
+    for (let i = 0; i < 3; i++) await capture(ip(4), ["email"], `Rafale${i}`);
+    await expect(capture(ip(4))).rejects.toMatchObject({ code: "P0003" });
+    // Une autre connexion passe encore.
+    await capture(ip(5));
+  });
+
+  it("le site ne lit ni n'écrit directement les envois (empreintes IP)", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query("SELECT * FROM app.public_lead_attempts")));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>
+      c.query("INSERT INTO app.public_lead_attempts (org_id, ip_hash) VALUES ($1, $2)", [A, ip(9)])));
+  });
+});

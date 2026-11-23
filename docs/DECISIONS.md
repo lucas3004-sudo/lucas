@@ -606,3 +606,21 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - **rappel de retrait** : quand un bien passe « vendu » ou « retiré » alors qu'il est encore en ligne, une tâche est créée pour son responsable (une seule ouverte à la fois) ;
   - migration 0025 : `app.property_portals`, même visibilité que le bien ; seuls ceux qui peuvent modifier le bien changent sa diffusion ; ni le bien ni le portail d'une ligne ne se modifient.
 - **Suite** : demande de partenariat à une passerelle de multidiffusion (`docs/partenaires/multidiffusion-ubiflow.md`), puis envoi automatique.
+
+## D-067 — Trouver des vendeurs : page publique « Estimez votre bien »
+- **Date** : 2026-11-23 · **Statut** : Acceptée (le fondateur : « fais ce qui est mieux pour toi et dis-moi ce qui est mieux »).
+- **Contexte** : le fondateur voulait voir sur la carte tous les biens de particuliers en vente, pour que les agences les contactent. Une agence n'achète presque jamais de biens : elle vend ceux des propriétaires, avec un mandat, contre des honoraires. Trouver des vendeurs (« rentrer des mandats ») est son besoin n° 1, et repérer les annonces de particuliers s'appelle la « pige ».
+- **Ce qui l'empêche** : copier les annonces des portails sans accord est interdit (droit des bases de données, CPI L342-1 ; Jinka condamné face à SeLoger en 2025 et à Leboncoin en 2026). Et depuis le 11/08/2026, on ne peut plus démarcher un particulier par téléphone sans son accord préalable.
+- **Décision** :
+  - **page publique par agence** (`/estimer/<identifiant>`), fermée par défaut, ouverte par le gérant ou un manager, avec le membre qui reçoit les demandes ;
+  - le propriétaire saisit adresse, type, surface et pièces, et obtient une **fourchette indicative à partir des ventes DVF** autour (arrondie au millier, avec le nombre de ventes et la date des données). Sans assez de ventes, aucune fourchette : un message invite à demander une estimation ;
+  - il peut demander à être rappelé : **accord explicite par canal** (case e-mail, case téléphone), information sur l'usage des données ;
+  - la demande crée dans l'agence un **contact « vendeur »** avec son consentement prouvé (date, page), un **bien « prospect »** (visible sur la carte) avec la fourchette montrée, et une **tâche de rappel** pour le destinataire ;
+  - **protections** :
+    - champ piège invisible et délai minimal de 3 secondes ;
+    - 3 demandes par heure par connexion, 50 par jour par agence ;
+    - empreinte de l'adresse IP seulement, jamais l'adresse elle-même ;
+    - l'adresse et l'estimation sont recalculées côté serveur ;
+  - migration 0026 : `app.agency_public_pages`, `app.public_lead_attempts`, et deux fonctions ouvertes au visiteur. Le rôle propriétaire n'est autorisé à créer que des lignes marquées « Estimation en ligne ».
+- **Plus tard, si le fondateur le décide** : afficher les annonces de particuliers via un fournisseur sous licence (pige légale, payante), sans numéro de téléphone (devis : `docs/research/fournisseurs-annonces.md`).
+- **À faire valider par l'avocat** : texte d'information RGPD de la page (l'agence est responsable du traitement, ImmoPilot sous-traitant) et durée de conservation.
