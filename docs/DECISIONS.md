@@ -539,3 +539,13 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - **« Agence »** : Équipe, Formule, Paramètres, puis Pilotage et Journal d'audit pour le gérant et les managers ;
   - noms en français courant ; la carte « Prochains modules » (en construction) est retirée de l'accueil, car elle n'aide pas l'agent.
 - **Aucune fonction supprimée** : toutes les pages restent accessibles, seul le classement change.
+
+## D-061 — Historique de chaque bien, tenu par la base
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : savoir depuis quand une annonce existe, s'il y a des intéressés, des visites)
+- **Décision** :
+  - migration 0021 : la base note elle-même, par un déclencheur, la création du bien, chaque changement de prix, de statut et de mandat, avec l'auteur et la date ;
+  - le site ne peut ni écrire, ni modifier, ni effacer cet historique, même le gérant ;
+  - l'historique a la même visibilité que le bien ;
+  - sur la fiche du bien, une section « Historique et activité » montre la durée en vente, l'évolution du prix, les acquéreurs de l'agence qui correspondent, les visites (avec l'intérêt exprimé), les affaires et une chronologie datée ;
+  - on peut désormais modifier le prix d'un bien (avant, impossible après sa création) ; chaque modification est tracée dans le journal d'audit.
+- **Limite** : cela concerne les biens de l'agence. Les annonces des autres agences attendent un fournisseur de données autorisé (voir `docs/research/fournisseurs-annonces.md`).

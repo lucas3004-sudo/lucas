@@ -119,6 +119,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-23, historique des biens** : migration 0021 (historique tenu par la base), section « Historique et activité » sur la fiche, modification du prix (D-061).
 - **2026-11-23, menu simplifié** : 7 entrées principales, groupes « Outils » et « Agence », noms simplifiés (D-060).
 - **2026-11-23, style commun à tout le logiciel** : même palette chaude que la page d'accueil, barre latérale « nuit », titres Sora, boutons en pilule, animations courtes à chaque page (D-059) ; page « Abonnement » au même style.
 - **2026-11-23, nouvelle page d'accueil** : scène animée au défilement (la fenêtre du logiciel s'allume puis passe de la carte à l'analyse, aux acquéreurs et aux mandats), verre dépoli, vraies captures, tarifs et questions ; connexion et inscription au même style ; version statique si les mouvements sont réduits (D-058). Paiement fusionné ([PR n° 28](https://github.com/lucas3004-sudo/lucas/pull/28)) ; migration 0020 appliquée en préproduction (20 migrations, 75 règles d'accès, même empreinte qu'en local).

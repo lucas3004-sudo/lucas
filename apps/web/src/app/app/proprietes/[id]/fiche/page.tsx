@@ -2,7 +2,7 @@
  * Fiche d'un bien, présentée comme une annonce : photos à faire défiler, caractéristiques,
  * description, puis l'analyse du marché (chiffres réels) et l'analyse rédigée par l'IA.
  */
-import { PROPERTY_FEATURES, VERDICT_LABELS } from "@immopilot/domain";
+import { PROPERTY_FEATURES, VERDICT_LABELS, type PropertyEvent } from "@immopilot/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,6 +14,7 @@ import { getProperty } from "@/lib/crm/data";
 import { PROPERTY_STATUS } from "@/lib/crm/labels";
 import { fmt } from "@/lib/format";
 import { listingAnalysis } from "@/lib/listing/analysis";
+import { propertyActivity } from "@/lib/crm/activity";
 import { getTenantPool } from "@/lib/server/db";
 import { buttonClass } from "@/ui/button";
 import { Badge, Card, CardBody, CardHeader } from "@/ui/surface";
@@ -125,6 +126,66 @@ async function MarketAnalysis({ property }: { property: NonNullable<Awaited<Retu
   );
 }
 
+const dayFmt = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "Europe/Paris" });
+const signedPct = (v: number) => `${v > 0 ? "+" : "−"}${Math.abs(v * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`;
+const euro = (v: string | null) => (v && Number.isFinite(Number(v)) ? fmt.euros(Number(v)) : "prix non renseigné");
+
+function eventLabel(e: PropertyEvent): string {
+  switch (e.kind) {
+    case "cree":
+      return e.newValue ? `Bien ajouté, à ${euro(e.newValue)}` : "Bien ajouté";
+    case "prix":
+      return `Prix : ${euro(e.oldValue)} → ${euro(e.newValue)}`;
+    case "statut":
+      return `Statut : ${PROPERTY_STATUS[e.oldValue as keyof typeof PROPERTY_STATUS] ?? e.oldValue} → ${PROPERTY_STATUS[e.newValue as keyof typeof PROPERTY_STATUS] ?? e.newValue}`;
+    case "mandat":
+      if (e.newValue === e.oldValue) return "Mandat mis à jour";
+      return e.newValue ? `Mandat ${e.newValue === "exclusif" ? "exclusif" : "simple"}` : "Mandat retiré";
+  }
+}
+
+/** Historique et activité (D-061) : depuis quand le bien est en vente, son prix, son intérêt. */
+async function ActivityCard({ property }: { property: NonNullable<Awaited<ReturnType<typeof getProperty>>> }) {
+  const { events, history, visits, interested, deals } = await propertyActivity(await requireAgency(), property);
+  const tiles: [string, string, string?][] = [
+    ["En vente depuis", history.daysOnMarket === null ? "Pas en vente" : `${history.daysOnMarket} jour(s)`, history.listedOn ? `depuis le ${dayFmt.format(history.listedOn)}` : undefined],
+    ["Évolution du prix", history.totalChange === null ? "Inchangé" : signedPct(history.totalChange), history.firstPrice && history.totalChange !== null ? `prix de départ ${fmt.euros(history.firstPrice)}` : undefined],
+    ["Acquéreurs intéressés", String(interested), "profils de l'agence qui correspondent"],
+    ["Visites", String(visits.visits), visits.visits ? `dont ${visits.byInterest.fort} avec un intérêt fort` : "aucun compte rendu"],
+    ["Affaires", String(deals.length), deals.length ? "offre ou vente en cours" : "aucune offre"],
+  ];
+  return (
+    <section aria-labelledby="historique">
+      <h2 id="historique" className="mb-3 font-display text-lg font-semibold tracking-[-0.02em] text-ink">Historique et activité</h2>
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="activite">
+        {tiles.map(([k, v, sub]) => (
+          <div key={k} className="rounded-2xl border border-line bg-surface p-3.5">
+            <dt className="text-xs text-ink-muted">{k}</dt>
+            <dd className="mt-1 font-display text-xl font-semibold tracking-[-0.02em] text-ink">{v}</dd>
+            {sub ? <dd className="text-xs text-ink-muted">{sub}</dd> : null}
+          </div>
+        ))}
+      </dl>
+      <ol className="mt-4 space-y-0 border-l border-line pl-4" aria-label="Chronologie du bien">
+        {[...events].reverse().map((e, i) => (
+          <li key={i} className="relative pb-3 text-sm">
+            <span aria-hidden className="absolute -left-[21px] top-1.5 size-2 rounded-full bg-brand" />
+            <span className="text-ink">{eventLabel(e)}</span>
+            {e.kind === "prix" ? (
+              <span className="ml-2 align-middle">
+                <Badge tone={Number(e.newValue) < Number(e.oldValue) ? "success" : "warning"}>
+                  {signedPct(Number(e.newValue) / Number(e.oldValue) - 1)}
+                </Badge>
+              </span>
+            ) : null}
+            <span className="block text-xs text-ink-muted">{dayFmt.format(e.at)}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default async function PropertySheetPage({ params }: { params: Promise<{ id: string }> }) {
   const id = z.uuid().safeParse((await params).id);
   if (!id.success) notFound();
@@ -189,6 +250,9 @@ export default async function PropertySheetPage({ params }: { params: Promise<{ 
               <EnergyScale label="Classe climat (GES)" value={property.ges_class} />
             </div>
           </section>
+          <Suspense fallback={<p className="text-sm text-ink-muted">Chargement de l&apos;historique…</p>}>
+            <ActivityCard property={property} />
+          </Suspense>
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">

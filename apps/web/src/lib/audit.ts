@@ -24,6 +24,7 @@ export type AuditAction =
   | "profil.cree"
   | "bien_agence.cree"
   | "bien_agence.supprime"
+  | "bien_agence.prix_modifie"
   | "tache.creee"
   | "rdv.cree"
   | "rdv.annule"
@@ -61,6 +62,7 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "profil.cree": "Profil de recherche créé",
   "bien_agence.cree": "Bien de l'agence créé",
   "bien_agence.supprime": "Bien de l'agence supprimé",
+  "bien_agence.prix_modifie": "Prix d'un bien modifié",
   "tache.creee": "Tâche créée",
   "rdv.cree": "Rendez-vous planifié",
   "rdv.annule": "Rendez-vous annulé",

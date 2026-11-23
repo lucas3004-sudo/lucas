@@ -306,6 +306,19 @@ export async function setPropertyStatusAction(form: FormData): Promise<void> {
   revalidatePath(`/app/proprietes/${id}`);
 }
 
+/** Nouveau prix d'un bien (baisse ou hausse) : la base le note dans l'historique du bien (D-061). */
+export async function updatePropertyPriceAction(form: FormData): Promise<void> {
+  const ctx = await requireAgency();
+  const id = UUID.parse(form.get("id"));
+  const price = z.coerce.number().int().min(1000).max(100_000_000).safeParse(String(form.get("price") ?? "").replace(/\s/g, ""));
+  if (!price.success) redirect(`/app/proprietes/${id}?erreur=prix`);
+  const updated = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) =>
+    (await c.query("UPDATE app.properties SET price = $2, updated_at = now() WHERE id = $1 AND price IS DISTINCT FROM $2", [id, price.data])).rowCount ?? 0);
+  if (updated) await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "bien_agence.prix_modifie", targetType: "bien", targetId: id });
+  revalidatePath(`/app/proprietes/${id}`);
+  redirect(`/app/proprietes/${id}`);
+}
+
 export async function deletePropertyAction(form: FormData): Promise<void> {
   const ctx = await requireAgency();
   const id = UUID.parse(form.get("id"));
