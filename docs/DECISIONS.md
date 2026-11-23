@@ -472,3 +472,31 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
 - **Pourquoi** : le fondateur veut chercher des biens sur une carte selon ses critères et repérer les meilleures offres. Sans annonces du marché (payantes, D-002), la carte s'appuie sur les biens de l'agence et les ventes réelles.
 - **Limite affichée à l'écran** : c'est un repère, pas une estimation. L'état, l'étage et la vue ne sont pas pris en compte.
 - Détails : `docs/carte-des-biens.md`.
+
+## D-055 — Carte v2 : MapLibre et fond IGN épuré ; fiche du bien avec verdict chiffré
+- **Date** : 2026-11-23 · **Statut** : Acceptée (demande du fondateur : carte « belle, professionnelle », annonces cliquables, critères complets)
+- **Décision** :
+  - **moteur vectoriel MapLibre GL** (libre, sans clé) sur le style PLAN IGN retouché pour un rendu épuré, avec la vue satellite de l'IGN ;
+  - **regroupement des biens** et **recherche de lieu avec rayon** ;
+  - **fiche du bien** façon annonce ;
+  - **verdict calculé** par l'écart du prix au milieu de la fourchette estimée (±10 %), puis par la médiane communale à défaut.
+- **Pourquoi pas Google Maps ou Mapbox** : payants au-delà d'un quota, et une clé à gérer. L'IGN est public, gratuit et officiel.
+- **Sécurité** : la CSP autorise `data.geopf.fr` pour les images et les connexions, ainsi que `worker-src blob:` pour le moteur de carte ; les bulles sont construites sans HTML.
+
+## D-056 — L'IA est activée pour l'analyse des annonces (révise D-047)
+- **Date** : 2026-11-23 · **Statut** : Acceptée (choix du fondateur : « avec IA maintenant »)
+- **Décision** :
+  - le fondateur crée le compte API Anthropic et fixe un plafond mensuel ;
+  - l'analyse rédigée par l'IA s'appuie **uniquement sur les chiffres réels** calculés par le logiciel ;
+  - elle est comptée dans le quota « annonces IA » de chaque formule (D-048) ;
+  - le coût de chaque appel est mesuré.
+- **Inchangé** : aucune autre fonction d'IA n'est ouverte sans décision.
+
+## D-057 — Paiement réel par Stripe, avec 14 jours d'essai gratuit
+- **Date** : 2026-11-23 · **Statut** : Acceptée (choix du fondateur), construction en cours
+- **Décision** :
+  - page d'accueil publique et page des prix gratuites ;
+  - le logiciel n'est accessible qu'avec un abonnement payé, après **14 jours d'essai gratuit** ;
+  - paiement par **Stripe** (compte créé par le fondateur), construit et testé d'abord en **mode test** (fausses cartes) ;
+  - passage au paiement réel après validation du fondateur.
+- **Coût** : commission Stripe par paiement (environ 1,5 % + 0,25 € par carte européenne standard selon sa page de tarifs, à vérifier dans le tableau de bord). Aucun abonnement fixe.

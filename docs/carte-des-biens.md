@@ -1,6 +1,19 @@
-# Carte des biens (gratuite)
+# Carte des biens et fiche du bien (gratuites)
 
-Chercher les biens selon ses critères sur une carte, et repérer d'un coup d'œil ceux affichés **sous le prix du marché**. Coût : 0 €, sans compte externe.
+Chercher les biens selon ses critères sur une carte moderne, repérer d'un coup d'œil ceux affichés **sous le prix du marché**, puis ouvrir leur **fiche** façon annonce. Coût : 0 €, sans compte externe.
+
+## Version 2 (2026-11-23), à la demande du fondateur : « une carte belle et professionnelle »
+- **Moteur MapLibre GL 5.24.0** (vectoriel : zoom fluide, rotation, plein écran, échelle). Il remplace Leaflet.
+- **Fond épuré** dérivé du style officiel PLAN IGN (`lib/map/basemap.ts`, testé) : couleurs douces, routes blanches à fin liseré, eau bleu clair. Les sigles d'équipements, le relief et les parcelles sont masqués ; seuls les noms de rues, de lieux et de cours d'eau restent.
+- **Vue satellite** : orthophotos de l'IGN, sans clé.
+- **Biens regroupés** quand on dézoome (pastille avec le nombre), étiquettes de prix (« 120 k€ »), couleur selon la position par rapport au marché.
+- **Panneau de cartes à photo** à côté de la carte : prix, €/m², type, surface, pièces, repère. Le survol d'une carte met le bien en avant sur la carte.
+- **Critères complets** (`lib/map/filters.ts`, testé) : lieu (commune, rue ou adresse, via la BAN) et rayon (500 m à 20 km, cercle tracé), type, prix minimum et maximum, surface minimum et maximum, pièces, prix au m², DPE, équipements, statut, bonnes affaires, avec photos, mes biens ; cinq tris.
+- **Fiche du bien** (`/app/proprietes/<id>/fiche`) :
+  - carrousel de photos (flèches, clavier, glissement du doigt, vignettes), description, caractéristiques, étiquettes DPE et GES ;
+  - **analyse du marché chiffrée**, calculée par le même moteur que le dossier de bien : fourchette estimée sur les ventes comparables, médiane de la commune, rendement locatif brut (loyers ANIL), risques (Géorisques), zonage ABC ;
+  - un **verdict** (bonne affaire, prix cohérent, prix élevé, analyse incomplète) qui suit l'écart au milieu de la fourchette, avec le même seuil de ±10 % que la carte ;
+  - l'analyse rédigée par l'IA s'y ajoutera dès que la clé sera configurée (D-056).
 
 ## Ce qui est construit
 - **Page « Carte »** (`/app/carte`) :

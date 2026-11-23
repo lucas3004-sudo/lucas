@@ -98,6 +98,7 @@ export default async function PropertyPage({ params, searchParams }: { params: P
         description={<>Responsable : {memberName(members, property.owner_user_id)} · ajouté le {fmt.date(property.created_at)}</>}
         actions={
           <>
+            <LinkButton href={`/app/proprietes/${property.id}/fiche`}>Voir la fiche</LinkButton>
             {ctx.role !== "lecture" && property.status !== "vendu" && property.status !== "retire" ? (
               <LinkButton href={`/app/affaires/nouvelle?bien=${property.id}`} variant="secondary">
                 Ouvrir une affaire

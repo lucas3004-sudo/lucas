@@ -31,29 +31,56 @@ test("un négociateur cherche sur la carte les biens selon ses critères et rep�
 
   await page.getByRole("link", { name: "Carte" }).first().click();
   await expect(page.getByRole("heading", { name: "Carte des biens" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Carte des biens de l'agence et des ventes réelles" })).toBeVisible();
-  await expect(page.locator("path.leaflet-interactive").first()).toBeAttached(); // le bien est placé sur la carte
-  await expect(page.getByRole("heading", { name: "1 bien(s) correspondant(s), les meilleures affaires d'abord" })).toBeVisible();
+  // Carte vectorielle chargée (moteur MapLibre, fond IGN) : l'état passe à « prête ».
+  await expect(page.locator('[data-state="prete"]')).toBeAttached({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "1 bien(s) correspondant(s)" })).toBeVisible();
   const item = page.getByRole("listitem").filter({ hasText: address });
-  await expect(item.getByRole("link", { name: address })).toBeVisible();
+  await expect(item).toBeVisible();
 
   if (expectDvf) {
     await expect(item.getByText(/^Sous le marché \(−\d+ %\)$/)).toBeVisible();
     await page.getByLabel("Bonnes affaires seulement").check();
-    await expect(page.getByRole("heading", { name: "1 bien(s) correspondant(s), les meilleures affaires d'abord" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "1 bien(s) correspondant(s)" })).toBeVisible();
     await page.getByLabel("Bonnes affaires seulement").uncheck();
   } else {
     await expect(item.getByText("Pas assez de ventes pour comparer")).toBeVisible();
   }
 
-  // Critères : un prix maximum trop bas écarte le bien, la surface minimale aussi.
+  // Critères : prix maximum, surface, équipements, DPE.
   await page.getByLabel("Prix maximum (€)").fill("100000");
   await expect(page.getByText("Aucun bien ne correspond à ces critères.")).toBeVisible();
   await page.getByLabel("Prix maximum (€)").fill("");
   await page.getByLabel("Surface minimum (m²)").fill("80");
   await expect(page.getByText("Aucun bien ne correspond à ces critères.")).toBeVisible();
   await page.getByLabel("Surface minimum (m²)").fill("");
+  await page.getByText("Plus de critères").click();
+  const garden = page.locator("label").filter({ hasText: /^Jardin$/ });
+  await garden.click(); // une « pastille » cliquable, comme pour un utilisateur
+  await expect(page.getByLabel("Jardin")).toBeChecked();
+  await expect(page.getByText("Aucun bien ne correspond à ces critères.")).toBeVisible();
+  await garden.click();
   await expect(item).toBeVisible();
+
+  // Lieu et rayon : à 1 km d'Amiens-centre, le bien reste ; autour d'Abbeville (40 km), il disparaît.
+  await page.getByRole("combobox", { name: "Lieu", exact: true }).fill("Abbeville");
+  await page.getByRole("option", { name: /Abbeville/ }).first().click();
+  await page.getByLabel("Rayon autour du lieu").selectOption("10");
+  await expect(page.getByText("Aucun bien ne correspond à ces critères.")).toBeVisible();
+  await page.getByRole("button", { name: "Effacer le lieu" }).click();
+  await expect(item).toBeVisible();
+
+  // Fiche du bien : photos, caractéristiques, analyse du marché chiffrée.
+  await item.getByRole("link", { name: `Voir la fiche : ${address}` }).click();
+  await expect(page.getByRole("heading", { name: address })).toBeVisible();
+  await expect(page.getByText("Aucune photo pour ce bien.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Caractéristiques" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Analyse du marché" })).toBeVisible({ timeout: 45_000 });
+  if (expectDvf) {
+    await expect(page.getByText("Bonne affaire", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("verdict-raisons")).toContainText("Prix au m²");
+    await expect(page.getByTestId("verdict-raisons")).toContainText("Rendement locatif brut estimé");
+  }
+  await page.goBack();
 
   // Ventes réelles de la zone : jamais d'adresse, zone contrôlée.
   const sales = await page.request.get("/api/v1/carte/ventes?bbox=2.28,49.88,2.32,49.91");
