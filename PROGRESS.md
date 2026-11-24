@@ -127,6 +127,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-24, fusion** : agents automatiques, crédits IA, diffusion, page « Estimez votre bien » et import Poliris fusionnés ([PR n° 31](https://github.com/lucas3004-sudo/lucas/pull/31)) ; migrations 0023 à 0026 appliquées en préproduction (26 migrations, 104 règles d'accès, même empreinte qu'en local).
 - **2026-11-23, reprise de l'ancien logiciel** : import de l'export Poliris (ZIP) des logiciels de transaction, pour remplir la carte sans saisie (D-068).
 - **2026-11-23, page « Estimez votre bien »** : la façon légale et gratuite de trouver des vendeurs (les annonces de particuliers des portails ne peuvent pas être copiées, et le démarchage téléphonique demande un accord préalable). Migration 0026, D-067.
 - **2026-11-23, agents automatiques, crédits IA, diffusion** : les agents passent seuls chaque jour (ils marchaient, mais seulement au clic, et l'agence de test était vide) ; crédits IA à l'usage avec plafond du gérant ; Pack annonce et suivi des portails avec rappel de retrait (migrations 0023 à 0025, D-064 à D-066).
