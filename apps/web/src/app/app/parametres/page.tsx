@@ -78,7 +78,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                     </Select>
                   </Field>
                 </div>
-                <SubmitButton variant="secondary">Enregistrer</SubmitButton>
+                <SubmitButton variant="secondary">Mettre à jour la page</SubmitButton>
               </form>
             ) : (
               <p className="text-xs text-ink-muted">Seuls le gérant et les managers peuvent ouvrir ou fermer cette page.</p>

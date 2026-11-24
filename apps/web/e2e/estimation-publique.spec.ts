@@ -24,7 +24,7 @@ test("une agence ouvre sa page d'estimation et reçoit la demande d'un propriét
   await expect(page.getByText("La page est fermée : personne ne peut l'ouvrir.")).toBeVisible();
   await page.getByLabel("Ouvrir la page au public").check();
   await page.getByLabel("Qui reçoit les demandes ?").selectOption({ label: "Nora Estimation" });
-  await page.getByRole("button", { name: "Enregistrer" }).last().click();
+  await page.getByRole("button", { name: "Mettre à jour la page" }).click();
   await expect(page.getByText("Page « Estimez votre bien » enregistrée.")).toBeVisible();
   const link = await page.getByLabel("Lien de votre page").inputValue();
   expect(link).toMatch(/\/estimer\/[a-z0-9-]+$/);
@@ -79,7 +79,7 @@ test("une agence ouvre sa page d'estimation et reçoit la demande d'un propriét
   // Page refermée : introuvable pour le public.
   await page.goto("/app/parametres");
   await page.getByLabel("Ouvrir la page au public").uncheck();
-  await page.getByRole("button", { name: "Enregistrer" }).last().click();
+  await page.getByRole("button", { name: "Mettre à jour la page" }).click();
   await expect(page.getByText("La page est fermée : personne ne peut l'ouvrir.")).toBeVisible();
   const closed = await page.request.get(publicPath);
   expect(closed.status()).toBe(404);
