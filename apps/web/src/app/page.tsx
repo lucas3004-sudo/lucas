@@ -189,6 +189,9 @@ export default async function Home() {
               <p className="rise-in mt-5 text-lg text-s-muted" style={v({ "--d": "120ms", "--rise": "10px" })}>
                 Prix hors taxes, par mois, sans engagement. 14 jours d&apos;essai gratuit, sans carte bancaire.
               </p>
+              <p className="rise-in mt-3 text-sm text-s-muted" style={v({ "--d": "160ms", "--rise": "10px" })}>
+                Besoin de plus d&apos;IA ? Au-delà du forfait : 2 € les 100 échanges, 0,20 € l&apos;annonce, avec un plafond mensuel que vous choisissez.
+              </p>
             </div>
             <div className="mx-auto mt-14 grid max-w-6xl gap-4 md:grid-cols-2 lg:grid-cols-4">
               {PAID_PLANS.map((id, i) => {

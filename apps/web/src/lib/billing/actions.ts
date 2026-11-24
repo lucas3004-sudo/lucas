@@ -1,8 +1,11 @@
 "use server";
-/** Paiement de l'abonnement (Stripe Checkout) et gestion (portail client Stripe). Gérant seulement. */
+/** Paiement de l'abonnement (Stripe Checkout), gestion (portail Stripe), plafond des crédits IA. Gérant seulement. */
+import { withTenant } from "@immopilot/db";
+import { parseOverageCap } from "@immopilot/domain";
 import { redirect } from "next/navigation";
 import { requireAgency } from "../agency/context";
 import { audit } from "../audit";
+import { getTenantPool } from "../server/db";
 import { appUrl } from "../server/env";
 import { getStripe, isPaidPlan, priceLookupKey } from "./stripe";
 import { agencyAccess } from "./subscription";
@@ -51,4 +54,20 @@ export async function openPortalAction(): Promise<void> {
   const portal = await stripe.billingPortal.sessions.create({ customer: subscription.stripeCustomerId, return_url: `${appUrl()}/abonnement`, locale: "fr" });
   await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "abonnement.portail_ouvert" });
   redirect(portal.url);
+}
+
+/** Plafond mensuel des crédits IA à l'usage (D-065) : gérant seulement, de 0 € (désactivé) à 500 €. */
+export async function setOverageCapAction(form: FormData): Promise<void> {
+  const ctx = await requireAgency();
+  if (ctx.role !== "gerant") redirect("/app/formule?plafond=gerant");
+  const cents = parseOverageCap(String(form.get("plafond") ?? ""));
+  if (cents === null) redirect("/app/formule?plafond=invalide");
+  await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, (_db, c) =>
+    c.query(
+      `INSERT INTO app.agency_ai_settings (org_id, overage_cap_cents, updated_by) VALUES ($1, $2, $3)
+       ON CONFLICT (org_id) DO UPDATE SET overage_cap_cents = EXCLUDED.overage_cap_cents, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+      [ctx.org.id, cents, ctx.user.id],
+    ));
+  await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "ia.plafond_modifie", details: { plafond_eur: cents / 100 } });
+  redirect("/app/formule?plafond=ok");
 }

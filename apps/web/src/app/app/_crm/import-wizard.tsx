@@ -33,6 +33,8 @@ export function ImportWizard({
   meId,
   defaultVisibility,
   notice,
+  accept = ".csv,text/csv",
+  fileHelp,
 }: {
   previewAction: Action;
   importAction: Action;
@@ -45,6 +47,9 @@ export function ImportWizard({
   meId: string;
   defaultVisibility: "private" | "agency";
   notice?: string;
+  /** Types de fichiers acceptés (les biens acceptent aussi l'export ZIP d'un logiciel). */
+  accept?: string;
+  fileHelp?: string;
 }) {
   const [preview, runPreview] = useActionState(previewAction, {});
   const [result, runImport] = useActionState(importAction, {});
@@ -65,7 +70,7 @@ export function ImportWizard({
     <div className="divide-y divide-line">
       <form action={runPreview} className="space-y-4 px-5 py-5">
         <p className="text-sm text-ink-muted">
-          Fichier CSV (séparateur point-virgule ou virgule, export Excel accepté), 1 Mo au maximum. La première ligne doit contenir les noms de colonnes.{" "}
+          {fileHelp ?? "Fichier CSV (séparateur point-virgule ou virgule, export Excel accepté), 1 Mo au maximum. La première ligne doit contenir les noms de colonnes."}{" "}
           <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(template)}`} download={templateName} className="font-medium text-brand-text underline">
             Télécharger un modèle
           </a>
@@ -74,7 +79,7 @@ export function ImportWizard({
         {notice ? <Alert tone="warning">{notice}</Alert> : null}
         {preview.error ? <Alert tone="danger">{preview.error}</Alert> : null}
         <Field label="Fichier CSV" htmlFor="file">
-          <Input id="file" name="file" type="file" accept=".csv,text/csv" required className="py-1.5" />
+          <Input id="file" name="file" type="file" accept={accept} required className="py-1.5" />
         </Field>
         <SubmitButton variant="secondary" pendingLabel="Lecture et vérification…">
           Vérifier le fichier

@@ -4,7 +4,7 @@
  * Une mission s'exécute avec l'identité de l'utilisateur qui la lance (la RLS s'applique) ;
  * une action approuvée s'exécute avec l'identité de celui qui l'approuve.
  */
-import { AGENTS_BY_ID, runMission, type MissionPorts } from "@immopilot/agents";
+import { AGENTS_BY_ID } from "@immopilot/agents";
 import { withTenant } from "@immopilot/db";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -12,48 +12,14 @@ import { requireAgency } from "../agency/context";
 import { audit } from "../audit";
 import { getTenantPool } from "../server/db";
 import { MergeError, mergeContacts } from "./merge";
-import { buildTools } from "./tools";
+import { runAgentMission } from "./run";
 
 export async function runAgentAction(form: FormData): Promise<void> {
   const ctx = await requireAgency();
   if (ctx.role === "lecture") return;
   const agent = AGENTS_BY_ID.get(z.string().parse(form.get("agentId")));
   if (!agent) return;
-  const tenant = { orgId: ctx.org.id, userId: ctx.user.id };
-  const pool = getTenantPool();
-
-  const missionId = await withTenant(pool, tenant, async (_db, c) => {
-    const setting = (await c.query<{ enabled: boolean }>("SELECT enabled FROM app.agent_settings WHERE agent_id = $1", [agent.id])).rows[0];
-    if (setting && !setting.enabled) return null;
-    return (await c.query<{ id: string }>(
-      "INSERT INTO app.missions (org_id, agent_id, agent_version, requested_by) VALUES ($1, $2, $3, $4) RETURNING id",
-      [ctx.org.id, agent.id, agent.version, ctx.user.id],
-    )).rows[0]!.id;
-  });
-  if (!missionId) return;
-
-  const ports: MissionPorts = {
-    recordStep: (s) =>
-      withTenant(pool, tenant, (_db, c) =>
-        c.query(
-          `INSERT INTO app.mission_steps (org_id, mission_id, position, tool, level, status, duration_ms, detail) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [ctx.org.id, missionId, s.position, s.tool, s.level, s.status, s.durationMs, s.detail],
-        )).then(() => undefined),
-    requestApproval: (r) =>
-      withTenant(pool, tenant, async (_db, c) =>
-        (await c.query<{ id: string }>(
-          `INSERT INTO app.approvals (org_id, mission_id, agent_id, tool, level, title, payload, requested_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-          [ctx.org.id, missionId, agent.id, r.tool, r.level, r.title.slice(0, 300), JSON.stringify(r.payload), ctx.user.id],
-        )).rows[0]!.id),
-  };
-
-  const outcome = await runMission(agent, buildTools(ctx), ports, {});
-  await withTenant(pool, tenant, (_db, c) =>
-    c.query(
-      `UPDATE app.missions SET status = $2, summary = $3, error = $4, steps = $5, finished_at = now() WHERE id = $1`,
-      [missionId, outcome.status, outcome.status === "echouee" ? {} : outcome.summary, outcome.status === "echouee" ? outcome.error.slice(0, 500) : null, outcome.steps],
-    ));
-  await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "agent.mission", targetType: "mission", targetId: missionId, details: { agent: agent.id, statut: outcome.status } });
+  await runAgentMission(ctx, agent, "manuel");
   revalidatePath("/app/agents");
 }
 

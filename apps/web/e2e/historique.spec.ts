@@ -34,7 +34,11 @@ test("un négociateur baisse le prix d'un bien mis en vente et retrouve tout l'h
   // Attendre la page mise à jour (le prix affiché change), pas seulement la valeur saisie.
   await expect(page.getByTestId("prix-affiche")).toHaveText(/^239\s000\s€/);
   await page.getByLabel("Statut du bien").selectOption("sous_offre");
-  await page.getByRole("button", { name: "Changer le statut" }).click();
+  // La liste affiche déjà « sous offre » avant l'enregistrement : on attend la réponse du serveur.
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes(propertyUrl)),
+    page.getByRole("button", { name: "Changer le statut" }).click(),
+  ]);
   await expect(page.getByLabel("Statut du bien")).toHaveValue("sous_offre");
 
   await page.goto(`${propertyUrl}/fiche`);

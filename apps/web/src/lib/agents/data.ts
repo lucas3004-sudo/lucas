@@ -10,6 +10,7 @@ export interface MissionRow {
   agent_version: string;
   requested_by: string;
   status: "en_cours" | "reussie" | "echouee" | "attente_approbation" | "annulee";
+  trigger: "manuel" | "auto";
   summary: { text?: string; counts?: Record<string, number> };
   error: string | null;
   steps: number;
@@ -46,7 +47,11 @@ export async function agentCenterData(ctx: AgencyContext) {
     const pending = (await c.query<{ agent_id: string; n: number }>(
       "SELECT agent_id, count(*)::int AS n FROM app.approvals WHERE status = 'en_attente' AND expires_at > now() GROUP BY 1",
     )).rows;
-    return { settings, missions, pending: new Map(pending.map((p) => [p.agent_id, p.n])) };
+    // Biens et contacts visibles : sans eux, les agents n'ont rien à traiter (on le dit clairement).
+    const material = (await c.query<{ biens: number; contacts: number }>(
+      "SELECT (SELECT count(*)::int FROM app.properties) AS biens, (SELECT count(*)::int FROM app.contacts) AS contacts",
+    )).rows[0] ?? { biens: 0, contacts: 0 };
+    return { settings, missions, pending: new Map(pending.map((p) => [p.agent_id, p.n])), material };
   });
 }
 

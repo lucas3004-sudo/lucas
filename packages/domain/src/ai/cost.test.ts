@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aiCostMicroUsd, aiGate } from "./cost";
+import { aiCostMicroUsd, aiDecision, aiGate } from "./cost";
 
 describe("coût d'un appel à l'IA", () => {
   it("Haiku 5.5 : 0,10 $ / 0,50 $ par million de jetons", () => {
@@ -26,4 +26,28 @@ describe("garde-fous de l'IA", () => {
   it("quota atteint", () => expect(aiGate({ ...ok, used: 200 })).toBe("quota_atteint"));
   it("illimité", () => expect(aiGate({ ...ok, limit: null, used: 10_000 })).toBeNull());
   it("plafond global atteint, même avec du quota", () => expect(aiGate({ ...ok, budgetLeft: false })).toBe("budget_atteint"));
+});
+
+describe("crédits IA à l'usage (D-065)", () => {
+  const base = { enabled: true, role: "negociateur", limit: 200, used: 200, budgetLeft: true };
+  const overage = { billable: true, capCents: 3000, spentCents: 0, unitCents: 2 };
+  it("quota épuisé, agence abonnée, plafond non atteint : l'appel passe et sera facturé", () => {
+    expect(aiDecision({ ...base, overage })).toEqual({ reason: null, overage: true });
+  });
+  it("dans le quota : jamais facturé à l'usage", () => {
+    expect(aiDecision({ ...base, used: 10, overage })).toEqual({ reason: null, overage: false });
+  });
+  it("sans abonnement payant ou plafond à 0 (désactivé) : quota atteint", () => {
+    expect(aiGate({ ...base, overage: { ...overage, billable: false } })).toBe("quota_atteint");
+    expect(aiGate({ ...base, overage: { ...overage, capCents: 0 } })).toBe("quota_atteint");
+    expect(aiGate(base)).toBe("quota_atteint");
+  });
+  it("le plafond du gérant est respecté au centime près", () => {
+    expect(aiGate({ ...base, overage: { ...overage, spentCents: 2998 } })).toBeNull();
+    expect(aiGate({ ...base, overage: { ...overage, spentCents: 2999 } })).toBe("plafond_atteint");
+  });
+  it("formule sans IA : jamais de dépassement ; plafond global de la plateforme toujours appliqué", () => {
+    expect(aiGate({ ...base, limit: 0, used: 0, overage })).toBe("non_inclus");
+    expect(aiGate({ ...base, overage, budgetLeft: false })).toBe("budget_atteint");
+  });
 });

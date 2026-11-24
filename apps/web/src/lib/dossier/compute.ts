@@ -130,6 +130,15 @@ async function zonage(pool: pg.Pool, address: Address): Promise<DossierSnapshot[
   return { status: "verifiee", source, value: { zone: r.zone, inForceFrom: r.in_force_from } };
 }
 
+/**
+ * Estimation seule, à partir des ventes DVF autour (sans DPE ni Géorisques) : rapide, sans appel
+ * externe, pour la page publique « Estimez votre bien » (D-067).
+ */
+export async function marketEstimate(pool: pg.Pool, address: Address, inputs: DossierInputs) {
+  const { market: block, comparables } = await market(pool, address, inputs);
+  return { estimate: estimateRange(inputs.surface, comparables), market: block };
+}
+
 export async function computeDossier(pool: pg.Pool, address: Address, inputs: DossierInputs): Promise<DossierSnapshot> {
   const banSource: SourceRef = { id: "ban", label: "Base Adresse Nationale", asOf: today(), citation: BAN_CITATION };
   const dpeSource: SourceRef = { id: "dpe", label: "DPE (ADEME)", asOf: null, citation: DPE_CITATION };

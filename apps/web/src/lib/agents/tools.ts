@@ -162,7 +162,14 @@ export function buildTools(ctx: AgencyContext): Map<string, ToolDefinition<never
       run: async (): Promise<DuplicateGroup[]> =>
         withTenant(getTenantPool(), tenant, async (_db, c) => {
           const rows = (await c.query("SELECT id, first_name, last_name, email, phone FROM app.contacts ORDER BY created_at, id")).rows;
-          return duplicateGroups(rows.map((r) => ({ id: r.id, firstName: r.first_name, lastName: r.last_name, email: r.email, phone: r.phone })));
+          // Une fusion déjà proposée et en attente n'est pas reproposée (le passage quotidien la reverrait sinon).
+          const pending = new Set((await c.query<{ pair: string }>(
+            `SELECT (payload->>'keepId') || '>' || (payload->>'removeId') AS pair FROM app.approvals
+             WHERE tool = 'contacts.merge' AND status = 'en_attente' AND expires_at > now()`,
+          )).rows.map((r) => r.pair));
+          return duplicateGroups(rows.map((r) => ({ id: r.id, firstName: r.first_name, lastName: r.last_name, email: r.email, phone: r.phone })))
+            .map((g) => ({ ...g, ids: g.ids.filter((id, i) => i === 0 || !pending.has(`${g.ids[0]}>${id}`)) }))
+            .filter((g) => g.ids.length > 1);
         }),
     } as unknown as ToolDefinition<never, unknown>,
     {

@@ -53,3 +53,40 @@ test("une nouvelle agence est en Essai : consommation affichée, invitation refu
   await expect(page.getByTestId("usage-membres")).toHaveText("5 sur 5");
   await expect(page.getByText("Quota atteint : les nouveaux ajouts sont refusés.")).toBeVisible();
 });
+
+test("crédits IA à l'usage : le gérant règle le plafond, montant du mois affiché, saisie invalide refusée", async ({ page }) => {
+  test.setTimeout(120_000);
+  const id = `${run}c`;
+  await page.goto("/inscription");
+  await page.getByLabel("Nom et prénom").fill("Inès Credits");
+  await page.getByLabel("Adresse e-mail professionnelle").fill(`credits-${id}@test.invalid`);
+  await page.getByLabel("Mot de passe").fill("motdepasse-de-test-1234");
+  await page.getByRole("button", { name: "Créer mon compte" }).click();
+  await page.getByLabel("Nom de l'agence").fill(`Agence Credits ${id}`);
+  await page.getByRole("button", { name: "Créer l'agence" }).click();
+  await expect(page.getByRole("heading", { name: "Bonjour Inès" })).toBeVisible();
+
+  await page.goto("/app/formule");
+  await expect(page.getByRole("heading", { name: "Crédits IA à l'usage" })).toBeVisible();
+  await expect(page.getByText(/2,00\s€ les 100 échanges avec l'assistant, 0,20\s€ l'annonce rédigée par IA/)).toBeVisible();
+  await expect(page.getByTestId("credits-mois")).toHaveText(/^0,00\s€$/);
+  await expect(page.getByTestId("credits-plafond")).toHaveText(/^30,00\s€$/);
+  await expect(page.getByText("Réglage par défaut")).toBeVisible();
+  // En essai : pas de moyen de paiement, donc pas de facturation à l'usage.
+  await expect(page.getByText("Disponible avec un abonnement payant")).toBeVisible();
+
+  await page.getByLabel("Plafond mensuel (€)").fill("dix euros");
+  await page.getByRole("button", { name: "Enregistrer le plafond" }).click();
+  await expect(page.getByText("Plafond invalide : indiquez un montant entre 0 et 500 €.")).toBeVisible();
+  await page.getByLabel("Plafond mensuel (€)").fill("45,50");
+  await page.getByRole("button", { name: "Enregistrer le plafond" }).click();
+  await expect(page.getByText("Plafond des crédits IA enregistré.")).toBeVisible();
+  await expect(page.getByTestId("credits-plafond")).toHaveText(/^45,50\s€$/);
+  await expect(page.getByText("Choisi par le gérant")).toBeVisible();
+  await page.getByLabel("Plafond mensuel (€)").fill("0");
+  await page.getByRole("button", { name: "Enregistrer le plafond" }).click();
+  await expect(page.getByTestId("credits-plafond")).toHaveText("Désactivé");
+
+  await page.goto("/app/journal");
+  await expect(page.getByRole("cell", { name: "Plafond des crédits IA modifié", exact: true }).first()).toBeVisible();
+});

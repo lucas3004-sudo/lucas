@@ -31,20 +31,30 @@ export default async function AgentsPage() {
       </>
     );
   }
-  const [{ settings, missions, pending }, members] = await Promise.all([agentCenterData(ctx), agencyMembers(ctx.org.id)]);
+  const [{ settings, missions, pending, material }, members] = await Promise.all([agentCenterData(ctx), agencyMembers(ctx.org.id)]);
   const totalPending = [...pending.values()].reduce((a, b) => a + b, 0);
 
   return (
     <>
       <PageHeader
         title="Agents"
-        description="Agents déterministes : ils appliquent des règles écrites dans le code, sans IA ni coût. Chacun agit avec vos droits, uniquement via les outils de sa fiche, et rien d'important ne se fait sans approbation."
+        description="Ils passent tout seuls chaque jour, à votre première connexion, et vous pouvez aussi les lancer à la main. Ils appliquent des règles écrites dans le code, sans IA ni coût, avec vos droits ; rien d'important ne se fait sans votre approbation."
         actions={
           <Link href="/app/agents/approbations" className="text-sm font-medium text-brand-text underline">
             Approbations{totalPending ? ` (${totalPending} en attente)` : ""}
           </Link>
         }
       />
+      {material.biens === 0 && material.contacts === 0 ? (
+        <div className="mb-4">
+          <Alert tone="brand">
+            <strong className="font-semibold">Les agents n&apos;ont encore rien à traiter.</strong> Ils fonctionnent, mais l&apos;agence n&apos;a encore aucun bien ni contact : ils ne trouvent donc rien à signaler.
+            Ajoutez ou importez vos <Link href="/app/proprietes" className="font-medium underline">biens</Link> et vos{" "}
+            <Link href="/app/contacts" className="font-medium underline">contacts</Link> (fichier Excel accepté) : dès le lendemain,
+            ils préparent les rappels, les acquéreurs à prévenir et les doublons à fusionner.
+          </Alert>
+        </div>
+      ) : null}
       <div className="grid gap-4 lg:grid-cols-2">
         {AGENTS.map((agent) => {
           const enabled = settings.get(agent.id) ?? true;
@@ -75,7 +85,7 @@ export default async function AgentsPage() {
                 </dl>
                 {last ? (
                   <p className="text-[13px] text-ink-muted">
-                    Dernière mission : {dateFmt.format(last.started_at)} · <Badge tone={STATUS[last.status].tone}>{STATUS[last.status].label}</Badge>{" "}
+                    Dernière mission{last.trigger === "auto" ? " (automatique)" : ""} : {dateFmt.format(last.started_at)} · <Badge tone={STATUS[last.status].tone}>{STATUS[last.status].label}</Badge>{" "}
                     {last.summary.text ?? last.error ?? ""}
                   </p>
                 ) : (
@@ -113,7 +123,7 @@ export default async function AgentsPage() {
                 <tr className="border-b border-line text-left text-xs text-ink-muted">
                   <th scope="col" className="px-5 py-2 font-medium">Date</th>
                   <th scope="col" className="px-3 py-2 font-medium">Agent</th>
-                  <th scope="col" className="px-3 py-2 font-medium">Lancée par</th>
+                  <th scope="col" className="px-3 py-2 font-medium">Lancement</th>
                   <th scope="col" className="px-3 py-2 font-medium">Statut</th>
                   <th scope="col" className="px-3 py-2 font-medium">Résultat</th>
                   <th scope="col" className="px-5 py-2 text-right font-medium">Étapes · coût</th>
@@ -124,7 +134,7 @@ export default async function AgentsPage() {
                   <tr key={m.id}>
                     <td className="px-5 py-2 text-ink-muted">{dateFmt.format(m.started_at)}</td>
                     <td className="px-3 py-2 text-ink">{AGENTS.find((a) => a.id === m.agent_id)?.name ?? m.agent_id} <span className="text-xs text-ink-subtle">v{m.agent_version}</span></td>
-                    <td className="px-3 py-2 text-ink-muted">{memberName(members, m.requested_by)}</td>
+                    <td className="px-3 py-2 text-ink-muted">{m.trigger === "auto" ? `Automatique (${memberName(members, m.requested_by)})` : memberName(members, m.requested_by)}</td>
                     <td className="px-3 py-2"><Badge tone={STATUS[m.status].tone}>{STATUS[m.status].label}</Badge></td>
                     <td className="px-3 py-2 text-ink">{m.summary.text ?? m.error ?? "—"}</td>
                     <td className="tabular px-5 py-2 text-right text-ink-muted">{m.steps} · {Number(m.cost_micro_usd) === 0 ? "0 €" : `${Number(m.cost_micro_usd) / 1_000_000} $`}</td>

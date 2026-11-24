@@ -3,16 +3,18 @@
  * les données de l'agence, à partir d'un instantané lu sous RLS (ce que l'utilisateur voit).
  *
  * Garde-fous :
- * - aucun appel sans clé, au-delà du quota de la formule ou du plafond de dépenses global ;
+ * - aucun appel sans clé, au-delà du plafond de dépenses global, ni au-delà du quota de la formule
+ *   sauf crédits à l'usage (agence abonnée, plafond du gérant, D-065) ;
  * - aucune donnée personnelle de contact envoyée (ni nom, ni téléphone, ni e-mail) : seulement
  *   les biens, des critères de recherche anonymes et des chiffres ;
  * - chaque appel est enregistré (jetons, coût), jamais le texte des questions ni des réponses.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { withTenant } from "@immopilot/db";
-import { aiCostMicroUsd, aiGate, AI_GATE_MESSAGES, parisMonthStart, recapLines, type AiGateReason } from "@immopilot/domain";
+import { aiCostMicroUsd, aiDecision, AI_GATE_MESSAGES, OVERAGE_UNIT_CENTS, parisMonthStart, recapLines, type AiDecision, type AiGateReason } from "@immopilot/domain";
 import type { AgencyContext } from "../agency/context";
 import { ROLE_LABELS } from "../auth/roles";
+import { overageState } from "../billing/overage";
 import { agencyPlanAndUsage, quotaFor } from "../billing/plan";
 import { activeProfiles, listProperties } from "../crm/data";
 import { PROPERTY_STATUS } from "../crm/labels";
@@ -33,15 +35,23 @@ const MAX_HISTORY = 10;
 const MAX_PROPERTIES = 60;
 const MAX_PROFILES = 40;
 
-/** L'IA peut-elle être utilisée maintenant par cet utilisateur ? */
-export async function assistantGate(ctx: AgencyContext): Promise<AiGateReason | null> {
+/** L'IA peut-elle être utilisée maintenant par cet utilisateur, et l'appel sera-t-il facturé à l'usage ? */
+export async function assistantDecision(ctx: AgencyContext): Promise<AiDecision> {
   const config = aiConfig();
-  if (!config.enabled) return "desactivee";
-  const { current, usage } = await agencyPlanAndUsage(ctx);
+  if (!config.enabled) return { reason: "desactivee", overage: false };
+  const [{ current, usage }, overage] = await Promise.all([agencyPlanAndUsage(ctx), overageState(ctx)]);
   const check = quotaFor(current, usage, "copilot", 0);
   const budgetLeft = await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) =>
     (await c.query<{ ok: boolean }>("SELECT app.ai_budget_left($1, $2) AS ok", [parisMonthStart(new Date()), config.monthlyBudgetMicroUsd])).rows[0]?.ok ?? false);
-  return aiGate({ enabled: true, role: ctx.role, limit: check.limit, used: check.used, budgetLeft });
+  return aiDecision({
+    enabled: true, role: ctx.role, limit: check.limit, used: check.used, budgetLeft,
+    overage: { billable: overage.billable, capCents: overage.capCents, spentCents: overage.month.cents, unitCents: OVERAGE_UNIT_CENTS.copilot },
+  });
+}
+
+/** L'IA peut-elle être utilisée maintenant par cet utilisateur ? */
+export async function assistantGate(ctx: AgencyContext): Promise<AiGateReason | null> {
+  return (await assistantDecision(ctx)).reason;
 }
 
 /** Instantané de l'agence, tel que l'utilisateur le voit, sans donnée personnelle de contact. */
@@ -90,8 +100,8 @@ let client: Anthropic | null = null;
 const anthropic = () => (client ??= new Anthropic());
 
 export async function askAssistant(ctx: AgencyContext, history: ChatTurn[], question: string): Promise<AssistantResult> {
-  const gate = await assistantGate(ctx);
-  if (gate) return { ok: false, reason: gate, message: AI_GATE_MESSAGES[gate] };
+  const decision = await assistantDecision(ctx);
+  if (decision.reason) return { ok: false, reason: decision.reason, message: AI_GATE_MESSAGES[decision.reason] };
 
   const config = aiConfig();
   const snapshot = await agencySnapshot(ctx);
@@ -135,9 +145,13 @@ export async function askAssistant(ctx: AgencyContext, history: ChatTurn[], ques
 
   await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, (_db, c) =>
     c.query(
-      `INSERT INTO app.ai_runs (org_id, user_id, feature, model, status, input_tokens, output_tokens, cost_microusd)
-       VALUES ($1, $2, 'copilot', $3, $4, $5, $6, $7)`,
-      [ctx.org.id, ctx.user.id, config.model, status, inputTokens, outputTokens, aiCostMicroUsd(config.model, inputTokens, outputTokens)],
+      `INSERT INTO app.ai_runs (org_id, user_id, feature, model, status, input_tokens, output_tokens, cost_microusd, overage_cents)
+       VALUES ($1, $2, 'copilot', $3, $4, $5, $6, $7, $8)`,
+      [
+        ctx.org.id, ctx.user.id, config.model, status, inputTokens, outputTokens, aiCostMicroUsd(config.model, inputTokens, outputTokens),
+        // Au-delà du forfait, seul un échange réussi est facturé (2 centimes).
+        decision.overage && status === "ok" ? OVERAGE_UNIT_CENTS.copilot : 0,
+      ],
     ));
   return result;
 }

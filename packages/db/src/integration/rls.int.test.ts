@@ -497,6 +497,26 @@ describe("agents : missions, étapes, approbations (migration 0014)", () => {
     await expectDenied(withTenant(pool, A2(), newApproval(m1, users.nego2A)));
   });
 
+  it("passage automatique (migration 0023) : un seul par agent, par utilisateur et par jour ; une date est obligatoire", async () => {
+    const auto = (by: string, day: string) => (_db: unknown, c: pg.PoolClient) =>
+      c.query(
+        `INSERT INTO app.missions (org_id, agent_id, agent_version, requested_by, trigger, run_on) VALUES ($1, 'mandate-watcher', '1.0.0', $2, 'auto', $3)
+         ON CONFLICT (org_id, agent_id, requested_by, run_on) WHERE trigger = 'auto' DO NOTHING RETURNING id`,
+        [A, by, day],
+      ).then((r) => r.rowCount);
+    expect(await withTenant(pool, A1(), auto(users.negoA, "2026-11-23"))).toBe(1);
+    expect(await withTenant(pool, A1(), auto(users.negoA, "2026-11-23"))).toBe(0);
+    // Un autre jour, ou un collègue le même jour : nouveau passage.
+    expect(await withTenant(pool, A1(), auto(users.negoA, "2026-11-24"))).toBe(1);
+    expect(await withTenant(pool, A2(), auto(users.nego2A, "2026-11-23"))).toBe(1);
+    // Les lancements à la main restent illimités ; un passage automatique sans date est refusé.
+    await withTenant(pool, A1(), newMission(users.negoA));
+    await withTenant(pool, A1(), newMission(users.negoA));
+    await expect(withTenant(pool, A1(), (_db, c) =>
+      c.query(`INSERT INTO app.missions (org_id, agent_id, agent_version, requested_by, trigger) VALUES ($1, 'mandate-watcher', '1.0.0', $2, 'auto')`, [A, users.negoA])))
+      .rejects.toMatchObject({ code: "23514" });
+  });
+
   it("activation d'un agent : réservée au gérant", async () => {
     await expectDenied(withTenant(pool, A1(), (_db, c) =>
       c.query(`INSERT INTO app.agent_settings (org_id, agent_id, enabled, updated_by) VALUES ($1, 'data-quality', false, $2)`, [A, users.negoA])));
@@ -789,5 +809,171 @@ describe("abonnements (migration 0020)", () => {
     // Agence inconnue : refusée.
     await expect(withTenant(pool, { orgId: A, userId: users.gerantA }, apply("00000000-0000-4000-8000-000000000000", "actif", "pro", null)))
       .rejects.toMatchObject({ code: "23503" });
+  });
+});
+
+describe("crédits IA à l'usage (migration 0024)", () => {
+  const since = new Date(Date.now() - 3_600_000).toISOString();
+  const run = (orgId: string, userId: string, overage: number, status = "ok", feature = "copilot") => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.ai_runs (org_id, user_id, feature, model, status, input_tokens, output_tokens, cost_microusd, overage_cents)
+       VALUES ($1, $2, $3, 'claude-haiku-5-5', $4, 1000, 200, 1500, $5)`,
+      [orgId, userId, feature, status, overage],
+    );
+  const setCap = (orgId: string, userId: string, cents: number, by = userId) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.agency_ai_settings (org_id, overage_cap_cents, updated_by) VALUES ($1, $2, $3)
+       ON CONFLICT (org_id) DO UPDATE SET overage_cap_cents = EXCLUDED.overage_cap_cents, updated_by = EXCLUDED.updated_by, updated_at = now()`,
+      [orgId, cents, by],
+    );
+
+  it("le plafond est fixé par le gérant seulement, en son nom, dans les bornes ; lu par l'agence, pas par l'autre", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.negoA }, setCap(A, users.negoA, 5000)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, setCap(A, users.gerantA, 5000, users.negoA)));
+    await expect(withTenant(pool, { orgId: A, userId: users.gerantA }, setCap(A, users.gerantA, 50_001))).rejects.toMatchObject({ code: "23514" });
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, setCap(A, users.gerantA, 4000));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, setCap(A, users.gerantA, 2500));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) =>
+      expect((await c.query("SELECT overage_cap_cents FROM app.agency_ai_settings")).rows).toEqual([{ overage_cap_cents: 2500 }]));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.agency_ai_settings")).toBe(0));
+  });
+
+  it("seul un appel réussi peut être facturé ; le total compte toute l'agence, sans l'autre", async () => {
+    await expect(withTenant(pool, { orgId: A, userId: users.negoA }, run(A, users.negoA, 2, "erreur"))).rejects.toMatchObject({ code: "23514" });
+    const total = (orgId: string, userId: string) => withTenant(pool, { orgId, userId }, async (_db, c) =>
+      (await c.query("SELECT * FROM app.ai_overage($1)", [since])).rows[0]);
+    const before = await total(A, users.negoA);
+    await withTenant(pool, { orgId: A, userId: users.negoA }, run(A, users.negoA, 2));
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, run(A, users.nego2A, 2));
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, run(A, users.nego2A, 20, "ok", "annonce"));
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, run(A, users.nego2A, 0));
+    const after = await total(A, users.negoA);
+    expect(after.copilot).toBe(before.copilot + 2);
+    expect(after.annonces).toBe(before.annonces + 1);
+    expect(Number(after.cents)).toBe(Number(before.cents) + 24);
+    expect(Number((await total(B, users.gerantB)).cents)).toBe(0);
+  });
+
+  it("facturation : les crédits d'une période, retrouvés par le client Stripe de l'agence", async () => {
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, (_db, c) =>
+      c.query("SELECT app.apply_subscription($1, 'actif', 'agency', 0, 'cus_TestB9', 'sub_TestB9', now() + interval '30 days')", [B]));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, run(B, users.gerantB, 2));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, run(B, users.gerantB, 20, "ok", "annonce"));
+    const bill = (customer: string, from: string, to: string) =>
+      pool.query("SELECT * FROM app.ai_overage_for_customer($1, $2, $3)", [customer, from, to]).then((r) => r.rows);
+    const later = new Date(Date.now() + 3_600_000).toISOString();
+    expect(await bill("cus_TestB9", since, later)).toEqual([{ org_id: B, copilot: 1, annonces: 1, cents: "22" }]);
+    // Hors période : rien à facturer ; client inconnu : aucune agence.
+    expect(await bill("cus_TestB9", later, later)).toEqual([{ org_id: B, copilot: 0, annonces: 0, cents: "0" }]);
+    expect(await bill("cus_Inconnu1", since, later)).toEqual([]);
+  });
+});
+
+describe("diffusion sur les portails (migration 0025)", () => {
+  const A1 = () => ({ orgId: A, userId: users.negoA });
+  const A2 = () => ({ orgId: A, userId: users.nego2A });
+  const GA = () => ({ orgId: A, userId: users.gerantA });
+  const newProperty = (visibility: "private" | "agency") => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.properties (org_id, owner_user_id, visibility, type, address_label, ban_id, insee_code, created_by)
+       VALUES ($1, $2, $3, 'Maison', 'Adresse portails', 'ban-test', '80021', $2) RETURNING id`,
+      [A, users.negoA, visibility],
+    ).then((r) => r.rows[0].id as string);
+  const publish = (propertyId: string, by: string, portal = "seloger", url: string | null = null) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.property_portals (org_id, property_id, portal, url, published_on, updated_by) VALUES ($1, $2, $3, $4, '2026-11-20', $5)`,
+      [A, propertyId, portal, url, by],
+    );
+
+  it("le responsable du bien et le gérant notent la diffusion ; un collègue lit (bien partagé) mais ne modifie pas", async () => {
+    const shared = await withTenant(pool, A1(), newProperty("agency"));
+    await withTenant(pool, A1(), publish(shared, users.negoA, "seloger", "https://www.exemple.fr/annonce/1"));
+    await withTenant(pool, GA(), publish(shared, users.gerantA, "leboncoin"));
+    await expectDenied(withTenant(pool, A2(), publish(shared, users.nego2A, "bienici")));
+    await withTenant(pool, A2(), async (_db, c) => {
+      expect(await count(c, "app.property_portals", "property_id = $1", [shared])).toBe(2);
+      expect((await c.query(`UPDATE app.property_portals SET status = 'retire', removed_on = '2026-11-21', updated_by = $2 WHERE property_id = $1`, [shared, users.nego2A])).rowCount).toBe(0);
+      expect((await c.query(`DELETE FROM app.property_portals WHERE property_id = $1`, [shared])).rowCount).toBe(0);
+    });
+    // Jamais au nom d'un autre ; un portail par bien ; le bien et le portail ne changent pas.
+    await expectDenied(withTenant(pool, A1(), publish(shared, users.gerantA, "bienici")));
+    await expect(withTenant(pool, A1(), publish(shared, users.negoA, "seloger"))).rejects.toMatchObject({ code: "23505" });
+    await expectDenied(withTenant(pool, A1(), (_db, c) => c.query(`UPDATE app.property_portals SET portal = 'autre' WHERE property_id = $1`, [shared])));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.property_portals")).toBe(0));
+  });
+
+  it("bien privé : invisible pour un collègue ; liens https seulement ; date de retrait cohérente", async () => {
+    const priv = await withTenant(pool, A1(), newProperty("private"));
+    await withTenant(pool, A1(), publish(priv, users.negoA));
+    await withTenant(pool, A2(), async (_db, c) => expect(await count(c, "app.property_portals", "property_id = $1", [priv])).toBe(0));
+    await expect(withTenant(pool, A1(), publish(priv, users.negoA, "autre", "javascript:alert(1)"))).rejects.toMatchObject({ code: "23514" });
+    await expect(withTenant(pool, A1(), (_db, c) =>
+      c.query(`UPDATE app.property_portals SET status = 'retire', updated_by = $2 WHERE property_id = $1`, [priv, users.negoA]))).rejects.toMatchObject({ code: "23514" });
+    await expect(withTenant(pool, A1(), (_db, c) =>
+      c.query(`UPDATE app.property_portals SET status = 'retire', removed_on = '2026-11-01', updated_by = $2 WHERE property_id = $1`, [priv, users.negoA]))).rejects.toMatchObject({ code: "23514" });
+    await withTenant(pool, A1(), async (_db, c) =>
+      expect((await c.query(`UPDATE app.property_portals SET status = 'retire', removed_on = '2026-11-22', updated_by = $2 WHERE property_id = $1`, [priv, users.negoA])).rowCount).toBe(1));
+  });
+});
+
+describe("page publique « Estimez votre bien » (migration 0026)", () => {
+  const slugA = `agence-a-${A}`;
+  const ip = (n: number) => n.toString(16).padStart(64, "0");
+  const setPage = (userId: string, enabled: boolean, ownerId: string) => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.agency_public_pages (org_id, estimation_enabled, lead_owner_user_id, updated_by) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (org_id) DO UPDATE SET estimation_enabled = EXCLUDED.estimation_enabled, lead_owner_user_id = EXCLUDED.lead_owner_user_id, updated_by = EXCLUDED.updated_by`,
+      [A, enabled, ownerId, userId],
+    );
+  const capture = (ipHash: string, channels: string[] = ["email"], last = "Propriétaire") =>
+    pool.query(
+      `SELECT app.capture_public_lead($1, $2, 'Lucie', $3, 'lucie@test.invalid', '06 12 34 56 78', $4,
+         '8 Boulevard du Port 80000 Amiens', '80021_test_8', '80021', 2.29, 49.89, 'Appartement', 62, 3, 230000, 260000) AS id`,
+      [A, ipHash, last, channels],
+    ).then((r) => r.rows[0].id as string);
+  const page = (slug: string) => pool.query("SELECT * FROM app.public_estimation_page($1)", [slug]).then((r) => r.rows);
+
+  it("réglage : gérant ou manager seulement, destinataire membre de l'agence ; lu par l'agence, pas par l'autre", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.negoA }, setPage(users.negoA, true, users.negoA)));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, setPage(users.gerantA, true, users.gerantB)));
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, setPage(users.gerantA, false, users.negoA));
+    await withTenant(pool, { orgId: A, userId: users.lectureA }, async (_db, c) => expect(await count(c, "app.agency_public_pages")).toBe(1));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.agency_public_pages")).toBe(0));
+  });
+
+  it("page fermée : introuvable et aucune demande acceptée ; ouverte : retrouvée par son identifiant public", async () => {
+    expect(await page(slugA)).toEqual([]);
+    await expect(capture(ip(1))).rejects.toMatchObject({ code: "P0002" });
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, setPage(users.gerantA, true, users.negoA));
+    expect(await page(slugA)).toEqual([{ org_id: A, name: "Agence A" }]);
+    expect(await page("agence-inconnue")).toEqual([]);
+  });
+
+  it("une demande crée contact vendeur, consentement prouvé, bien à prospecter et tâche pour le destinataire", async () => {
+    const id = await capture(ip(2), ["email", "telephone"], "Demande1");
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => {
+      const contact = (await c.query("SELECT owner_user_id, roles, source, visibility FROM app.contacts WHERE id = $1", [id])).rows[0];
+      expect(contact).toEqual({ owner_user_id: users.negoA, roles: ["vendeur"], source: "Estimation en ligne", visibility: "agency" });
+      expect((await c.query("SELECT channel, status FROM app.contact_consents WHERE contact_id = $1 ORDER BY channel", [id])).rows)
+        .toEqual([{ channel: "email", status: "accorde" }, { channel: "telephone", status: "accorde" }]);
+      expect((await c.query("SELECT status, owner_user_id FROM app.properties WHERE seller_contact_id = $1", [id])).rows).toEqual([{ status: "prospect", owner_user_id: users.negoA }]);
+      expect(await count(c, "app.tasks", "contact_id = $1 AND assignee_user_id = $2", [id, users.negoA])).toBe(1);
+    });
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.contacts", "id = $1", [id])).toBe(0));
+  });
+
+  it("sans consentement valable : refusé ; au-delà de 3 demandes par heure depuis la même connexion : refusé", async () => {
+    await expect(capture(ip(3), [])).rejects.toMatchObject({ code: "23514" });
+    await expect(capture(ip(3), ["sms"])).rejects.toMatchObject({ code: "23514" });
+    for (let i = 0; i < 3; i++) await capture(ip(4), ["email"], `Rafale${i}`);
+    await expect(capture(ip(4))).rejects.toMatchObject({ code: "P0003" });
+    // Une autre connexion passe encore.
+    await capture(ip(5));
+  });
+
+  it("le site ne lit ni n'écrit directement les envois (empreintes IP)", async () => {
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query("SELECT * FROM app.public_lead_attempts")));
+    await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>
+      c.query("INSERT INTO app.public_lead_attempts (org_id, ip_hash) VALUES ($1, $2)", [A, ip(9)])));
   });
 });

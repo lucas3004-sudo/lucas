@@ -573,3 +573,64 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - migration 0022 : `app.ai_runs` enregistre chaque appel (jetons, coût), jamais le texte. Personne ne peut modifier ni effacer un appel, sinon on pourrait remettre son quota à zéro.
 - **Sans clé** : l'assistant est éteint et le dit ; le guide « Comment faire… » reste disponible.
 - **À faire au passage en réel** : mentionner Anthropic comme sous-traitant dans la politique de confidentialité (partie légale) ; vérifier le premier appel réel (coût, qualité des réponses).
+
+## D-064 — Agents automatiques : un passage par jour
+- **Date** : 2026-11-23 · **Statut** : Acceptée (remarque du fondateur : « les agents ne fonctionnent pas encore »).
+- **Constat** : les agents fonctionnaient (7 missions réussies en préproduction le 23/11), mais seulement quand on cliquait sur « Lancer », et l'agence de test n'avait ni bien ni contact : ils ne trouvaient donc rien.
+- **Décision** :
+  - chaque agent activé passe **tout seul une fois par jour**, à la première connexion de chaque utilisateur, **après** l'envoi de la page (aucune attente) ;
+  - il agit avec les droits de cet utilisateur (la RLS s'applique, comme pour un lancement à la main) ; pas de compte « système » qui verrait tout ;
+  - migration 0023 : `trigger` (`manuel` / `auto`) et `run_on` sur `app.missions`, avec un index unique (agence, agent, utilisateur, jour) : un seul passage automatique même si plusieurs onglets s'ouvrent ;
+  - une fusion de doublons déjà proposée et en attente n'est plus reproposée ;
+  - la page Agents dit clairement quand l'agence n'a encore rien à traiter, avec les liens pour ajouter ou importer biens et contacts.
+- **Pourquoi pas une tâche planifiée (cron)** : il faudrait un secret supplémentaire à configurer dans Vercel et un compte qui voit toutes les agences. Le passage à la connexion suffit tant que les agents sont déterministes (coût nul) ; un cron pourra s'ajouter pour des agents qui doivent tourner la nuit.
+
+## D-065 — Crédits IA à l'usage
+- **Date** : 2026-11-23 · **Statut** : Acceptée (décisions du fondateur : « 2 € / 100 échanges », plafond « choisi par le gérant »).
+- **Décision** :
+  - au-delà des échanges IA inclus dans la formule, l'agence continue à l'usage : **2 € HT les 100 échanges** avec l'assistant, **0,20 € HT l'annonce** rédigée par IA ;
+  - **plafond mensuel choisi par le gérant** (30 € par défaut, de 0 à 500 €, 0 = désactivé), dans « Formule » ; au-delà, l'IA s'arrête jusqu'au 1er du mois suivant, avec un message clair ;
+  - réservé aux agences **abonnées par Stripe** (il faut un moyen de paiement) ; en essai, le quota reste un arrêt ;
+  - le plafond de dépenses global de la plateforme (D-063) s'applique toujours ;
+  - migration 0024 : le prix de chaque appel facturé est enregistré au moment de l'appel (`overage_cents`, seulement pour un appel réussi) ; `app.agency_ai_settings` (plafond, gérant seulement) ; `app.ai_overage` (total du mois, chiffres seulement) ;
+  - facturation : au renouvellement, Stripe envoie `invoice.created` ; le webhook signé ajoute une ligne « Crédits IA au-delà du forfait » à la facture en brouillon (clé d'idempotence : jamais deux fois).
+- **Coût pour nous** : environ 0,2 centime par échange (Haiku 5.5), soit une marge d'environ 90 %.
+- **Reste à vérifier avec une vraie clé Stripe de test** : la ligne ajoutée à la facture (le code est testé avec des factures simulées, pas encore contre Stripe).
+
+## D-066 — Diffusion des annonces : Pack annonce et suivi des portails
+- **Date** : 2026-11-23 · **Statut** : Acceptée (décision du fondateur : « Pack maintenant + passerelle »).
+- **Constat** : publier sur les portails depuis un logiciel est légal et habituel (la multidiffusion). Chaque portail reste payé par l'agence. L'envoi automatique demande un partenariat (passerelle comme Ubiflow, ou accord avec chaque portail).
+- **Décision** :
+  - **Pack annonce** sur la page « Annonce » : titre et description séparés, prêts à coller, et un fichier ZIP (texte et toutes les photos) ; disponible seulement quand les mentions obligatoires sont complètes ;
+  - **suivi de la diffusion** : pour chaque portail (SeLoger, Leboncoin, Bien'ici, Logic-Immo, site de l'agence, autre), publié depuis quand, avec le lien (https seulement), ou retiré ;
+  - **rappel de retrait** : quand un bien passe « vendu » ou « retiré » alors qu'il est encore en ligne, une tâche est créée pour son responsable (une seule ouverte à la fois) ;
+  - migration 0025 : `app.property_portals`, même visibilité que le bien ; seuls ceux qui peuvent modifier le bien changent sa diffusion ; ni le bien ni le portail d'une ligne ne se modifient.
+- **Suite** : demande de partenariat à une passerelle de multidiffusion (`docs/partenaires/multidiffusion-ubiflow.md`), puis envoi automatique.
+
+## D-067 — Trouver des vendeurs : page publique « Estimez votre bien »
+- **Date** : 2026-11-23 · **Statut** : Acceptée (le fondateur : « fais ce qui est mieux pour toi et dis-moi ce qui est mieux »).
+- **Contexte** : le fondateur voulait voir sur la carte tous les biens de particuliers en vente, pour que les agences les contactent. Une agence n'achète presque jamais de biens : elle vend ceux des propriétaires, avec un mandat, contre des honoraires. Trouver des vendeurs (« rentrer des mandats ») est son besoin n° 1, et repérer les annonces de particuliers s'appelle la « pige ».
+- **Ce qui l'empêche** : copier les annonces des portails sans accord est interdit (droit des bases de données, CPI L342-1 ; Jinka condamné face à SeLoger en 2025 et à Leboncoin en 2026). Et depuis le 11/08/2026, on ne peut plus démarcher un particulier par téléphone sans son accord préalable.
+- **Décision** :
+  - **page publique par agence** (`/estimer/<identifiant>`), fermée par défaut, ouverte par le gérant ou un manager, avec le membre qui reçoit les demandes ;
+  - le propriétaire saisit adresse, type, surface et pièces, et obtient une **fourchette indicative à partir des ventes DVF** autour (arrondie au millier, avec le nombre de ventes et la date des données). Sans assez de ventes, aucune fourchette : un message invite à demander une estimation ;
+  - il peut demander à être rappelé : **accord explicite par canal** (case e-mail, case téléphone), information sur l'usage des données ;
+  - la demande crée dans l'agence un **contact « vendeur »** avec son consentement prouvé (date, page), un **bien « prospect »** (visible sur la carte) avec la fourchette montrée, et une **tâche de rappel** pour le destinataire ;
+  - **protections** :
+    - champ piège invisible et délai minimal de 3 secondes ;
+    - 3 demandes par heure par connexion, 50 par jour par agence ;
+    - empreinte de l'adresse IP seulement, jamais l'adresse elle-même ;
+    - l'adresse et l'estimation sont recalculées côté serveur ;
+  - migration 0026 : `app.agency_public_pages`, `app.public_lead_attempts`, et deux fonctions ouvertes au visiteur. Le rôle propriétaire n'est autorisé à créer que des lignes marquées « Estimation en ligne ».
+- **Plus tard, si le fondateur le décide** : afficher les annonces de particuliers via un fournisseur sous licence (pige légale, payante), sans numéro de téléphone (devis : `docs/research/fournisseurs-annonces.md`).
+- **À faire valider par l'avocat** : texte d'information RGPD de la page (l'agence est responsable du traitement, ImmoPilot sous-traitant) et durée de conservation.
+
+## D-068 — Reprendre les biens de l'ancien logiciel (export Poliris)
+- **Date** : 2026-11-23 · **Statut** : Acceptée (choix du fondateur : « Import auto des agences », pour que la carte se remplisse sans saisie).
+- **Contexte** : les logiciels de transaction exportent les annonces de l'agence vers les portails au format SeLoger « Poliris » (ZIP contenant `Annonces.csv` : champs entre guillemets séparés par `!#`, un bien par ligne). Ce sont les propres annonces de l'agence : les reprendre est légal.
+- **Décision** :
+  - l'import des biens accepte, en plus du CSV Excel, ce **ZIP** (ou `Annonces.csv` seul) ; le format est reconnu automatiquement ;
+  - champs repris (rangs de la spécification 4.09) : référence, adresse, code postal, ville, prix, surface, pièces, DPE, mandat exclusif, ascenseur, balcon ou terrasse, cave, parking, titre et texte de l'annonce ;
+  - seules les **ventes d'appartements et de maisons** sont reprises (les autres lignes sont écartées avec la raison) ; les biens arrivent « sous mandat », adresse vérifiée par la Base Adresse Nationale, puis apparaissent sur la carte ;
+  - les photos ne sont pas reprises (stockage limité, D-042), et seul `Annonces.csv` est extrait du ZIP (20 Mo au plus).
+- **Suite** : synchronisation régulière (mise à jour des prix et retraits d'après les références), quand une passerelle ou une adresse de flux sera disponible.

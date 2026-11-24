@@ -12,8 +12,11 @@ export function SubmitButton({
   className,
   pending,
   disabled = false,
+  "aria-label": ariaLabel,
 }: {
   children: React.ReactNode;
+  /** Nom accessible quand le texte visible ne suffit pas (plusieurs boutons identiques sur la page). */
+  "aria-label"?: string;
   pendingLabel?: string;
   /** Bouton inactif (action indisponible). */
   disabled?: boolean;
@@ -26,7 +29,7 @@ export function SubmitButton({
   const status = useFormStatus();
   const busy = pending ?? status.pending;
   return (
-    <button type="submit" disabled={busy || disabled} aria-busy={busy} className={buttonClass(variant, size, className)}>
+    <button type="submit" disabled={busy || disabled} aria-busy={busy} aria-label={ariaLabel} className={buttonClass(variant, size, className)}>
       {busy ? (pendingLabel ?? "Un instant…") : children}
     </button>
   );
