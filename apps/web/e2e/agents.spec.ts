@@ -27,6 +27,11 @@ test("le gérant fait travailler les agents et approuve une fusion de doublons",
     await expect(page.getByRole("cell", { name: "Automatique (Gina Agents)" })).toHaveCount(5, { timeout: 1000 });
   }).toPass({ timeout: 20_000 });
   await expect(page.getByText("Dernière mission (automatique)").first()).toBeVisible();
+  // Agents assistés par l'IA (D-069) : affichés, mais éteints tant que la clé de l'IA manque.
+  const writer = page.locator("section").filter({ has: page.getByRole("heading", { name: "Rédacteur d'annonces" }) });
+  await expect(writer.getByText("IA non activée", { exact: true })).toBeVisible();
+  await expect(writer.getByText("S'allume dès que la clé de l'IA est ajoutée (comme l'assistant).")).toBeVisible();
+  await expect(writer.getByRole("button", { name: /^Lancer/ })).toHaveCount(0);
 
   // Deux fiches pour la même personne : la seconde est créée malgré l'avertissement.
   for (const [first, phone, confirm] of [["Jean", "06 11 22 33 44", false], ["J.", "", true]] as const) {

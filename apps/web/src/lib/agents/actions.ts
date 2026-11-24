@@ -11,6 +11,7 @@ import { z } from "zod";
 import { requireAgency } from "../agency/context";
 import { audit } from "../audit";
 import { getTenantPool } from "../server/db";
+import { aiConfig } from "../ai/config";
 import { MergeError, mergeContacts } from "./merge";
 import { runAgentMission } from "./run";
 
@@ -19,6 +20,8 @@ export async function runAgentAction(form: FormData): Promise<void> {
   if (ctx.role === "lecture") return;
   const agent = AGENTS_BY_ID.get(z.string().parse(form.get("agentId")));
   if (!agent) return;
+  // Agent assisté par l'IA : rien à lancer tant que l'IA n'est pas activée.
+  if (agent.mode !== "deterministe" && !aiConfig().enabled) return;
   await runAgentMission(ctx, agent, "manuel");
   revalidatePath("/app/agents");
 }
@@ -43,6 +46,16 @@ export async function setAgentEnabledAction(form: FormData): Promise<void> {
 const EXECUTORS = {
   "contacts.merge": async (c: Parameters<typeof mergeContacts>[0], ctx: Parameters<typeof mergeContacts>[1], payload: unknown) =>
     mergeContacts(c, ctx, z.object({ keepId: z.uuid(), removeId: z.uuid() }).parse(payload)),
+  // Annonce rédigée par l'IA (D-069) : enregistrée avec les droits de celui qui approuve (RLS).
+  "listing.applyDraft": async (c: Parameters<typeof mergeContacts>[0], _ctx: Parameters<typeof mergeContacts>[1], payload: unknown) => {
+    const p = z.object({ propertyId: z.uuid(), title: z.string().min(1).max(120), description: z.string().min(50).max(4000) }).parse(payload);
+    const r = await c.query(
+      "UPDATE app.properties SET listing_title = $2, listing_description = $3, updated_at = now() WHERE id = $1",
+      [p.propertyId, p.title, p.description],
+    );
+    if (!r.rowCount) throw new MergeError("Vous ne pouvez pas modifier ce bien (ou il a été supprimé).");
+    return { propertyId: p.propertyId };
+  },
 } as const;
 
 export async function decideApprovalAction(form: FormData): Promise<void> {

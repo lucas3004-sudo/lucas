@@ -634,3 +634,18 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - seules les **ventes d'appartements et de maisons** sont reprises (les autres lignes sont écartées avec la raison) ; les biens arrivent « sous mandat », adresse vérifiée par la Base Adresse Nationale, puis apparaissent sur la carte ;
   - les photos ne sont pas reprises (stockage limité, D-042), et seul `Annonces.csv` est extrait du ZIP (20 Mo au plus).
 - **Suite** : synchronisation régulière (mise à jour des prix et retraits d'après les références), quand une passerelle ou une adresse de flux sera disponible.
+
+## D-069 — Agents assistés par l'IA : annonces, analyse, relances, récap
+- **Date** : 2026-11-24 · **Statut** : Acceptée (demande du fondateur : des agents « vraiment puissants », les quatre fonctions construites et testées une par une).
+- **Décision** :
+  - les 5 agents à règles restent (gratuits, fiables). Trois agents **assistés par l'IA** s'ajoutent, plus un récap rédigé :
+    1. **Rédacteur d'annonces** (L2) : rédige titre et texte des biens en vente sans vraie description. Chaque annonce attend une **approbation** (texte visible dans « Approbations ») avant d'être enregistrée ; une proposition refusée n'est pas refaite avant 30 jours ;
+    2. **Analyse des annonces** (L1) : points forts, points faibles, prix comparé aux ventes DVF du quartier, conseils. Envoyée au responsable sous forme de tâche, **une fois par prix** ;
+    3. **Relances** (L1) : pour chaque alerte « bien correspondant », prépare le message à envoyer à l'acquéreur, ajouté à la tâche. **Rien n'est envoyé** ;
+    4. **Récap rédigé** : bouton « Résumer avec l'IA » sur l'accueil, à partir des seuls chiffres du récap ;
+  - le **code décide** de tout (quoi, combien, dans quel ordre) ; l'IA ne fait que rédiger ou analyser. 5 éléments au plus par passage, et l'agent s'arrête dès qu'un quota ou un plafond est atteint ;
+  - **données envoyées** : caractéristiques du bien avec la **ville et le code postal seulement** (ni rue, ni numéro, ni notes), chiffres du marché, texte de l'annonce. Jamais un nom, un e-mail ou un téléphone de contact. Le message de relance commence par « Bonjour [Prénom] », la signature est ajoutée après ;
+  - même modèle et mêmes garde-fous que l'assistant (D-063, D-065) : Haiku 5.5, quotas « annonces IA » (rédaction) et « échanges » (analyse, relances, récap), crédits à l'usage, plafond global ; coût de chaque mission mesuré ;
+  - sans clé Anthropic, ces agents sont affichés mais éteints (« IA non activée ») et ne passent pas dans le tour quotidien.
+- **Tests** : moteur (5 éléments au plus, approbation obligatoire, arrêt au quota), lecture des réponses, données envoyées. De bout en bout, `playwright.ia.config.ts` démarre le site avec un **faux serveur d'IA local** : même code d'appel qu'en ligne, sans appel réel ni coût. Le test vérifie aussi qu'aucune donnée de contact ne part et que la consommation est comptée.
+- **À vérifier avec la vraie clé** : la qualité des textes rédigés par Haiku 5.5 (un modèle plus fort, Sonnet 5.5, reste possible par `AI_MODEL`).

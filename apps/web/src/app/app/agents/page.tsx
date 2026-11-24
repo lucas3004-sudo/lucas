@@ -4,6 +4,7 @@ import Link from "next/link";
 import { requireAgency } from "@/lib/agency/context";
 import { runAgentAction, setAgentEnabledAction } from "@/lib/agents/actions";
 import { agentCenterData, type MissionRow } from "@/lib/agents/data";
+import { aiConfig } from "@/lib/ai/config";
 import { agencyMembers } from "@/lib/crm/data";
 import { SubmitButton } from "@/ui/client";
 import { Alert, Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
@@ -33,12 +34,13 @@ export default async function AgentsPage() {
   }
   const [{ settings, missions, pending, material }, members] = await Promise.all([agentCenterData(ctx), agencyMembers(ctx.org.id)]);
   const totalPending = [...pending.values()].reduce((a, b) => a + b, 0);
+  const aiOn = aiConfig().enabled;
 
   return (
     <>
       <PageHeader
         title="Agents"
-        description="Ils passent tout seuls chaque jour, à votre première connexion, et vous pouvez aussi les lancer à la main. Ils appliquent des règles écrites dans le code, sans IA ni coût, avec vos droits ; rien d'important ne se fait sans votre approbation."
+        description="Ils passent tout seuls chaque jour, à votre première connexion, et vous pouvez aussi les lancer à la main. Les uns appliquent des règles, sans coût ; les autres rédigent et analysent avec l'IA, sans jamais recevoir les noms ni les coordonnées de vos clients. Tous agissent avec vos droits, et rien d'important ne se fait sans votre approbation."
         actions={
           <Link href="/app/agents/approbations" className="text-sm font-medium text-brand-text underline">
             Approbations{totalPending ? ` (${totalPending} en attente)` : ""}
@@ -58,10 +60,14 @@ export default async function AgentsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         {AGENTS.map((agent) => {
           const enabled = settings.get(agent.id) ?? true;
+          const usesAi = agent.mode !== "deterministe";
+          const aiMissing = usesAi && !aiOn;
           const last = missions.find((m) => m.agent_id === agent.id);
           const waiting = pending.get(agent.id) ?? 0;
           const status = !enabled
             ? { label: "Désactivé", tone: "neutral" as const }
+            : aiMissing
+              ? { label: "IA non activée", tone: "neutral" as const }
             : waiting
               ? { label: `${waiting} approbation(s) en attente`, tone: "warning" as const }
               : last?.status === "echouee"
@@ -73,13 +79,13 @@ export default async function AgentsPage() {
               <CardBody className="space-y-3 text-sm">
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px]">
                   <dt className="text-ink-muted">Mode</dt>
-                  <dd className="text-ink">Déterministe (sans IA)</dd>
+                  <dd className="text-ink">{usesAi ? "Assisté par l'IA (rédaction et analyse)" : "Déterministe (sans IA)"}</dd>
                   <dt className="text-ink-muted">Niveau maximal</dt>
                   <dd className="text-ink">{agent.maxPermission} · {LEVEL_LABELS[agent.maxPermission]}</dd>
                   <dt className="text-ink-muted">Outils</dt>
                   <dd className="break-words font-mono text-xs text-ink">{agent.tools.join(", ")}</dd>
                   <dt className="text-ink-muted">Coût mesuré</dt>
-                  <dd className="text-ink">0 € (aucun appel à un modèle)</dd>
+                  <dd className="text-ink">{usesAi ? "Quelques centimes par passage, dans les quotas de la formule" : "0 € (aucun appel à un modèle)"}</dd>
                   <dt className="text-ink-muted">Version</dt>
                   <dd className="text-ink">{agent.version}</dd>
                 </dl>
@@ -92,7 +98,10 @@ export default async function AgentsPage() {
                   <p className="text-[13px] text-ink-muted">Aucune mission pour le moment.</p>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  {enabled ? (
+                  {aiMissing ? (
+                    <p className="text-[13px] text-ink-muted">S&apos;allume dès que la clé de l&apos;IA est ajoutée (comme l&apos;assistant).</p>
+                  ) : null}
+                  {enabled && !aiMissing ? (
                     <form action={runAgentAction}>
                       <input type="hidden" name="agentId" value={agent.id} />
                       <SubmitButton size="sm" pendingLabel="Mission en cours…">Lancer {agent.name}</SubmitButton>

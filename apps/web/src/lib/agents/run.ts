@@ -9,6 +9,8 @@ import { utcToParisLocal } from "@immopilot/domain";
 import type { AgencyContext } from "../agency/context";
 import { audit } from "../audit";
 import { getTenantPool } from "../server/db";
+import { aiConfig } from "../ai/config";
+import type { AiMeter } from "./ai-tools";
 import { buildTools } from "./tools";
 
 type Trigger = "manuel" | "auto";
@@ -47,11 +49,12 @@ export async function runAgentMission(ctx: AgencyContext, agent: AgentDefinition
         )).rows[0]!.id),
   };
 
-  const outcome = await runMission(agent, buildTools(ctx), ports, {});
+  const meter: AiMeter = { costMicroUsd: 0 };
+  const outcome = await runMission(agent, buildTools(ctx, meter), ports, {});
   await withTenant(pool, tenant, (_db, c) =>
     c.query(
-      `UPDATE app.missions SET status = $2, summary = $3, error = $4, steps = $5, finished_at = now() WHERE id = $1`,
-      [missionId, outcome.status, outcome.status === "echouee" ? {} : outcome.summary, outcome.status === "echouee" ? outcome.error.slice(0, 500) : null, outcome.steps],
+      `UPDATE app.missions SET status = $2, summary = $3, error = $4, steps = $5, cost_micro_usd = $6, finished_at = now() WHERE id = $1`,
+      [missionId, outcome.status, outcome.status === "echouee" ? {} : outcome.summary, outcome.status === "echouee" ? outcome.error.slice(0, 500) : null, outcome.steps, Math.round(meter.costMicroUsd)],
     ));
   await audit({
     orgId: ctx.org.id, userId: ctx.user.id, action: "agent.mission", targetType: "mission", targetId: missionId,
@@ -62,7 +65,8 @@ export async function runAgentMission(ctx: AgencyContext, agent: AgentDefinition
 
 /**
  * Passage automatique du jour : lancé après l'affichage de la page (jamais pendant), une fois par
- * jour et par utilisateur. Les agents sont déterministes : aucun coût, aucun appel externe.
+ * jour et par utilisateur. Les agents déterministes ne coûtent rien ; les agents assistés par l'IA
+ * traitent au plus 5 éléments chacun, dans la limite des quotas et du plafond (D-069).
  */
 export async function runDailyAgents(ctx: AgencyContext): Promise<void> {
   if (ctx.role === "lecture") return;
@@ -71,8 +75,11 @@ export async function runDailyAgents(ctx: AgencyContext): Promise<void> {
     new Set((await c.query<{ agent_id: string }>(
       "SELECT agent_id FROM app.missions WHERE trigger = 'auto' AND run_on = $1 AND requested_by = $2", [today, ctx.user.id],
     )).rows.map((r) => r.agent_id)));
+  const aiOn = aiConfig().enabled;
   for (const agent of AGENTS) {
     if (done.has(agent.id)) continue;
+    // Les agents assistés par l'IA ne passent que si l'IA est activée (D-069).
+    if (agent.mode !== "deterministe" && !aiOn) continue;
     try {
       await runAgentMission(ctx, agent, "auto");
     } catch (error) {
