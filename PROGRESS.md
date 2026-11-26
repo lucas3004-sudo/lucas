@@ -131,6 +131,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-26, fusion** : prospection fusionnée ([PR n° 34](https://github.com/lucas3004-sudo/lucas/pull/34)) ; migration 0027 appliquée en préproduction (27 migrations, 104 règles d'accès, même empreinte qu'en local : colonnes, fonctions, contraintes et droits).
 - **2026-11-26, prospection (D-072)** : page « Prospection » avec 7 statuts, favoris, notes datées, lien de l'annonce, relance datée (tâche), propriétaire et accords de contact ; les demandes « Estimez votre bien » y arrivent seules ; « Mandat obtenu » passe le bien sous mandat. Migration 0027. Tests : base 65, domaine 154, bout en bout (parcours complet, accessibilité).
 - **2026-11-26, export SeLoger fusionné (#33)** ; test des mandats corrigé (la BAN ne reconnaît plus « 2 place Gambetta, Amiens » avec son numéro).
 - **2026-11-26, fournisseurs validés (D-071)** : devis à demander à Yanport et Stream Estate (annonces), Ubiflow et Gédéon (multidiffusion) ; chaque agence paie sa passerelle ; après signature, carte et prospection d'abord. E-mails prêts : `docs/partenaires/demandes-de-devis-2026-11.md`. **Bloqué : réponse des fournisseurs (envoi par le fondateur).**
