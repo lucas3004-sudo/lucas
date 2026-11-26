@@ -10,6 +10,7 @@ import { cache } from "react";
 import type { AgencyContext } from "../agency/context";
 import { getAuth } from "../auth/server";
 import { getTenantPool } from "../server/db";
+import type { ProspectionStatus } from "@immopilot/domain";
 import type { ConsentChannel, ContactRole, ProfileStatus, PropertyStatus } from "./labels";
 
 export interface Contact {
@@ -91,6 +92,11 @@ export interface Property {
   fees_percent: number | null;
   listing_title: string | null;
   listing_description: string | null;
+  // Prospection (migration 0027, D-072).
+  prospection_status: ProspectionStatus | null;
+  prospection_favorite: boolean;
+  source_url: string | null;
+  updated_at: Date;
 }
 
 export interface Task {

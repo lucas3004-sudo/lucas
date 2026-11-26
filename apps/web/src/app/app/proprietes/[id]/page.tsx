@@ -1,18 +1,20 @@
-import { CRITERION_LABELS, INTEREST_LABELS, mandateAlert, mandateAlertLabel, matchProperty, NEXT_STEP_LABELS, PRICE_OPINION_LABELS, utcToParisLocal, visitStats, type CriterionKey } from "@immopilot/domain";
+import { CRITERION_LABELS, defaultFollowUpOn, INTEREST_LABELS, mandateAlert, mandateAlertLabel, matchProperty, NEXT_STEP_LABELS, ownerReach, PRICE_OPINION_LABELS, utcToParisLocal, visitStats, type CriterionKey } from "@immopilot/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireAgency } from "@/lib/agency/context";
 import { deletePropertyAction, notifyColleagueAction, setPropertyStatusAction, updatePropertyPriceAction } from "@/lib/crm/actions";
-import { activeProfiles, agencyMembers, asMatchProfile, asMatchProperty, getProperty, listTasks } from "@/lib/crm/data";
+import { activeProfiles, agencyMembers, asMatchProfile, asMatchProperty, contactName, currentConsents, getContact, getProperty, listContacts, listTasks } from "@/lib/crm/data";
+import { addProspectionNoteAction, followPropertyAction, setSellerContactAction } from "@/lib/crm/prospection-actions";
+import { ProspectionStatusForm } from "../../prospection/status-form";
 import { MATCHABLE_STATUSES, PROPERTY_STATUS } from "@/lib/crm/labels";
 import { parseWeights, WEIGHT_KEYS } from "@/lib/crm/weights";
 import { fmt } from "@/lib/format";
 import { buttonClass, LinkButton } from "@/ui/button";
 import { ConfirmSubmit, SubmitButton } from "@/ui/client";
-import { Input, Select } from "@/ui/form";
-import { Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
+import { Input, Select, Textarea } from "@/ui/form";
+import { Alert, Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
 import {
   canDeleteRecord,
   canEditRecord,
@@ -21,6 +23,7 @@ import {
   MatchExplanation,
   memberName,
   PropertyStatusBadge,
+  ProspectionBadge,
   scoreTone,
   VisibilityBadge,
 } from "../../_crm/parts";
@@ -48,7 +51,8 @@ export default async function PropertyPage({ params, searchParams }: { params: P
   const property = await getProperty(ctx, id.data);
   if (!property) notFound();
 
-  const { weights, custom } = parseWeights(await searchParams);
+  const sp = await searchParams;
+  const { weights, custom } = parseWeights(sp);
   const matchable = MATCHABLE_STATUSES.includes(property.status);
   const [members, profiles, tasks, appointments, deals, photos, visits] = await Promise.all([
     agencyMembers(ctx.org.id),
@@ -62,6 +66,18 @@ export default async function PropertyPage({ params, searchParams }: { params: P
       )).rows),
     reportsForProperty(ctx, property.id),
   ]);
+  // Prospection (D-072) : propriétaire (contact vendeur visible) et ses accords en cours.
+  const prospecting = property.prospection_status !== null;
+  const [seller, contacts] = prospecting
+    ? await Promise.all([property.seller_contact_id ? getContact(ctx, property.seller_contact_id) : Promise.resolve(null), listContacts(ctx)])
+    : [null, []];
+  const sellerConsents = seller ? currentConsents(seller.consents, utcToParisLocal(new Date()).slice(0, 10)) : {};
+  const reach = ownerReach({
+    hasOwner: seller !== null, phone: seller?.contact.phone ?? null, email: seller?.contact.email ?? null,
+    phoneConsent: sellerConsents.telephone?.valid ?? false, emailConsent: sellerConsents.email?.valid ?? false,
+  });
+  const sellerOptions = contacts.filter((c) => c.roles.includes("vendeur") || c.id === property.seller_contact_id);
+  const today = utcToParisLocal(new Date()).slice(0, 10);
   const vstats = visitStats(visits.map((v) => ({ interest: v.interest, priceOpinion: v.price_opinion, nextStep: v.next_step })));
   const memberIds = new Set(members.map((m) => m.userId));
   const canEdit = canEditRecord(ctx, property.owner_user_id);
@@ -136,7 +152,100 @@ export default async function PropertyPage({ params, searchParams }: { params: P
         <VisibilityBadge visibility={property.visibility} />
         {property.mandate_type ? <Badge>Mandat {property.mandate_type}</Badge> : null}
         {mandate ? <Badge tone={mandate.kind === "expire" ? "danger" : "warning"}>{mandateAlertLabel(mandate)}</Badge> : null}
+        {property.prospection_status ? <ProspectionBadge status={property.prospection_status} /> : null}
       </div>
+
+      {property.prospection_status ? (
+        <Card className="mb-4">
+          <CardHeader
+            title="Prospection"
+            description="Bien que l'agence aimerait rentrer en mandat. Les relances sont des tâches ; les accords du propriétaire se notent sur sa fiche contact."
+            action={<Link href="/app/prospection" className="text-sm font-medium text-brand-text hover:underline">Toute la prospection</Link>}
+          />
+          <div className="space-y-4 px-5 py-4">
+            {sp.repere === "1" ? <Alert tone="success">Bien ajouté à votre prospection, « à contacter ».</Alert> : null}
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <ProspectionBadge status={property.prospection_status} />
+              {property.prospection_favorite ? <Badge tone="warning">★ Favori</Badge> : null}
+              {property.source_url ? (
+                <a href={property.source_url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-brand-text hover:underline">
+                  Voir l&apos;annonce d&apos;origine ↗
+                </a>
+              ) : null}
+            </div>
+            {canEdit && ctx.role !== "lecture" ? (
+              <ProspectionStatusForm
+                id={property.id}
+                status={property.prospection_status}
+                today={today}
+                defaultFollowUpOn={defaultFollowUpOn(today)}
+                label={property.address_label}
+              />
+            ) : null}
+            {canEdit && ctx.role !== "lecture" ? (
+              <form action={addProspectionNoteAction} className="space-y-2">
+                <input type="hidden" name="id" value={property.id} />
+                <label className="block space-y-1 text-[13px] text-ink">
+                  <span className="block font-medium">Ajouter une note</span>
+                  <Textarea name="note" required minLength={2} maxLength={1000} rows={2} placeholder="Ex. : appelée le matin, rappeler après les vacances." />
+                </label>
+                <SubmitButton size="sm" variant="secondary">Ajouter la note</SubmitButton>
+                <p className="text-xs text-ink-muted">Datée et signée, elle s&apos;ajoute aux notes du bien (partie « Caractéristiques »).</p>
+              </form>
+            ) : null}
+            <div className="space-y-2 border-t border-line pt-4">
+              <p className="text-sm text-ink">
+                {seller ? (
+                  <>
+                    Propriétaire :{" "}
+                    <Link href={`/app/contacts/${seller.contact.id}`} className="font-medium hover:underline">
+                      {contactName(seller.contact)}
+                    </Link>
+                  </>
+                ) : property.seller_contact_id ? (
+                  "Propriétaire : contact privé d'un collègue."
+                ) : (
+                  "Propriétaire non renseigné."
+                )}
+              </p>
+              {property.seller_contact_id && !seller ? null : <p className="text-xs text-ink-muted">{reach.message}</p>}
+              {reach.call || reach.email ? (
+                <div className="flex flex-wrap gap-2">
+                  {reach.call && seller?.contact.phone ? (
+                    <a href={`tel:${seller.contact.phone.replace(/[^\d+]/g, "")}`} className={buttonClass("secondary", "sm")}>Appeler</a>
+                  ) : null}
+                  {reach.email && seller?.contact.email ? (
+                    <a href={`mailto:${seller.contact.email}`} className={buttonClass("secondary", "sm")}>Écrire un e-mail</a>
+                  ) : null}
+                </div>
+              ) : null}
+              {canEdit && ctx.role !== "lecture" && (seller || !property.seller_contact_id) ? (
+                <form action={setSellerContactAction} className="flex flex-wrap items-end gap-2">
+                  <input type="hidden" name="id" value={property.id} />
+                  <label className="space-y-1 text-[13px] text-ink">
+                    <span className="block font-medium">Propriétaire (contact vendeur)</span>
+                    <Select name="sellerContactId" defaultValue={property.seller_contact_id ?? ""} className="h-9 w-auto">
+                      <option value="">Non renseigné</option>
+                      {sellerOptions.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {contactName(c)}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                  <SubmitButton size="sm" variant="secondary">Enregistrer le propriétaire</SubmitButton>
+                  <Link href="/app/contacts/nouveau" className={buttonClass("ghost", "sm")}>Créer le contact du propriétaire</Link>
+                </form>
+              ) : null}
+            </div>
+          </div>
+        </Card>
+      ) : property.status === "prospect" && canEdit && ctx.role !== "lecture" ? (
+        <form action={followPropertyAction} className="mb-4">
+          <input type="hidden" name="id" value={property.id} />
+          <SubmitButton size="sm" variant="secondary">Suivre en prospection</SubmitButton>
+        </form>
+      ) : null}
 
       <Card className="mb-4">
         <CardHeader title={`Photos (${photos.length})`} />

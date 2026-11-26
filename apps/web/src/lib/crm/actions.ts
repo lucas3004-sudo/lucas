@@ -7,7 +7,7 @@
 import { withTenant } from "@immopilot/db";
 import {
   cleanListingUrl, FEATURE_KEYS, findDuplicates, normalizeEmail, normalizePhone, PORTAL_IDS, portalsToRemove, REMOVAL_TASK_PREFIX,
-  removalTaskTitle, utcToParisLocal, type PortalId, type PortalListing, type PropertyFeature,
+  prospectionAfterPropertyStatus, removalTaskTitle, utcToParisLocal, type PortalId, type PortalListing, type PropertyFeature, type ProspectionStatus,
 } from "@immopilot/domain";
 import { communesByPostcode, geocode } from "@immopilot/integrations";
 import { revalidatePath } from "next/cache";
@@ -255,10 +255,14 @@ const propertySchema = z.object({
 export async function createPropertyAction(_prev: CrmState, form: FormData): Promise<CrmState> {
   const ctx = await requireAgency();
   if (ctx.role === "lecture") return { error: "Le rôle « lecture seule » ne permet pas de créer un bien." };
+  // Bien repéré pour la prospection (D-072) : toujours « prospect », avec le lien de l'annonce d'origine.
+  const prospection = form.get("prospection") === "1";
+  const sourceUrl = cleanListingUrl(String(form.get("sourceUrl") ?? ""));
+  if (sourceUrl === undefined) return { error: "Le lien de l'annonce doit commencer par https:// (500 caractères au plus)." };
   const parsed = propertySchema.safeParse({
     label: form.get("label"), banId: form.get("banId"), type: form.get("type"), surface: form.get("surface"),
     rooms: form.get("rooms"), price: form.get("price"), dpeClass: form.get("dpeClass") ?? "", features: form.getAll("features"),
-    status: form.get("status"), mandateType: form.get("mandateType") ?? "", visibility: form.get("visibility"),
+    status: prospection ? "prospect" : form.get("status"), mandateType: prospection ? "" : (form.get("mandateType") ?? ""), visibility: form.get("visibility"),
     ownerUserId: canAssign(ctx) ? form.get("ownerUserId") || ctx.user.id : ctx.user.id, notes: form.get("notes"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Valeurs invalides." };
@@ -277,10 +281,11 @@ export async function createPropertyAction(_prev: CrmState, form: FormData): Pro
     ({ id, alerts } = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) => {
       const newId = (await c.query<{ id: string }>(
         `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, mandate_type, type, address_label, ban_id, insee_code,
-           longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
+           longitude, latitude, surface, rooms, price, dpe_class, features, notes, created_by, prospection_status, source_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING id`,
         [ctx.org.id, d.ownerUserId, d.visibility, d.status, d.mandateType, d.type, address.label, address.banId, address.inseeCode,
-         address.longitude, address.latitude, d.surface, d.rooms, d.price, d.dpeClass, d.features, d.notes, ctx.user.id],
+         address.longitude, address.latitude, d.surface, d.rooms, d.price, d.dpeClass, d.features, d.notes, ctx.user.id,
+         prospection ? "a_contacter" : null, sourceUrl],
       )).rows[0]!.id;
       // Opportunity Finder v1 : les collègues dont un acquéreur correspond sont prévenus.
       const taskIds = await alertMatchingBuyers(c, {
@@ -297,7 +302,7 @@ export async function createPropertyAction(_prev: CrmState, form: FormData): Pro
   for (const taskId of alerts) {
     await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "tache.creee", targetType: "tache", targetId: taskId, details: { motif: "alerte_automatique" } });
   }
-  redirect(`/app/proprietes/${id}`);
+  redirect(prospection ? `/app/proprietes/${id}?repere=1` : `/app/proprietes/${id}`);
 }
 
 export async function setPropertyStatusAction(form: FormData): Promise<void> {
@@ -306,7 +311,10 @@ export async function setPropertyStatusAction(form: FormData): Promise<void> {
   const status = z.enum(["prospect", "mandat", "sous_offre", "vendu", "retire"]).parse(form.get("status"));
   // Bien vendu ou retiré encore en ligne : rappel au responsable pour retirer ses annonces (D-066).
   const removalTask = await withTenant(getTenantPool(), tenant(ctx), async (_db, c) => {
-    await c.query("UPDATE app.properties SET status = $2, updated_at = now() WHERE id = $1", [id, status]);
+    // Prospection en cours (D-072) : mandat signé, elle devient « Mandat obtenu » ; bien retiré, « Sans suite ».
+    const before = (await c.query<{ prospection_status: ProspectionStatus | null }>("SELECT prospection_status FROM app.properties WHERE id = $1", [id])).rows[0];
+    await c.query("UPDATE app.properties SET status = $2, prospection_status = $3, updated_at = now() WHERE id = $1",
+      [id, status, prospectionAfterPropertyStatus(before?.prospection_status ?? null, status)]);
     const prop = (await c.query<{ owner_user_id: string; address_label: string; status: string }>(
       "SELECT owner_user_id, address_label, status FROM app.properties WHERE id = $1", [id],
     )).rows[0];
@@ -327,6 +335,7 @@ export async function setPropertyStatusAction(form: FormData): Promise<void> {
     await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "tache.creee", targetType: "tache", targetId: removalTask, details: { motif: "retrait_annonce" } });
   }
   revalidatePath(`/app/proprietes/${id}`);
+  revalidatePath("/app/prospection");
 }
 
 /** Diffusion d'un bien sur un portail (D-066) : publié (avec le lien), retiré, ou ligne supprimée (erreur). */

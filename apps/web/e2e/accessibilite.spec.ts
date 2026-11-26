@@ -10,7 +10,8 @@ import { expect, test, type Page } from "@playwright/test";
 const run = Date.now().toString(36);
 const PUBLIC_PAGES = ["/", "/connexion", "/inscription"];
 const APP_PAGES = [
-  "/app", "/app/contacts", "/app/contacts/nouveau", "/app/proprietes", "/app/proprietes/nouveau", "/app/biens", "/app/biens/nouveau",
+  "/app", "/app/contacts", "/app/contacts/nouveau", "/app/proprietes", "/app/proprietes/nouveau", "/app/proprietes/nouveau?prospection=1",
+  "/app/prospection", "/app/biens", "/app/biens/nouveau",
   "/app/affaires", "/app/agenda", "/app/taches", "/app/investissement", "/app/qualite", "/app/agents", "/app/agents/approbations",
   "/app/equipe", "/app/parametres", "/app/formule", "/app/pilotage", "/app/journal", "/app/securite", "/app/carte", "/app/assistant", "/abonnement",
 ];

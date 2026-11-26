@@ -2,7 +2,7 @@
  * Fiche d'un bien, présentée comme une annonce : photos à faire défiler, caractéristiques,
  * description, puis l'analyse du marché (chiffres réels) et l'analyse rédigée par l'IA.
  */
-import { PROPERTY_FEATURES, VERDICT_LABELS, type PropertyEvent } from "@immopilot/domain";
+import { isProspectionStatus, PROPERTY_FEATURES, PROSPECTION_LABELS, VERDICT_LABELS, type PropertyEvent } from "@immopilot/domain";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -141,6 +141,11 @@ function eventLabel(e: PropertyEvent): string {
     case "mandat":
       if (e.newValue === e.oldValue) return "Mandat mis à jour";
       return e.newValue ? `Mandat ${e.newValue === "exclusif" ? "exclusif" : "simple"}` : "Mandat retiré";
+    case "prospection": {
+      const label = (v: string | null) => (isProspectionStatus(v) ? PROSPECTION_LABELS[v] : v);
+      if (!e.newValue) return "Retiré de la prospection";
+      return e.oldValue ? `Prospection : ${label(e.oldValue)} → ${label(e.newValue)}` : `Ajouté à la prospection (${label(e.newValue)})`;
+    }
   }
 }
 
