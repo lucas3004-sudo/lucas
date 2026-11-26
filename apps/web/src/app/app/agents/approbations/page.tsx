@@ -34,6 +34,18 @@ function Detail({ a }: { a: ApprovalRow }) {
       </p>
     );
   }
+  if (a.tool === "listing.applyDraft") {
+    return (
+      <div className="space-y-1.5 rounded-[var(--radius-control)] bg-surface-muted p-3 text-[13px]" data-testid="annonce-proposee">
+        <p className="font-medium text-ink">{String(a.payload.title ?? "")}</p>
+        <p className="whitespace-pre-line text-ink-muted">{String(a.payload.description ?? "")}</p>
+        <p className="text-xs text-ink-subtle">
+          Texte rédigé par l&apos;IA à partir des caractéristiques du bien : relisez-le. Une fois approuvé, il est enregistré dans l&apos;annonce du{" "}
+          <Link href={`/app/proprietes/${String(a.payload.propertyId)}/annonce`} className="underline">bien</Link>, avec les mentions obligatoires ajoutées automatiquement.
+        </p>
+      </div>
+    );
+  }
   return null;
 }
 

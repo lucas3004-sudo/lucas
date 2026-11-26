@@ -27,6 +27,8 @@ d'acceptation sont vérifiés.
 
 **Agents (sans IA)** : Agent Center avec 5 agents déterministes (qualité des données, Opportunity Finder, veille des échéances, veille des mandats, détection des doublons) ; passerelle d'outils qui refuse tout ce qui dépasse la fiche ; boîte d'approbations (aucune fusion sans décision humaine). **Passage automatique une fois par jour** à la première connexion de chaque utilisateur (D-064).
 
+**Agents IA (éteints sans clé)** : Rédacteur d'annonces (avec approbation), Analyse des annonces (prix face aux ventes DVF, conseils), Relances (message prêt pour l'acquéreur), récap rédigé ; aucune donnée de contact envoyée ; testés de bout en bout avec un faux serveur d'IA (D-069).
+
 **Crédits IA à l'usage** : au-delà du forfait, 2 € les 100 échanges et 0,20 € l'annonce IA, plafond mensuel choisi par le gérant (30 € par défaut), ligne ajoutée à la facture Stripe de renouvellement (D-065). Côté Stripe, à vérifier avec une vraie clé de test.
 
 **Reprise des biens de l'ancien logiciel** : l'import des biens accepte l'export SeLoger « Poliris » (ZIP) des logiciels d'agence ; ventes d'appartements et de maisons reprises avec leur annonce (D-068).
@@ -127,6 +129,8 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-24, agents IA** : quatre fonctions d'IA construites et testées une par une (rédaction et analyse d'annonce, relances, récap), éteintes tant que la clé Anthropic manque (D-069).
+- **2026-11-24, fusion** : agents automatiques, crédits IA, diffusion, page « Estimez votre bien » et import Poliris fusionnés ([PR n° 31](https://github.com/lucas3004-sudo/lucas/pull/31)) ; migrations 0023 à 0026 appliquées en préproduction (26 migrations, 104 règles d'accès, même empreinte qu'en local).
 - **2026-11-23, reprise de l'ancien logiciel** : import de l'export Poliris (ZIP) des logiciels de transaction, pour remplir la carte sans saisie (D-068).
 - **2026-11-23, page « Estimez votre bien »** : la façon légale et gratuite de trouver des vendeurs (les annonces de particuliers des portails ne peuvent pas être copiées, et le démarchage téléphonique demande un accord préalable). Migration 0026, D-067.
 - **2026-11-23, agents automatiques, crédits IA, diffusion** : les agents passent seuls chaque jour (ils marchaient, mais seulement au clic, et l'agence de test était vide) ; crédits IA à l'usage avec plafond du gérant ; Pack annonce et suivi des portails avec rappel de retrait (migrations 0023 à 0025, D-064 à D-066).

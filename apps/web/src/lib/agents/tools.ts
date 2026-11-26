@@ -13,13 +13,14 @@ import { listDeals } from "../deals/data";
 import { dealDeadlines } from "../deals/deadlines";
 import { qualityCounts, qualityReport } from "../quality/report";
 import { getTenantPool } from "../server/db";
+import { buildAiTools, type AiMeter } from "./ai-tools";
 import { mergeContacts } from "./merge";
 
 export const MANDATE_REMINDER_PREFIX = "Mandat à renouveler";
 
 const REASONS: Record<string, string> = { email: "même e-mail", telephone: "même téléphone", nom: "même nom complet" };
 
-export function buildTools(ctx: AgencyContext): Map<string, ToolDefinition<never, unknown>> {
+export function buildTools(ctx: AgencyContext, meter: AiMeter = { costMicroUsd: 0 }): Map<string, ToolDefinition<never, unknown>> {
   const tenant = { orgId: ctx.org.id, userId: ctx.user.id };
   const seesAll = ctx.role === "gerant" || ctx.role === "manager";
   const today = () => utcToParisLocal(new Date()).slice(0, 10);
@@ -182,5 +183,5 @@ export function buildTools(ctx: AgencyContext): Map<string, ToolDefinition<never
       run: async (input: { keepId: string; removeId: string }) => withTenant(getTenantPool(), tenant, (_db, c) => mergeContacts(c, ctx, input)),
     } as unknown as ToolDefinition<never, unknown>,
   ];
-  return new Map(tools.map((t) => [t.id, t]));
+  return new Map([...tools, ...buildAiTools(ctx, meter)].map((t) => [t.id, t]));
 }

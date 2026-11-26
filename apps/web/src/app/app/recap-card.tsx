@@ -3,6 +3,8 @@
  * 24 heures ou 7 jours, et ce qui demande une action. Chaque ligne mène à la page concernée.
  */
 import { RECAP_PERIOD_LABELS, recapHeadline, recapLines, type RecapPeriod } from "@immopilot/domain";
+import { aiConfig } from "@/lib/ai/config";
+import { AiRecap } from "./ai-recap";
 import Link from "next/link";
 import type { AgencyContext } from "@/lib/agency/context";
 import { fmt } from "@/lib/format";
@@ -67,6 +69,7 @@ export async function RecapCard({ ctx, period }: { ctx: AgencyContext; period: R
           </ul>
         </div>
       ) : null}
+      {aiConfig().enabled && lines.length ? <AiRecap period={period} /> : null}
     </section>
   );
 }

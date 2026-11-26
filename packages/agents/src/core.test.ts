@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createGateway, GatewayError, runMission, type AgentDefinition, type MissionPorts, type StepRecord, type ToolDefinition } from "./core";
-import { AGENTS, deadlineWatcherAgent, duplicateDetectionAgent, mandateWatcherAgent } from "./definitions";
+import { AGENTS, AI_AGENTS, AI_ITEMS_PER_RUN, deadlineWatcherAgent, duplicateDetectionAgent, followupWriterAgent, listingWriterAgent, mandateWatcherAgent, listingAnalystAgent } from "./definitions";
 
 function harness() {
   const steps: StepRecord[] = [];
@@ -109,13 +109,15 @@ describe("missions", () => {
 });
 
 describe("fiches des agents", () => {
-  it("chaque fiche est complète, en mode déterministe, et n'utilise que des outils sous son plafond déclaré", () => {
+  it("chaque fiche est complète ; les agents d'origine sont déterministes, les agents IA « assistés » (D-069)", () => {
     for (const a of AGENTS) {
       expect(a.id).toMatch(/^[a-z-]+$/);
       expect(a.version).toMatch(/^\d+\.\d+\.\d+$/);
-      expect(a.mode).toBe("deterministe");
+      expect(a.mode).toBe(AI_AGENTS.some((x) => x.id === a.id) ? "assiste" : "deterministe");
       expect(a.tools.length).toBeGreaterThan(0);
     }
+    // Aucun agent IA n'agit à l'extérieur (L3) ; seule l'annonce rédigée demande une approbation.
+    expect(AI_AGENTS.map((a) => a.maxPermission)).toEqual(["L2", "L1", "L1"]);
     expect(new Set(AGENTS.map((a) => a.id)).size).toBe(AGENTS.length);
     // Les rappels d'échéances n'ont pas besoin d'approbation ; la fusion de doublons, si (L2).
     expect(deadlineWatcherAgent.maxPermission).toBe("L1");
@@ -162,5 +164,56 @@ describe("fiches des agents", () => {
       { propertyId: "p2", assigneeUserId: "u2", title: "Mandat à renouveler : 2 Place Gambetta", dueOn: "2026-11-19",
         details: "Le mandat a expiré il y a 2 jour(s) (2026-11-19). Renouvelez-le avec le vendeur ou changez le statut du bien." },
     ]);
+  });
+});
+
+describe("agents assistés par l'IA (D-069)", () => {
+  const candidates = Array.from({ length: 8 }, (_, i) => ({ propertyId: `p${i}`, ownerUserId: `u${i}`, label: `Bien ${i}`, taskId: `t${i}` }));
+  const toolsFor = (ai: (i: number) => unknown) => {
+    let n = 0;
+    const calls: string[] = [];
+    const mk = (id: string, level: ToolDefinition["level"], run: () => unknown) =>
+      [id, { id, level, description: id, input: z.object({}).passthrough(), approvalTitle: () => id, run: async () => { calls.push(id); return run(); } }] as const;
+    const map = new Map<string, ToolDefinition<never, unknown>>([
+      mk("listings.needingText", "L0", () => candidates),
+      mk("analysis.candidates", "L0", () => candidates),
+      mk("followups.candidates", "L0", () => candidates),
+      mk("ai.writeListing", "L0", () => ai(n++)),
+      mk("ai.analyzeListing", "L0", () => ai(n++)),
+      mk("ai.buyerMessage", "L0", () => ai(n++)),
+      mk("listing.applyDraft", "L2", () => ({})),
+      mk("tasks.createAnalysis", "L1", () => ({ created: true })),
+      mk("tasks.attachMessage", "L1", () => ({ updated: true })),
+    ] as unknown as [string, ToolDefinition<never, unknown>][]);
+    return { map, calls };
+  };
+  const ok = { ok: true, title: "T", description: "D", analysis: "Analyse", verdict: "bien placé", message: "Bonjour [Prénom]" };
+
+  it("rédacteur : 5 annonces au plus par passage, chacune soumise à approbation, jamais appliquée directement", async () => {
+    const { ports, approvals } = harness();
+    const { map, calls } = toolsFor(() => ok);
+    const outcome = await runMission(listingWriterAgent, map, ports, {});
+    expect(outcome.status).toBe("attente_approbation");
+    expect(approvals).toHaveLength(AI_ITEMS_PER_RUN);
+    expect(calls.filter((c) => c === "ai.writeListing")).toHaveLength(AI_ITEMS_PER_RUN);
+    expect(calls).not.toContain("listing.applyDraft");
+  });
+
+  it("quota ou plafond atteint : l'agent s'arrête net, sans appeler l'IA pour la suite", async () => {
+    const { ports } = harness();
+    const { map, calls } = toolsFor((i) => (i === 0 ? ok : { ok: false, reason: "quota atteint", stop: true }));
+    const outcome = await runMission(listingAnalystAgent, map, ports, {});
+    expect(outcome.status).toBe("reussie");
+    if (outcome.status === "reussie") expect(outcome.summary.text).toContain("1 analyse(s)");
+    if (outcome.status === "reussie") expect(outcome.summary.text).toContain("Arrêt : quota atteint");
+    expect(calls.filter((c) => c === "ai.analyzeListing")).toHaveLength(2);
+  });
+
+  it("un élément refusé (ex. : pas assez de ventes) est sauté, les suivants sont traités", async () => {
+    const { ports } = harness();
+    const { map } = toolsFor((i) => (i === 1 ? { ok: false, reason: "trop peu de ventes", stop: false } : ok));
+    const outcome = await runMission(followupWriterAgent, map, ports, {});
+    expect(outcome.status).toBe("reussie");
+    if (outcome.status === "reussie") expect(outcome.summary.counts).toEqual({ alertes: 8, messages: 4, ignores: 1 });
   });
 });

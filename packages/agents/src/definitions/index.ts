@@ -5,6 +5,9 @@
  */
 import { z } from "zod";
 import type { AgentDefinition, MissionSummary } from "../core";
+import { AI_AGENTS } from "./ai";
+
+export * from "./ai";
 
 const noInput = z.object({}).strict();
 
@@ -173,5 +176,5 @@ export const duplicateDetectionAgent: AgentDefinition<Record<string, never>> = {
   },
 };
 
-export const AGENTS = [dataQualityAgent, opportunityFinderAgent, deadlineWatcherAgent, mandateWatcherAgent, duplicateDetectionAgent] as const;
+export const AGENTS = [dataQualityAgent, opportunityFinderAgent, deadlineWatcherAgent, mandateWatcherAgent, duplicateDetectionAgent, ...AI_AGENTS] as const;
 export const AGENTS_BY_ID = new Map<string, AgentDefinition<Record<string, never>>>(AGENTS.map((a) => [a.id, a]));

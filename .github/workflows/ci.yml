@@ -65,3 +65,8 @@ jobs:
           AUTH_RATE_LIMIT_SIGNUP: "50"
           AUTH_RATE_LIMIT_SIGNIN: "100"
         run: pnpm exec playwright test --trace off
+      - name: Tests de bout en bout des fonctions d'IA (faux serveur d'IA, aucun appel réel)
+        working-directory: apps/web
+        env:
+          E2E_DATABASE_URL_OWNER: postgres://app_owner:ci_owner@localhost:5432/immopilot_test
+        run: pnpm exec playwright test -c playwright.ia.config.ts --trace off

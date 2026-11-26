@@ -10,18 +10,15 @@
  * - chaque appel est enregistré (jetons, coût), jamais le texte des questions ni des réponses.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { withTenant } from "@immopilot/db";
-import { aiCostMicroUsd, aiDecision, AI_GATE_MESSAGES, OVERAGE_UNIT_CENTS, parisMonthStart, recapLines, type AiDecision, type AiGateReason } from "@immopilot/domain";
+import { AI_GATE_MESSAGES, recapLines, type AiDecision, type AiGateReason } from "@immopilot/domain";
 import type { AgencyContext } from "../agency/context";
 import { ROLE_LABELS } from "../auth/roles";
-import { overageState } from "../billing/overage";
-import { agencyPlanAndUsage, quotaFor } from "../billing/plan";
 import { activeProfiles, listProperties } from "../crm/data";
 import { PROPERTY_STATUS } from "../crm/labels";
 import { fmt } from "../format";
 import { recapData } from "../recap/data";
-import { getTenantPool } from "../server/db";
 import { aiConfig } from "./config";
+import { aiDecisionFor, anthropic, recordAiRun } from "./run";
 import { guideAsText } from "./guide";
 
 export interface ChatTurn {
@@ -37,16 +34,7 @@ const MAX_PROFILES = 40;
 
 /** L'IA peut-elle être utilisée maintenant par cet utilisateur, et l'appel sera-t-il facturé à l'usage ? */
 export async function assistantDecision(ctx: AgencyContext): Promise<AiDecision> {
-  const config = aiConfig();
-  if (!config.enabled) return { reason: "desactivee", overage: false };
-  const [{ current, usage }, overage] = await Promise.all([agencyPlanAndUsage(ctx), overageState(ctx)]);
-  const check = quotaFor(current, usage, "copilot", 0);
-  const budgetLeft = await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) =>
-    (await c.query<{ ok: boolean }>("SELECT app.ai_budget_left($1, $2) AS ok", [parisMonthStart(new Date()), config.monthlyBudgetMicroUsd])).rows[0]?.ok ?? false);
-  return aiDecision({
-    enabled: true, role: ctx.role, limit: check.limit, used: check.used, budgetLeft,
-    overage: { billable: overage.billable, capCents: overage.capCents, spentCents: overage.month.cents, unitCents: OVERAGE_UNIT_CENTS.copilot },
-  });
+  return aiDecisionFor(ctx, "copilot");
 }
 
 /** L'IA peut-elle être utilisée maintenant par cet utilisateur ? */
@@ -96,8 +84,6 @@ N'invente jamais de chiffre, de prix, de bien ni de fonction qui n'existe pas.
 Tu ne connais pas les noms ni les coordonnées des contacts : ils ne te sont pas transmis.
 Pour une question juridique, fiscale ou une estimation officielle, rappelle que ta réponse est indicative et qu'il faut vérifier auprès d'un professionnel.`;
 
-let client: Anthropic | null = null;
-const anthropic = () => (client ??= new Anthropic());
 
 export async function askAssistant(ctx: AgencyContext, history: ChatTurn[], question: string): Promise<AssistantResult> {
   const decision = await assistantDecision(ctx);
@@ -143,15 +129,6 @@ export async function askAssistant(ctx: AgencyContext, history: ChatTurn[], ques
     if (!(error instanceof Anthropic.APIError)) throw error;
   }
 
-  await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, (_db, c) =>
-    c.query(
-      `INSERT INTO app.ai_runs (org_id, user_id, feature, model, status, input_tokens, output_tokens, cost_microusd, overage_cents)
-       VALUES ($1, $2, 'copilot', $3, $4, $5, $6, $7, $8)`,
-      [
-        ctx.org.id, ctx.user.id, config.model, status, inputTokens, outputTokens, aiCostMicroUsd(config.model, inputTokens, outputTokens),
-        // Au-delà du forfait, seul un échange réussi est facturé (2 centimes).
-        decision.overage && status === "ok" ? OVERAGE_UNIT_CENTS.copilot : 0,
-      ],
-    ));
+  await recordAiRun(ctx, { feature: "copilot", model: config.model, status, inputTokens, outputTokens, overage: decision.overage });
   return result;
 }
