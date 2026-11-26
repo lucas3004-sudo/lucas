@@ -56,7 +56,7 @@ test("un négociateur suit ses mandats : rappel avant la fin, mandat expiré sig
   await expect(page.getByText("La date de fin doit suivre la date de signature.")).toBeVisible();
 
   // Même numéro sur un autre bien de l'agence : refusé.
-  await createProperty(page, "2 place gambetta amiens", "2 Place Gambetta 80000 Amiens");
+  await createProperty(page, "12 rue des jacobins amiens", "12 Rue des Jacobins 80000 Amiens");
   await saveMandate(page, { number: "M-2026-042" });
   await expect(page.getByText("Ce numéro de mandat est déjà utilisé dans l'agence.")).toBeVisible();
 
