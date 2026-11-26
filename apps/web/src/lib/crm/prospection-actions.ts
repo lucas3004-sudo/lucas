@@ -6,7 +6,7 @@
  */
 import { withTenant } from "@immopilot/db";
 import {
-  defaultFollowUpOn, FOLLOW_UP_PREFIX, followUpTitle, PROSPECTION_STATUSES, prospectionEffects, utcToParisLocal,
+  appendNote, defaultFollowUpOn, FOLLOW_UP_PREFIX, followUpTitle, PROSPECTION_STATUSES, prospectionEffects, utcToParisLocal,
 } from "@immopilot/domain";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -112,3 +112,21 @@ export async function setSellerContactAction(form: FormData): Promise<void> {
   refresh(id);
 }
 
+/** Note de prospection datée, ajoutée aux notes du bien (« appelée, rappeler après les vacances »). */
+export async function addProspectionNoteAction(form: FormData): Promise<void> {
+  const ctx = await requireAgency();
+  if (ctx.role === "lecture") return;
+  const id = UUID.parse(form.get("id"));
+  const note = z.string().trim().min(2).max(1000).safeParse(form.get("note"));
+  if (!note.success) return;
+  const added = await withTenant(getTenantPool(), { orgId: ctx.org.id, userId: ctx.user.id }, async (_db, c) => {
+    const prop = (await c.query<{ notes: string | null }>("SELECT notes FROM app.properties WHERE id = $1 AND prospection_status IS NOT NULL", [id])).rows[0];
+    if (!prop) return false;
+    const updated = await c.query("UPDATE app.properties SET notes = $2, updated_at = now() WHERE id = $1",
+      [id, appendNote(prop.notes, note.data, ctx.user.name, today())]);
+    return !!updated.rowCount;
+  });
+  if (!added) return;
+  await audit({ orgId: ctx.org.id, userId: ctx.user.id, action: "bien_agence.note", targetType: "bien", targetId: id });
+  refresh(id);
+}

@@ -6,14 +6,14 @@ import { z } from "zod";
 import { requireAgency } from "@/lib/agency/context";
 import { deletePropertyAction, notifyColleagueAction, setPropertyStatusAction, updatePropertyPriceAction } from "@/lib/crm/actions";
 import { activeProfiles, agencyMembers, asMatchProfile, asMatchProperty, contactName, currentConsents, getContact, getProperty, listContacts, listTasks } from "@/lib/crm/data";
-import { followPropertyAction, setSellerContactAction } from "@/lib/crm/prospection-actions";
+import { addProspectionNoteAction, followPropertyAction, setSellerContactAction } from "@/lib/crm/prospection-actions";
 import { ProspectionStatusForm } from "../../prospection/status-form";
 import { MATCHABLE_STATUSES, PROPERTY_STATUS } from "@/lib/crm/labels";
 import { parseWeights, WEIGHT_KEYS } from "@/lib/crm/weights";
 import { fmt } from "@/lib/format";
 import { buttonClass, LinkButton } from "@/ui/button";
 import { ConfirmSubmit, SubmitButton } from "@/ui/client";
-import { Input, Select } from "@/ui/form";
+import { Input, Select, Textarea } from "@/ui/form";
 import { Alert, Badge, Card, CardBody, CardHeader, PageHeader } from "@/ui/surface";
 import {
   canDeleteRecord,
@@ -181,6 +181,17 @@ export default async function PropertyPage({ params, searchParams }: { params: P
                 defaultFollowUpOn={defaultFollowUpOn(today)}
                 label={property.address_label}
               />
+            ) : null}
+            {canEdit && ctx.role !== "lecture" ? (
+              <form action={addProspectionNoteAction} className="space-y-2">
+                <input type="hidden" name="id" value={property.id} />
+                <label className="block space-y-1 text-[13px] text-ink">
+                  <span className="block font-medium">Ajouter une note</span>
+                  <Textarea name="note" required minLength={2} maxLength={1000} rows={2} placeholder="Ex. : appelée le matin, rappeler après les vacances." />
+                </label>
+                <SubmitButton size="sm" variant="secondary">Ajouter la note</SubmitButton>
+                <p className="text-xs text-ink-muted">Datée et signée, elle s&apos;ajoute aux notes du bien (partie « Caractéristiques »).</p>
+              </form>
             ) : null}
             <div className="space-y-2 border-t border-line pt-4">
               <p className="text-sm text-ink">

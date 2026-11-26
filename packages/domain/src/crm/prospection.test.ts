@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendNote,
   defaultFollowUpOn,
   followUpTitle,
   isProspectionStatus,
+  lastNote,
   ownerReach,
   PROSPECTION_LABELS,
   PROSPECTION_STATUSES,
@@ -69,5 +71,17 @@ describe("prospection", () => {
     expect(ownerReach({ ...base, phoneConsent: true, emailConsent: true }).message).toBe("Accord enregistré : vous pouvez le contacter par téléphone et par e-mail.");
     // Accord sans le moyen correspondant : rien à proposer.
     expect(ownerReach({ ...base, email: null, emailConsent: true })).toMatchObject({ call: false, email: false });
+  });
+
+  it("notes datées : ajoutées à la suite, sur une ligne, les plus anciennes retirées si la place manque", () => {
+    const first = appendNote(null, "Appelée, rappeler après les vacances", "Paul Prospection", "2026-11-26");
+    expect(first).toBe("26/11/2026 · Paul Prospection : Appelée, rappeler après les vacances");
+    const second = appendNote(first, "  Rendez-vous\n  le 3/12 à 10 h ", "Paul Prospection", "2026-11-27");
+    expect(second.split("\n")).toEqual([first, "27/11/2026 · Paul Prospection : Rendez-vous le 3/12 à 10 h"]);
+    expect(lastNote(second)).toBe("27/11/2026 · Paul Prospection : Rendez-vous le 3/12 à 10 h");
+    expect(lastNote(null)).toBeNull();
+    const full = appendNote("x".repeat(60) + "\n" + "y".repeat(30), "nouvelle", "A", "2026-11-26", 80);
+    expect(full).toBe("y".repeat(30) + "\n26/11/2026 · A : nouvelle");
+    expect(full.length).toBeLessThanOrEqual(80);
   });
 });

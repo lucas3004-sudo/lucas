@@ -118,3 +118,21 @@ export function ownerReach(input: OwnerReachInput): { call: boolean; email: bool
     message: "Aucun accord enregistré : ni appel ni e-mail de prospection. Écrivez-lui un courrier ou proposez une estimation, puis notez son accord sur sa fiche.",
   };
 }
+
+/**
+ * Ajoute une note datée aux notes du bien (champ existant, 5 000 caractères au plus). Si la place
+ * manque, les notes les plus anciennes sont retirées, ligne entière par ligne entière.
+ */
+export function appendNote(existing: string | null, note: string, author: string, day: string, max = 5000): string {
+  const [y, m, d] = day.split("-");
+  const line = `${d}/${m}/${y} · ${author.trim() || "Membre"} : ${note.trim().replace(/\s*\n\s*/g, " ")}`.slice(0, max);
+  let lines = [...(existing?.trim() ? existing.trim().split("\n") : []), line];
+  while (lines.length > 1 && lines.join("\n").length > max) lines = lines.slice(1);
+  return lines.join("\n");
+}
+
+/** Dernière note (la plus récente), pour la liste de prospection. */
+export function lastNote(notes: string | null): string | null {
+  const lines = notes?.trim() ? notes.trim().split("\n") : [];
+  return lines.length ? lines[lines.length - 1]! : null;
+}

@@ -694,8 +694,9 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
     - la base note chaque changement de statut de prospection dans l'historique du bien (déclencheur de D-061) ;
     - le journal d'audit garde l'identifiant et le statut, jamais de donnée personnelle ;
   - **droits** : ceux du bien (RLS existante). Le responsable, le gérant, les managers et les assistants font avancer ; un collègue voit un bien partagé sans le modifier ; la lecture seule ne modifie rien ; l'autre agence ne voit rien ;
+  - **notes** : « Ajouter une note » (section Prospection du bien) ajoute une ligne datée et signée aux notes du bien, qui existent déjà. Si les 5 000 caractères sont dépassés, les plus anciennes sont retirées. La liste affiche la dernière note ;
   - l'export complet de l'agence (CSV des biens) reprend le statut de prospection et le lien de l'annonce.
 - **Tests** :
   - base : 3 tests (valeurs refusées, historique, droits), plus la demande d'estimation qui arrive « à contacter » ;
-  - domaine : 6 tests ;
+  - domaine : 7 tests ;
   - bout en bout : parcours complet de prospection, estimation publique, accessibilité des deux nouvelles pages.

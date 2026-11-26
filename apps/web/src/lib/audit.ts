@@ -47,7 +47,8 @@ export type AuditAction =
   | "agence.page_estimation"
   | "biens.export_poliris"
   | "bien_agence.prospection"
-  | "bien_agence.proprietaire";
+  | "bien_agence.proprietaire"
+  | "bien_agence.note";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -92,6 +93,7 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "biens.export_poliris": "Annonces exportées au format SeLoger (Poliris)",
   "bien_agence.prospection": "Statut de prospection d'un bien modifié",
   "bien_agence.proprietaire": "Propriétaire d'un bien renseigné",
+  "bien_agence.note": "Note de prospection ajoutée",
 };
 
 export async function audit(params: {

@@ -72,6 +72,11 @@ test("un négociateur suit un bien repéré, de l'annonce du particulier jusqu'a
   await expect(page.getByText(/Aucun accord enregistré : ni appel ni e-mail de prospection/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Appeler" })).toHaveCount(0);
 
+  // Notes de prospection datées, ajoutées aux notes du bien.
+  await page.getByLabel("Ajouter une note").fill("Appelée par sa voisine : vend avant l'été.");
+  await page.getByRole("button", { name: "Ajouter la note" }).click();
+  await expect(page.getByText(/· Paul Prospection : Appelée par sa voisine : vend avant l'été\./)).toBeVisible();
+
   // Elle donne son accord par téléphone (preuve notée sur sa fiche) : l'appel devient possible.
   await page.goto(contactPath);
   await page.getByText("Enregistrer un consentement ou un retrait").click();
@@ -85,6 +90,7 @@ test("un négociateur suit un bien repéré, de l'annonce du particulier jusqu'a
   await expect(item.locator("span").getByText("À contacter", { exact: true })).toBeVisible();
   await expect(item.getByText("85 m² · 4 pièce(s)", { exact: false })).toBeVisible();
   await expect(item.getByText("Accord enregistré : vous pouvez le contacter par téléphone.")).toBeVisible();
+  await expect(item.getByText(/^Dernière note : .* · Paul Prospection : Appelée par sa voisine : vend avant l'été\.$/)).toBeVisible();
   await expect(item.getByRole("link", { name: "Appeler" })).toHaveAttribute("href", "tel:0622334455");
   await expect(item.getByRole("link", { name: "Écrire un e-mail" })).toHaveCount(0);
   await expect(item.getByRole("link", { name: `Voir l'annonce d'origine : ${ADDRESS}` })).toHaveAttribute("href", "https://www.exemple.fr/annonce/42");
@@ -142,4 +148,5 @@ test("un négociateur suit un bien repéré, de l'annonce du particulier jusqu'a
   await page.goto("/app/journal");
   await expect(page.getByRole("cell", { name: "Statut de prospection d'un bien modifié", exact: true }).first()).toBeVisible();
   await expect(page.getByRole("cell", { name: "Propriétaire d'un bien renseigné", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Note de prospection ajoutée", exact: true }).first()).toBeVisible();
 });

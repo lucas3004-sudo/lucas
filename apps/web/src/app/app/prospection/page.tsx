@@ -1,5 +1,5 @@
 import {
-  defaultFollowUpOn, isProspectionClosed, isProspectionStatus, ownerReach, PROSPECTION_LABELS, PROSPECTION_STATUSES, prospectionCounts,
+  defaultFollowUpOn, isProspectionClosed, isProspectionStatus, lastNote, ownerReach, PROSPECTION_LABELS, PROSPECTION_STATUSES, prospectionCounts,
   utcToParisLocal, type ProspectionStatus,
 } from "@immopilot/domain";
 import type { Metadata } from "next";
@@ -129,6 +129,7 @@ function ProspectRow({ p, today, canEdit, owner }: { p: Prospect; today: string;
           ) : null}
         </p>
         {p.sellerHidden ? null : <p className="text-xs text-ink-muted">{reach.message}</p>}
+        {lastNote(p.notes) ? <p className="text-xs text-ink">Dernière note : {lastNote(p.notes)}</p> : null}
         {reach.call || reach.email ? (
           <div className="flex flex-wrap gap-2 pt-1">
             {reach.call && p.seller?.phone ? (
