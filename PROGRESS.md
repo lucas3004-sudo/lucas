@@ -35,6 +35,8 @@ d'acceptation sont vérifiés.
 
 **Page « Estimez votre bien »** : page publique de chaque agence (ouverte par le gérant ou un manager), fourchette indicative tirée des ventes DVF, demande de rappel avec accord par canal ; la demande devient contact vendeur, bien « prospect » et tâche (D-067).
 
+**Export vers les portails** : fichier au format SeLoger « Poliris » 4.09 (annonces complètes, photos), prêt pour les portails et les passerelles ; branchement automatique en attente d'un partenariat (D-070).
+
 **Diffusion des annonces** : Pack annonce (titre, description, ZIP du texte et des photos), suivi des portails où le bien est en ligne, rappel de retrait quand le bien est vendu (D-066). Envoi automatique : en attente d'un partenariat de multidiffusion.
 
 **Sécurité du compte** : double authentification par application (TOTP) avec codes de secours, essais limités, rappel au gérant et aux managers ([détails](docs/securite-compte.md)).
@@ -129,6 +131,9 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-26, fournisseurs validés (D-071)** : devis à demander à Yanport et Stream Estate (annonces), Ubiflow et Gédéon (multidiffusion) ; chaque agence paie sa passerelle ; après signature, carte et prospection d'abord. E-mails prêts : `docs/partenaires/demandes-de-devis-2026-11.md`. **Bloqué : réponse des fournisseurs (envoi par le fondateur).**
+- **2026-11-26, étude des fournisseurs** : annonces de particuliers (Stream Estate, Yanport, Melo, Casafari…) et multidiffusion (Ubiflow, Gédéon, AllYouCanPost, portails en direct), prix, budget de 1 à 50 agences, plan d'intégration ; en attente de validation (`docs/research/etude-fournisseurs-2026-11.md`).
+- **2026-11-26, export SeLoger** : export Poliris 4.09 des annonces (D-070). Agents IA fusionnés ([PR n° 32](https://github.com/lucas3004-sudo/lucas/pull/32)), sans migration.
 - **2026-11-24, agents IA** : quatre fonctions d'IA construites et testées une par une (rédaction et analyse d'annonce, relances, récap), éteintes tant que la clé Anthropic manque (D-069).
 - **2026-11-24, fusion** : agents automatiques, crédits IA, diffusion, page « Estimez votre bien » et import Poliris fusionnés ([PR n° 31](https://github.com/lucas3004-sudo/lucas/pull/31)) ; migrations 0023 à 0026 appliquées en préproduction (26 migrations, 104 règles d'accès, même empreinte qu'en local).
 - **2026-11-23, reprise de l'ancien logiciel** : import de l'export Poliris (ZIP) des logiciels de transaction, pour remplir la carte sans saisie (D-068).

@@ -17,6 +17,40 @@ Une **passerelle de multidiffusion** comme Ubiflow sert d'intermédiaire. Le log
 - **Pack annonce** : le titre et la description prêts à coller, avec les mentions obligatoires vérifiées (DPE, honoraires, copropriété, Géorisques), et un fichier ZIP avec le texte et toutes les photos.
 - **Suivi de la diffusion** : les portails où chaque bien est en ligne, le lien de l'annonce, la date. Quand le bien est vendu ou retiré, un rappel est créé pour retirer chaque annonce.
 
+## Prix observés (recherche du 26/11/2026, à confirmer par devis)
+
+- Diffusion vers un seul portail : dès **25 € HT/mois** par passerelle (site d'Ubiflow, cité par les comparatifs).
+- Packs multi-portails, par point de vente, avec engagement et frais d'installation : Initial **45 à 55 €**, Pro **89 à 95 €**, Expert **119 à 135 € HT/mois** (les comparatifs ne concordent pas).
+- Coût constaté pour une petite agence (environ 30 biens, 5 portails) : **100 à 150 € HT/mois** pour Ubiflow seul, selon un comparatif publié par un concurrent (Diffuze).
+- Les abonnements aux portails ne sont pas inclus. Aucun tarif « éditeur » public : devis nécessaire.
+
+## Ce qui est prêt depuis le 26/11/2026 (D-070)
+
+- **Export au format SeLoger « Poliris » 4.09** (page « Biens », gérant et managers). Il produit un ZIP avec `Annonces.csv` (329 champs par annonce), `Config.txt`, `Photos.cfg` et les photos.
+- Seuls les biens sous mandat dont les mentions obligatoires sont complètes y figurent.
+- C'est le format qu'acceptent SeLoger, Logic-Immo et la plupart des passerelles. Il reste à le **brancher** : identifiant agence fourni par le portail ou la passerelle, et mode d'envoi (FTP ou HTTPS).
+
+## E-mail aux portails, en direct (par vous)
+
+À envoyer à l'équipe Partenaires Logiciel de SeLoger (adresse indiquée dans sa spécification technique : partners@groupeseloger.com, à vérifier). À adapter pour Leboncoin Immo et Bien'ici.
+
+> **Objet** : Demande de partenariat éditeur, flux d'annonces Poliris
+>
+> Bonjour,
+>
+> Je développe ImmoPilot AI, un logiciel de gestion pour les petites agences immobilières en France. Notre logiciel produit déjà un export de leurs annonces au format Poliris 4.09 (Annonces.csv, Config.txt, Photos.cfg, photos jointes).
+>
+> Nous souhaitons devenir éditeur partenaire pour que nos agences clientes, abonnées chez vous, diffusent leurs annonces directement depuis ImmoPilot. Pourriez-vous nous indiquer :
+> 1. la procédure de certification d'une nouvelle passerelle et l'environnement de test disponible ;
+> 2. le mode d'envoi attendu (FTP, HTTPS) et la fréquence ;
+> 3. l'encodage attendu pour Annonces.csv ;
+> 4. les éventuels frais pour l'éditeur ;
+> 5. la marche à suivre pour activer le flux d'une agence (identifiant agence).
+>
+> Merci par avance,
+>
+> [Votre nom] — ImmoPilot AI
+
 ## Questions à poser à la passerelle
 
 1. Proposez-vous un **programme partenaire pour les éditeurs de logiciels** ? Quelles conditions (frais, engagement, certification) ?

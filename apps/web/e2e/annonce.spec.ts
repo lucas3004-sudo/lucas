@@ -4,6 +4,7 @@
  */
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { unzipSync } from "fflate";
 
 const run = Date.now().toString(36);
 
@@ -86,6 +87,22 @@ test("un gérant complète l'annonce d'un bien jusqu'à ce que toutes les mentio
   await expect(text).toContainText("Logement à consommation énergétique excessive");
   await expect(text).toContainText("Nombre de lots : 24.");
   await expect(text).toContainText("www.georisques.gouv.fr");
+
+  // Export au format SeLoger « Poliris » (D-070) : l'annonce complète part dans le fichier des portails.
+  await page.goto("/app/proprietes");
+  await expect(page.getByTestId("export-poliris")).toContainText("1 annonce(s) prête(s)");
+  const exportZip = await page.request.get(new URL("/api/v1/annonces/poliris", page.url()).toString());
+  expect(exportZip.status()).toBe(200);
+  expect(exportZip.headers()["content-disposition"]).toMatch(/^attachment; filename="annonces-seloger-.+\.zip"$/);
+  const exported = unzipSync(new Uint8Array(await exportZip.body()));
+  expect(Object.keys(exported).sort()).toEqual(["Annonces.csv", "Config.txt", "Photos.cfg"]);
+  const annonces = new TextDecoder("windows-1252").decode(exported["Annonces.csv"]);
+  expect(annonces.split("\r\n").filter(Boolean)).toHaveLength(1);
+  expect(annonces).toMatch(/^"[^"]+"!#"[^"]+"!#"Vente"!#"Appartement"!#"80000"!#"Amiens"!#"France"!#"8 Boulevard du Port"/);
+  expect(annonces.split("!#")).toHaveLength(329);
+  expect(new TextDecoder().decode(exported["Config.txt"])).toContain("Version=4.09");
+  await page.goBack();
+  await page.goto(`${propertyPath}/annonce`);
 
   // Diffusion (D-066) : pack annonce (texte et photos), portails suivis, rappel de retrait à la vente.
   await expect(page.getByRole("button", { name: "Copier le titre" })).toBeVisible();

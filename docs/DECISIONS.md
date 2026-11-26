@@ -649,3 +649,22 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - sans clé Anthropic, ces agents sont affichés mais éteints (« IA non activée ») et ne passent pas dans le tour quotidien.
 - **Tests** : moteur (5 éléments au plus, approbation obligatoire, arrêt au quota), lecture des réponses, données envoyées. De bout en bout, `playwright.ia.config.ts` démarre le site avec un **faux serveur d'IA local** : même code d'appel qu'en ligne, sans appel réel ni coût. Le test vérifie aussi qu'aucune donnée de contact ne part et que la consommation est comptée.
 - **À vérifier avec la vraie clé** : la qualité des textes rédigés par Haiku 5.5 (un modèle plus fort, Sonnet 5.5, reste possible par `AI_MODEL`).
+
+## D-070 — Export des annonces au format SeLoger « Poliris »
+- **Date** : 2026-11-26 · **Statut** : Acceptée (demande du fondateur : la publication automatique sur les portails, pour que les agences puissent quitter leur logiciel).
+- **Décision** :
+  - page « Biens », gérant et managers : « Envoyer aux portails » affiche le nombre d'annonces prêtes et à compléter, puis télécharge un **ZIP au format Poliris 4.09**. Il contient `Annonces.csv` (329 champs par annonce, entre guillemets, séparés par `!#`, fins de ligne CRLF, encodage Windows-1252), `Config.txt`, `Photos.cfg` (mode FULL) et les photos jointes ;
+  - seuls les biens **sous mandat** dont les **mentions obligatoires** sont complètes partent. Le texte est celui de la fiche annonce, avec les mentions. L'adresse est transmise (placement du bien), comme le font les logiciels d'agence ; le portail décide de ce qu'il affiche ;
+  - champs repris : référence (numéro de mandat, sinon identifiant), type, adresse, code postal, ville, prix, honoraires (pourcentage, à la charge de, prix hors honoraires), surface, pièces, titre, texte, équipements, exclusivité, DPE et GES, copropriété (lots, charges), photos ;
+  - le fichier est **relu par l'import Poliris d'ImmoPilot** (test aller-retour) ; chaque export est journalisé.
+- **Reste à faire pour l'envoi automatique** : obtenir l'identifiant agence et le mode d'envoi auprès du portail (partenariat éditeur) ou de la passerelle (Ubiflow, devis), et confirmer avec eux l'encodage attendu. E-mails prêts dans `docs/partenaires/multidiffusion-ubiflow.md`.
+- **Coûts observés (26/11/2026)** : Ubiflow de 25 € HT/mois par portail à 135 € HT/mois par agence, plus l'installation, payés par l'agence. Partenariat direct avec un portail : généralement sans frais pour l'éditeur, à confirmer.
+
+## D-071 — Fournisseurs à consulter : annonces de particuliers et multidiffusion
+- **Date** : 2026-11-26 · **Statut** : Acceptée (choix du fondateur, après l'étude `docs/research/etude-fournisseurs-2026-11.md`).
+- **Décision** :
+  - **annonces de particuliers** : demander un devis à **Yanport** et à **Stream Estate**. On ne signe qu'avec celui qui garantit par écrit l'origine des annonces, les droits sur les photos et les textes, et le traitement des coordonnées (RGPD). Les aspirateurs non autorisés restent exclus (D-002) ;
+  - **multidiffusion** : demander un devis « éditeur » à **Ubiflow** et à **Gédéon**. On garde celui qui confirme une API (ou un flux) pour publier, modifier et retirer, avec les statuts par portail, les erreurs, les contacts reçus et les statistiques ;
+  - **paiement** : chaque agence paie sa passerelle et ses abonnements aux portails ; ImmoPilot ne paie rien et pilote tout depuis le logiciel ;
+  - **ordre de développement, après signature** : d'abord la carte des annonces de particuliers et la prospection (fiche, analyse IA, liste et statuts dans le CRM existant), ensuite la multidiffusion. Les deux passent par des connecteurs interchangeables (plan de l'étude, section 6).
+- **Aucune intégration n'est codée avant la réponse des fournisseurs et la signature.** E-mails prêts : `docs/partenaires/demandes-de-devis-2026-11.md`.
