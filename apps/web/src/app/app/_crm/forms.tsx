@@ -225,18 +225,27 @@ export function PropertyForm({
   canAssign,
   meId,
   defaultVisibility,
+  prospection = false,
 }: {
   members: Member[];
   canAssign: boolean;
   meId: string;
   defaultVisibility: "private" | "agency";
+  /** Bien repéré pour la prospection (D-072) : toujours « prospect », avec le lien de l'annonce. */
+  prospection?: boolean;
 }) {
   return (
     <ActionForm action={createPropertyAction} initial={INITIAL} className="space-y-5 px-5 py-5">
       {(state, pending) => (
         <>
           <Feedback state={state} />
+          {prospection ? <input type="hidden" name="prospection" value="1" /> : null}
           <AddressField />
+          {prospection ? (
+            <Field label="Lien de l'annonce (facultatif)" htmlFor="sourceUrl" hint="L'annonce du particulier où vous avez repéré le bien. Elle reste sur le site d'origine : seul le lien est gardé.">
+              <Input id="sourceUrl" name="sourceUrl" type="url" inputMode="url" maxLength={500} placeholder="https://" />
+            </Field>
+          ) : null}
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Type de bien" htmlFor="type">
               <Select id="type" name="type">
@@ -263,22 +272,26 @@ export function PropertyForm({
                 ))}
               </Select>
             </Field>
-            <Field label="Statut" htmlFor="status">
-              <Select id="status" name="status" defaultValue="mandat">
-                {Object.entries(PROPERTY_STATUS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Mandat" htmlFor="mandateType">
-              <Select id="mandateType" name="mandateType" defaultValue="">
-                <option value="">Non précisé</option>
-                <option value="simple">Simple</option>
-                <option value="exclusif">Exclusif</option>
-              </Select>
-            </Field>
+            {prospection ? null : (
+              <>
+                <Field label="Statut" htmlFor="status">
+                  <Select id="status" name="status" defaultValue="mandat">
+                    {Object.entries(PROPERTY_STATUS).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Mandat" htmlFor="mandateType">
+                  <Select id="mandateType" name="mandateType" defaultValue="">
+                    <option value="">Non précisé</option>
+                    <option value="simple">Simple</option>
+                    <option value="exclusif">Exclusif</option>
+                  </Select>
+                </Field>
+              </>
+            )}
             <VisibilityField defaultValue={defaultVisibility} hint="Privé : visible seulement par le responsable, le gérant et les managers." />
             <OwnerField members={members} canAssign={canAssign} meId={meId} />
           </div>
@@ -288,7 +301,7 @@ export function PropertyForm({
           </Field>
           <p className="text-xs text-ink-muted">Ces caractéristiques sont déclarées : elles ne sont pas vérifiées.</p>
           <SubmitButton pending={pending} pendingLabel="Vérification de l'adresse…">
-            Créer le bien
+            {prospection ? "Ajouter à ma prospection" : "Créer le bien"}
           </SubmitButton>
         </>
       )}

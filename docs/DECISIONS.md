@@ -668,3 +668,34 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - **paiement** : chaque agence paie sa passerelle et ses abonnements aux portails ; ImmoPilot ne paie rien et pilote tout depuis le logiciel ;
   - **ordre de développement, après signature** : d'abord la carte des annonces de particuliers et la prospection (fiche, analyse IA, liste et statuts dans le CRM existant), ensuite la multidiffusion. Les deux passent par des connecteurs interchangeables (plan de l'étude, section 6).
 - **Aucune intégration n'est codée avant la réponse des fournisseurs et la signature.** E-mails prêts : `docs/partenaires/demandes-de-devis-2026-11.md`.
+
+## D-072 — Prospection : suivre les biens à rentrer en mandat dans le CRM existant
+- **Date** : 2026-11-26 · **Statut** : Acceptée (choix du fondateur : construire la prospection dès maintenant, sans attendre les fournisseurs d'annonces de D-071).
+- **Décision** :
+  - **pas de second CRM**. Un bien suivi en prospection reste un bien de l'agence, avec trois colonnes de plus (migration 0027) :
+    - un statut de prospection : à contacter, contacté, en attente, relance à effectuer, rendez-vous obtenu, mandat obtenu, sans suite ;
+    - un favori ;
+    - le lien https de l'annonce d'origine.
+    Le propriétaire est le contact vendeur du bien, ses accords restent des consentements, et les relances sont des tâches ;
+  - **entrées dans la liste** :
+    - « Ajouter un bien repéré » (formulaire de bien en mode prospection : adresse vérifiée par la BAN, lien de l'annonce) ;
+    - « Suivre en prospection » sur un bien déjà saisi au statut « prospect » ;
+    - automatiquement, chaque demande de la page « Estimez votre bien » (D-067), « à contacter ».
+    Plus tard, les annonces d'un fournisseur sous licence (D-071) rempliront la même liste ;
+  - **effets** :
+    - « Relance à effectuer » crée une tâche datée pour le responsable du bien (7 jours par défaut, jamais en double : une seconde relance décale la date) ;
+    - « Mandat obtenu » passe un prospect « sous mandat » ;
+    - à l'inverse, un bien passé sous mandat (ou plus loin) depuis sa page devient « Mandat obtenu », et un bien retiré « Sans suite » ;
+  - **contact du propriétaire** :
+    - les boutons « Appeler » et « Écrire un e-mail » n'apparaissent qu'avec un accord en cours de validité pour ce canal ;
+    - un numéro seul ne suffit pas (démarchage téléphonique sur accord préalable depuis le 11/08/2026 ; e-mail de prospection sur accord) ;
+    - sinon, l'écran propose le courrier ou l'estimation ;
+  - **historique et journal** :
+    - la base note chaque changement de statut de prospection dans l'historique du bien (déclencheur de D-061) ;
+    - le journal d'audit garde l'identifiant et le statut, jamais de donnée personnelle ;
+  - **droits** : ceux du bien (RLS existante). Le responsable, le gérant, les managers et les assistants font avancer ; un collègue voit un bien partagé sans le modifier ; la lecture seule ne modifie rien ; l'autre agence ne voit rien ;
+  - l'export complet de l'agence (CSV des biens) reprend le statut de prospection et le lien de l'annonce.
+- **Tests** :
+  - base : 3 tests (valeurs refusées, historique, droits), plus la demande d'estimation qui arrive « à contacter » ;
+  - domaine : 6 tests ;
+  - bout en bout : parcours complet de prospection, estimation publique, accessibilité des deux nouvelles pages.

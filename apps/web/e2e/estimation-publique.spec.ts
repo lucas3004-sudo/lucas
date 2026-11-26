@@ -75,6 +75,13 @@ test("une agence ouvre sa page d'estimation et reçoit la demande d'un propriét
   await expect(page.locator("span").getByText("Accordé", { exact: true })).toBeVisible();
   await page.goto("/app/proprietes");
   await expect(page.getByRole("link", { name: /8 Boulevard du Port 80000 Amiens/ })).toBeVisible();
+  // Prospection (D-072) : la demande y arrive « à contacter » ; l'e-mail est possible (accord), pas l'appel.
+  await page.goto("/app/prospection");
+  const lead = page.getByRole("listitem", { name: "8 Boulevard du Port 80000 Amiens" });
+  await expect(lead.locator("span").getByText("À contacter", { exact: true })).toBeVisible();
+  await expect(lead.getByText("Accord enregistré : vous pouvez le contacter par e-mail.")).toBeVisible();
+  await expect(lead.getByRole("link", { name: "Écrire un e-mail" })).toHaveAttribute("href", `mailto:lucie-${run}@test.invalid`);
+  await expect(lead.getByRole("link", { name: "Appeler" })).toHaveCount(0);
 
   // Page refermée : introuvable pour le public.
   await page.goto("/app/parametres");

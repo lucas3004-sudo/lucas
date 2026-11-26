@@ -956,7 +956,9 @@ describe("page publique « Estimez votre bien » (migration 0026)", () => {
       expect(contact).toEqual({ owner_user_id: users.negoA, roles: ["vendeur"], source: "Estimation en ligne", visibility: "agency" });
       expect((await c.query("SELECT channel, status FROM app.contact_consents WHERE contact_id = $1 ORDER BY channel", [id])).rows)
         .toEqual([{ channel: "email", status: "accorde" }, { channel: "telephone", status: "accorde" }]);
-      expect((await c.query("SELECT status, owner_user_id FROM app.properties WHERE seller_contact_id = $1", [id])).rows).toEqual([{ status: "prospect", owner_user_id: users.negoA }]);
+      // Prospection (migration 0027) : la demande arrive « à contacter » dans la liste de prospection.
+      expect((await c.query("SELECT status, prospection_status, owner_user_id FROM app.properties WHERE seller_contact_id = $1", [id])).rows)
+        .toEqual([{ status: "prospect", prospection_status: "a_contacter", owner_user_id: users.negoA }]);
       expect(await count(c, "app.tasks", "contact_id = $1 AND assignee_user_id = $2", [id, users.negoA])).toBe(1);
     });
     await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) => expect(await count(c, "app.contacts", "id = $1", [id])).toBe(0));
@@ -975,5 +977,60 @@ describe("page publique « Estimez votre bien » (migration 0026)", () => {
     await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query("SELECT * FROM app.public_lead_attempts")));
     await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>
       c.query("INSERT INTO app.public_lead_attempts (org_id, ip_hash) VALUES ($1, $2)", [A, ip(9)])));
+  });
+});
+
+describe("prospection (migration 0027)", () => {
+  const spotted = (userId: string, visibility: "private" | "agency", extra = "") => (_db: unknown, c: pg.PoolClient) =>
+    c.query(
+      `INSERT INTO app.properties (org_id, owner_user_id, visibility, status, type, address_label, ban_id, insee_code, created_by, price,
+         prospection_status, source_url${extra ? ", notes" : ""})
+       VALUES ($1, $2, $3, 'prospect', 'Maison', 'Bien repéré', 'ban-prosp', '80021', $2, 199000, 'a_contacter',
+         'https://www.exemple.fr/annonce/123'${extra ? ", $4" : ""}) RETURNING id`,
+      extra ? [A, userId, visibility, extra] : [A, userId, visibility],
+    ).then((r) => r.rows[0].id as string);
+
+  it("un bien repéré garde son lien d'annonce et son statut ; valeurs hors liste ou lien non https refusés", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, spotted(users.negoA, "agency"));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => {
+      expect((await c.query("SELECT prospection_status, prospection_favorite, source_url FROM app.properties WHERE id = $1", [id])).rows)
+        .toEqual([{ prospection_status: "a_contacter", prospection_favorite: false, source_url: "https://www.exemple.fr/annonce/123" }]);
+    });
+    await expect(withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) =>
+      c.query("UPDATE app.properties SET prospection_status = 'gagne' WHERE id = $1", [id]))).rejects.toMatchObject({ code: "23514" });
+    await expect(withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) =>
+      c.query("UPDATE app.properties SET source_url = 'http://www.exemple.fr/annonce' WHERE id = $1", [id]))).rejects.toMatchObject({ code: "23514" });
+    await expect(withTenant(pool, { orgId: A, userId: users.negoA }, (_db, c) =>
+      c.query("UPDATE app.properties SET source_url = 'https://exemple.fr/a b' WHERE id = $1", [id]))).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("la base note l'entrée en prospection et chaque changement de statut, avec leur auteur", async () => {
+    const id = await withTenant(pool, { orgId: A, userId: users.negoA }, spotted(users.negoA, "agency"));
+    await withTenant(pool, { orgId: A, userId: users.negoA }, async (_db, c) => {
+      await c.query("UPDATE app.properties SET prospection_status = 'contacte' WHERE id = $1", [id]);
+      await c.query("UPDATE app.properties SET prospection_favorite = true WHERE id = $1", [id]);
+      expect((await c.query("SELECT kind, old_value, new_value, actor_user_id FROM app.property_events WHERE property_id = $1 ORDER BY id", [id])).rows).toEqual([
+        { kind: "cree", old_value: null, new_value: "199000", actor_user_id: users.negoA },
+        { kind: "prospection", old_value: null, new_value: "a_contacter", actor_user_id: users.negoA },
+        { kind: "prospection", old_value: "a_contacter", new_value: "contacte", actor_user_id: users.negoA },
+      ]);
+    });
+  });
+
+  it("mêmes droits que le bien : le collègue lit un bien partagé sans le modifier, ne voit pas un bien privé ; l'autre agence rien", async () => {
+    const shared = await withTenant(pool, { orgId: A, userId: users.negoA }, spotted(users.negoA, "agency"));
+    const hidden = await withTenant(pool, { orgId: A, userId: users.negoA }, spotted(users.negoA, "private"));
+    await withTenant(pool, { orgId: A, userId: users.nego2A }, async (_db, c) => {
+      expect(await count(c, "app.properties", "id = $1 AND prospection_status IS NOT NULL", [shared])).toBe(1);
+      expect(await count(c, "app.properties", "id = $1", [hidden])).toBe(0);
+      expect((await c.query("UPDATE app.properties SET prospection_status = 'sans_suite' WHERE id = $1", [shared])).rowCount).toBe(0);
+    });
+    await withTenant(pool, { orgId: A, userId: users.lectureA }, async (_db, c) =>
+      expect((await c.query("UPDATE app.properties SET prospection_favorite = true WHERE id = $1", [shared])).rowCount).toBe(0));
+    // Contrôle positif : le gérant modifie.
+    await withTenant(pool, { orgId: A, userId: users.gerantA }, async (_db, c) =>
+      expect((await c.query("UPDATE app.properties SET prospection_status = 'rendez_vous' WHERE id = $1", [shared])).rowCount).toBe(1));
+    await withTenant(pool, { orgId: B, userId: users.gerantB }, async (_db, c) =>
+      expect(await count(c, "app.properties", "prospection_status IS NOT NULL")).toBe(0));
   });
 });

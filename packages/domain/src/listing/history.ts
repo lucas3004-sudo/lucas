@@ -3,7 +3,7 @@
  * date de mise en vente, durée en vente, évolution du prix.
  */
 
-export type PropertyEventKind = "cree" | "prix" | "statut" | "mandat";
+export type PropertyEventKind = "cree" | "prix" | "statut" | "mandat" | "prospection";
 
 export interface PropertyEvent {
   kind: PropertyEventKind;

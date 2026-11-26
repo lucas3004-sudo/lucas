@@ -1,5 +1,5 @@
 /** Éléments d'affichage partagés par les écrans du CRM (sans état : utilisables côté serveur). */
-import { CRITERION_LABELS, PROPERTY_FEATURES, type MatchResult, type PropertyFeature, type Satisfaction } from "@immopilot/domain";
+import { CRITERION_LABELS, PROPERTY_FEATURES, PROSPECTION_LABELS, type MatchResult, type PropertyFeature, type ProspectionStatus, type Satisfaction } from "@immopilot/domain";
 import type { AgencyContext } from "@/lib/agency/context";
 import { PROPERTY_STATUS, type PropertyStatus } from "@/lib/crm/labels";
 import { Check } from "@/ui/form";
@@ -52,6 +52,21 @@ const STATUS_TONE: Record<PropertyStatus, "brand" | "success" | "warning" | "neu
 
 export function PropertyStatusBadge({ status }: { status: PropertyStatus }) {
   return <Badge tone={STATUS_TONE[status]}>{PROPERTY_STATUS[status]}</Badge>;
+}
+
+const PROSPECTION_TONE: Record<ProspectionStatus, "neutral" | "brand" | "success" | "warning"> = {
+  a_contacter: "brand",
+  contacte: "neutral",
+  en_attente: "neutral",
+  relance: "warning",
+  rendez_vous: "success",
+  mandat_obtenu: "success",
+  sans_suite: "neutral",
+};
+
+/** Statut de prospection d'un bien (D-072). */
+export function ProspectionBadge({ status }: { status: ProspectionStatus }) {
+  return <Badge tone={PROSPECTION_TONE[status]}>{PROSPECTION_LABELS[status]}</Badge>;
 }
 
 export function VisibilityBadge({ visibility }: { visibility: "private" | "agency" }) {

@@ -45,7 +45,9 @@ export type AuditAction =
   | "ia.plafond_modifie"
   | "bien_agence.diffusion"
   | "agence.page_estimation"
-  | "biens.export_poliris";
+  | "biens.export_poliris"
+  | "bien_agence.prospection"
+  | "bien_agence.proprietaire";
 
 export const AUDIT_LABELS: Record<AuditAction, string> = {
   "agence.creee": "Agence créée",
@@ -88,6 +90,8 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "bien_agence.diffusion": "Diffusion d'un bien sur un portail",
   "agence.page_estimation": "Page « Estimez votre bien » ouverte ou fermée",
   "biens.export_poliris": "Annonces exportées au format SeLoger (Poliris)",
+  "bien_agence.prospection": "Statut de prospection d'un bien modifié",
+  "bien_agence.proprietaire": "Propriétaire d'un bien renseigné",
 };
 
 export async function audit(params: {

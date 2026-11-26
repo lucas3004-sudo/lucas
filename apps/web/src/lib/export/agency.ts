@@ -5,7 +5,7 @@
  * Lecture sous l'identité du gérant : la RLS s'applique (le gérant voit toute l'agence).
  */
 import { withTenant } from "@immopilot/db";
-import { INTEREST_LABELS, NEXT_STEP_LABELS, PRICE_OPINION_LABELS, toCsv, type CsvCell, type PriceOpinion, type VisitInterest, type VisitNextStep } from "@immopilot/domain";
+import { INTEREST_LABELS, isProspectionStatus, NEXT_STEP_LABELS, PRICE_OPINION_LABELS, PROSPECTION_LABELS, toCsv, type CsvCell, type PriceOpinion, type VisitInterest, type VisitNextStep } from "@immopilot/domain";
 import type { AgencyContext } from "../agency/context";
 import { APPOINTMENT_KINDS } from "../agenda/labels";
 import { isoDay } from "../crm/dates";
@@ -54,11 +54,12 @@ export async function exportDataset(ctx: AgencyContext, dataset: ExportDataset, 
         ];
       case "biens":
         return [
-          ["Adresse", "Type", "Surface", "Pièces", "Prix", "DPE", "Statut", "Mandat", "N° mandat", "Date de mandat", "Fin du mandat", "Équipements", "Visibilité", "Responsable", "Notes", "Créé le"],
+          ["Adresse", "Type", "Surface", "Pièces", "Prix", "DPE", "Statut", "Mandat", "N° mandat", "Date de mandat", "Fin du mandat", "Équipements", "Visibilité", "Responsable", "Notes", "Créé le", "Prospection", "Lien de l'annonce"],
           ...(await q("SELECT * FROM app.properties ORDER BY created_at")).map((r) => [
             r.address_label as string, r.type as string, num(r.surface), num(r.rooms), num(r.price), r.dpe_class as string,
             label(PROPERTY_STATUS, r.status), r.mandate_type as string, r.mandate_number as string, day(r.mandate_signed_on), day(r.mandate_ends_on),
             (r.features as string[]).join(", "), r.visibility === "private" ? "Privé" : "Agence", who(r.owner_user_id), r.notes as string, at(r.created_at),
+            isProspectionStatus(r.prospection_status) ? PROSPECTION_LABELS[r.prospection_status] : "", r.source_url as string,
           ]),
         ];
       case "profils":
