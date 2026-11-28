@@ -50,7 +50,7 @@ Ouvrez votre profil : cliquez sur votre photo (« Moi ») en haut, puis sur « V
 | Champ | Où le trouver | Quoi mettre |
 |---|---|---|
 | **Photo** | Le cercle de la photo, en haut à gauche du profil | Une vraie photo de vous, récente, visage net, fond simple. Dans la fenêtre de la photo, choisissez la visibilité la plus large proposée. |
-| **Bannière** | Le crayon ou l'appareil photo sur le bandeau du haut | L'image préparée pour la bannière (texte prévu : voir 3.4). Dimensions : dimensions recommandées affichées par LinkedIn au moment de l'envoi. |
+| **Bannière** | Le crayon ou l'appareil photo sur le bandeau du haut | L'image prête : [banniere-profil-1584x396.png](https://github.com/lucas3004-sudo/lucas/blob/main/docs/commercial/linkedin-images/banniere-profil-1584x396.png) (1584 × 396 pixels, la taille d'une bannière de profil). |
 | **Nom** | Le crayon « Modifier » sous la bannière, à droite | Vos prénom et nom réels. |
 | **Titre** | Même fenêtre, champ « Titre » | Le texte de la section 3.1. |
 | **Lieu** | Même fenêtre | `[Ville]`, France. |
@@ -93,14 +93,14 @@ LinkedIn peut refuser de créer une page pour un compte tout neuf ou peu rempli.
 | Secteur | Un secteur des logiciels, par exemple « Développement de logiciels » |
 | Taille de l'entreprise | La plus petite tranche proposée |
 | Type d'entreprise | Celui qui correspond à votre statut juridique : `[à remplir]` |
-| Logo | Le logo d'ImmoPilot (la maison du site, dont le dessin source est `apps/web/src/ui/logo.tsx`), en image carrée. Dimensions : dimensions recommandées affichées par LinkedIn au moment de l'envoi. |
+| Logo | L'image prête : [logo-page-entreprise-400x400.png](https://github.com/lucas3004-sudo/lucas/blob/main/docs/commercial/linkedin-images/logo-page-entreprise-400x400.png) (400 × 400 pixels, taille recommandée par LinkedIn). |
 | Slogan | Le texte de la section 4.2 |
 | Case de certification | Cochez-la : vous êtes bien le représentant de l'entreprise. |
 
 3. Une fois la page créée, ouvrez-la et cliquez sur le bouton de modification de la page (crayon), puis remplissez :
    - **Présentation** (description) : texte de la section 4.1 ;
    - **Lieu** : `[Ville]` ;
-   - **Bannière** : l'image préparée (texte prévu : voir 4.4). Dimensions : dimensions recommandées affichées par LinkedIn au moment de l'envoi ;
+   - **Bannière** : l'image prête : [banniere-page-entreprise-4200x700.png](https://github.com/lucas3004-sudo/lucas/blob/main/docs/commercial/linkedin-images/banniere-page-entreprise-4200x700.png) (4200 × 700 pixels, taille recommandée par LinkedIn) ;
    - **Bouton personnalisé** : voir 4.3.
 
 ### 1.5 Relier votre poste à la page
@@ -778,3 +778,9 @@ Les jours de publication, comptez 10 minutes de plus : publier vers 8 h, puis r�
 | Captures | `docs/captures/` |
 | Guide d'entretien | `docs/research/guide-entretien.md` |
 | Règles de prospection et LinkedIn (skills) | `.claude/skills/prospecting/references/compliance.md`, `.claude/skills/cold-email/references/linkedin-outreach.md` |
+
+
+## Tailles des images
+
+- Page entreprise (logo 400 × 400, bannière 4200 × 700) : [aide LinkedIn](https://www.linkedin.com/help/linkedin/answer/a563309).
+- Bannière de profil 1584 × 396 : guides spécialisés (par exemple [Figma](https://www.figma.com/resource-library/linkedin-size-guide/)).
