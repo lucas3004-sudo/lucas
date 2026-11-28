@@ -29,8 +29,7 @@ import { alertMatchingBuyers } from "./alerts";
 import { getTenantPool } from "../server/db";
 import { duplicateCandidates } from "./data";
 
-const MAX_BYTES = 1_000_000;
-const MAX_ZIP_BYTES = 20_000_000;
+import { importFileTooLarge, MAX_CSV_BYTES as MAX_BYTES } from "./import-limits";
 
 export type RowStatus = "ok" | "doublon" | "erreur";
 export interface PreviewRow {
@@ -63,7 +62,8 @@ async function readCsv(form: FormData): Promise<{ text: string; encoding: string
     // Export Poliris d'un logiciel d'agence : un ZIP qui contient Annonces.csv (D-068). Seul ce
     // fichier est extrait (les photos ne sont pas reprises), avec une limite de taille.
     if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
-      if (file.size > MAX_ZIP_BYTES) return { error: "Fichier ZIP trop volumineux (20 Mo au maximum)." };
+      const tooLarge = importFileTooLarge(file.name, file.size);
+      if (tooLarge) return { error: tooLarge };
       let csv: Uint8Array | undefined;
       try {
         const files = unzipSync(bytes, { filter: (f) => /(^|\/)annonces\.csv$/i.test(f.name) && f.originalSize <= MAX_BYTES });

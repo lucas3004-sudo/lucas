@@ -31,6 +31,7 @@ export const EXPECTED_MIGRATIONS = [
   "0025_property_portals.sql",
   "0026_public_estimation.sql",
   "0027_prospection.sql",
+  "0028_securite.sql",
 ] as const;
 
 /** Migrations attendues mais absentes de la base, dans l'ordre. */

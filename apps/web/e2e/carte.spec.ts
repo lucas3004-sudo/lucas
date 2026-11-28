@@ -29,10 +29,17 @@ test("un négociateur cherche sur la carte les biens selon ses critères et rep�
   await page.getByRole("button", { name: "Créer le bien" }).click();
   await expect(page.getByRole("heading", { name: address })).toBeVisible({ timeout: 20_000 });
 
+  // Le moteur de dessin de la carte (worker MapLibre) doit démarrer : sans lui, la carte reste
+  // vide alors que la page semble prête (constaté lors du passage à MapLibre 6).
+  const mapErrors: string[] = [];
+  page.on("pageerror", (e) => mapErrors.push(e.message));
+  page.on("console", (m) => { if (m.type() === "error" && /worker/i.test(m.text())) mapErrors.push(m.text()); });
   await page.getByRole("link", { name: "Carte" }).first().click();
   await expect(page.getByRole("heading", { name: "Carte des biens" })).toBeVisible();
   // Carte vectorielle chargée (moteur MapLibre, fond IGN) : l'état passe à « prête ».
   await expect(page.locator('[data-state="prete"]')).toBeAttached({ timeout: 30_000 });
+  await expect.poll(() => page.evaluate(() => performance.getEntriesByType("resource").some((r) => /maplibre-gl-worker-.*\.mjs/.test(r.name)))).toBe(true);
+  expect(mapErrors).toEqual([]);
   await expect(page.getByRole("heading", { name: "1 bien(s) correspondant(s)" })).toBeVisible();
   const item = page.getByRole("listitem").filter({ hasText: address });
   await expect(item).toBeVisible();

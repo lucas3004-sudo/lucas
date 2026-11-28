@@ -973,6 +973,16 @@ describe("page publique « Estimez votre bien » (migration 0026)", () => {
     await capture(ip(5));
   });
 
+  it("RGPD : les empreintes IP de plus de 2 jours sont effacées au prochain envoi (migration 0028)", async () => {
+    await owner.query(
+      "INSERT INTO app.public_lead_attempts (org_id, ip_hash, created_at) VALUES ($1, $2, now() - interval '3 days'), ($1, $3, now() - interval '1 day')",
+      [A, ip(7), ip(8)],
+    );
+    await capture(ip(6), ["email"], "Purge");
+    const left = (await owner.query("SELECT ip_hash FROM app.public_lead_attempts WHERE ip_hash = ANY($1) ORDER BY ip_hash", [[ip(6), ip(7), ip(8)]])).rows;
+    expect(left.map((r) => r.ip_hash)).toEqual([ip(6), ip(8)].sort());
+  });
+
   it("le site ne lit ni n'écrit directement les envois (empreintes IP)", async () => {
     await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) => c.query("SELECT * FROM app.public_lead_attempts")));
     await expectDenied(withTenant(pool, { orgId: A, userId: users.gerantA }, (_db, c) =>

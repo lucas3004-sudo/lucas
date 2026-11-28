@@ -37,7 +37,7 @@ export default async function ImportPropertiesPage() {
           meId={ctx.user.id}
           defaultVisibility={settings.defaultVisibility}
           accept=".csv,text/csv,.zip,application/zip"
-          fileHelp="Tableau Excel enregistré en CSV (1 Mo au maximum, noms de colonnes sur la première ligne), ou export de votre logiciel d'agence au format SeLoger « Poliris » (fichier ZIP ou Annonces.csv) : vos ventes d'appartements et de maisons sont reprises avec leur annonce, sans les photos."
+          fileHelp="Tableau Excel enregistré en CSV (1 Mo au maximum, noms de colonnes sur la première ligne), ou export de votre logiciel d'agence au format SeLoger « Poliris » (fichier ZIP de 2,8 Mo au plus, ou Annonces.csv seul) : vos ventes d'appartements et de maisons sont reprises avec leur annonce, sans les photos."
         />
       </Card>
     </>
