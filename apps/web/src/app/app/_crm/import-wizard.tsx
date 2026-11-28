@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import type { ImportState } from "@/lib/crm/import-actions";
+import { importFileTooLarge } from "@/lib/crm/import-limits";
 import { VISIBILITY } from "@/lib/crm/labels";
 import { buttonClass } from "@/ui/button";
 import { SubmitButton } from "@/ui/client";
@@ -79,7 +80,15 @@ export function ImportWizard({
         {notice ? <Alert tone="warning">{notice}</Alert> : null}
         {preview.error ? <Alert tone="danger">{preview.error}</Alert> : null}
         <Field label="Fichier CSV" htmlFor="file">
-          <Input id="file" name="file" type="file" accept={accept} required className="py-1.5" />
+          <Input
+            id="file" name="file" type="file" accept={accept} required className="py-1.5"
+            onChange={(e) => {
+              // Un fichier trop lourd est bloqué ici, avec un message clair (le serveur revérifie).
+              const f = e.currentTarget.files?.[0];
+              e.currentTarget.setCustomValidity(f ? importFileTooLarge(f.name, f.size) : "");
+              e.currentTarget.reportValidity();
+            }}
+          />
         </Field>
         <SubmitButton variant="secondary" pendingLabel="Lecture et vérification…">
           Vérifier le fichier

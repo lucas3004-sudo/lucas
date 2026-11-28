@@ -13,3 +13,5 @@ __pycache__/
 .DS_Store
 apps/web/next-env.d.ts
 *.tsbuildinfo
+# Moteur de carte MapLibre, copié depuis node_modules à chaque build
+apps/web/public/vendor/

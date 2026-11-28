@@ -18,7 +18,7 @@ d'acceptation sont vérifiés.
 | 6. Outils professionnels (fin du MVP) | 🟡 **CRM et matching livrés et testés (2026-11-20)**, avancés avant la phase 5 (choix du fondateur, D-034). **Investment Studio**, **tableau de bord du gérant**, **agenda (.ics)**, **export RGPD** et **import CSV**, **alertes de correspondance**, **suivi des affaires** et **fiche annonce** (mentions obligatoires, sans IA) et **photos des biens** livrés et testés. Phase 6 terminée côté outils, hors IA | [CRM et matching](docs/crm-et-matching.md), [Investment Studio](docs/investment-studio.md), [Pilotage](docs/pilotage-gerant.md), [Affaires](docs/affaires.md), [Annonce](docs/annonce.md), [captures 09 à 15](docs/captures/) |
 | 7. Organisation entreprise (CEO, Council, Devil's Advocate) | À faire | — |
 | 8. Monétisation | En cours : formules et quotas (2026-11-21) ; essai de 14 jours et paiement Stripe prêts (2026-11-23), en attente de la clé de test | [Formules et quotas](docs/formules-et-quotas.md) |
-| 9. Qualité et sécurité (audit formel) | En cours : audit automatique d'accessibilité WCAG 2.1 AA en CI (2026-11-21) ; CSP stricte, contrôle de version de la base | [Accessibilité](docs/accessibilite.md) |
+| 9. Qualité et sécurité (audit formel) | En cours : audit automatique d'accessibilité WCAG 2.1 AA en CI (2026-11-21) ; CSP stricte, contrôle de version de la base ; **audit de sécurité complet le 2026-11-28** (aucune faille grave ouverte ; 4 chantiers avant les vraies agences : e-mails, pages légales et contrat RGPD, durées de conservation, rôle séparé pour Stripe) | [Accessibilité](docs/accessibilite.md) |
 | 10. Espace particuliers | À faire | — |
 | 11. Production | À faire | — |
 
@@ -131,6 +131,7 @@ Le travail qui ne dépendait de personne est fait (point du 2026-11-21). Ce qui 
 Décidé le 2026-11-20 : prix d'entrée (D-014), cible « petites agences » (D-015), lancement de la phase 2. Le 2026-11-20 : autorisation permanente de fusionner et d'appliquer les migrations testées (CLAUDE.md).
 
 ## Journal
+- **2026-11-28, audit de sécurité (D-073)** : 2 failles de bibliothèques corrigées (carte MapLibre 6.18.0, lecture des ZIP fflate 0.8.3), migration 0028 (fonctions de contexte, effacement des empreintes IP au bout de 2 jours), taille réelle des imports ; base, accès, connexion, fichiers, en-têtes, secrets et hébergement contrôlés ([rapport](docs/securite-audit-2026-11.md)). Choix du fondateur : garder Stripe, tableau de bord du fondateur avec compteur de visiteurs sans cookie, plan LinkedIn ; skills de design installés.
 - **2026-11-26, fusion** : prospection fusionnée ([PR n° 34](https://github.com/lucas3004-sudo/lucas/pull/34)) ; migration 0027 appliquée en préproduction (27 migrations, 104 règles d'accès, même empreinte qu'en local : colonnes, fonctions, contraintes et droits).
 - **2026-11-26, prospection (D-072)** : page « Prospection » avec 7 statuts, favoris, notes datées, lien de l'annonce, relance datée (tâche), propriétaire et accords de contact ; les demandes « Estimez votre bien » y arrivent seules ; « Mandat obtenu » passe le bien sous mandat. Migration 0027. Tests : base 65, domaine 154, bout en bout (parcours complet, accessibilité).
 - **2026-11-26, export SeLoger fusionné (#33)** ; test des mandats corrigé (la BAN ne reconnaît plus « 2 place Gambetta, Amiens » avec son numéro).

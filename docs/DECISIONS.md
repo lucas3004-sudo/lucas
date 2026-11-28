@@ -700,3 +700,26 @@ Statuts possibles : **Acceptée**, **Modifiée**, **Reportée**, **Refusée**, *
   - base : 3 tests (valeurs refusées, historique, droits), plus la demande d'estimation qui arrive « à contacter » ;
   - domaine : 7 tests ;
   - bout en bout : parcours complet de prospection, estimation publique, accessibilité des deux nouvelles pages.
+
+## D-073 — Audit de sécurité du 2026-11-28 et choix du fondateur pour la suite
+- **Date** : 2026-11-28 · **Statut** : Acceptée (audit demandé par le fondateur ; choix faits par questions à cocher).
+- **Audit** ([rapport](securite-audit-2026-11.md)) :
+  - **MapLibre 6.18.0** au lieu de 5.24.0, pour une faille de code dans les crédits de la carte. La 5.24.1 contient aussi la correction, mais la base des failles la classe à tort comme vulnérable : la version 6 garde `pnpm audit` propre et reste maintenue. Son moteur de dessin (worker) est copié dans `public/vendor/` avant chaque build et indiqué par `setWorkerUrl` ;
+  - **fflate 0.8.3** : un ZIP piégé ne peut plus bloquer l'import ;
+  - **migration 0028** :
+    - chemin de recherche figé pour `ctx_org` et `ctx_user` ;
+    - empreintes IP de la page d'estimation effacées au bout de 2 jours ;
+  - **taille réelle des imports** : 2,8 Mo pour un ZIP, sous la limite de 3 Mo des actions serveur, contrôlée dès le choix du fichier.
+- **Choix du fondateur** :
+  - **paiement** : on garde Stripe (déjà intégré et testé) ; pas de Whop ni de Wero ;
+  - **tableau de bord du fondateur** après l'audit : une page réservée au fondateur avec la double authentification, des totaux sans aucune donnée personnelle des clients des agences, et un **compteur de visiteurs maison sans cookie** ;
+  - **LinkedIn** : un plan, des publications et des messages d'approche que le fondateur envoie lui-même. Pas de robot : c'est interdit par LinkedIn et le compte risque d'être bloqué ;
+  - **style « moins IA », plus professionnel** : 21 skills de design installés dans `.claude/skills/`, choisis parmi les 845 du catalogue ui-skills.com (réseau ouvert pour ce site) et relus avant installation :
+    - le paquet ui-skills (ibelick) : baseline-ui, improve-ui, fixing-accessibility, fixing-metadata, fixing-motion-performance, ui-skills-root ;
+    - audit-ai-design-slop, design-taste-frontend, impeccable (avec ses 34 fichiers de référence), make-interfaces-feel-better, better-typography, better-colors, rams, swiss-design, web-design-guidelines, interface-design, create-design-md, landing-page, pricing-page ;
+    - stop-slop, pour les textes ;
+    - pas tout le catalogue : la plupart des skills visent d'autres technologies (Vue, Swift, 3D, vidéo), et chaque skill installé alourdit chaque session. Les autres restent consultables à la demande (`npx ui-skills get <nom>`).
+- **Objection du Devil's Advocate** : passer à une nouvelle version majeure de la carte pour une faille peu exploitable chez nous, c'est risquer de casser la carte. C'est arrivé : la carte restait vide.
+- **Réponse** : la casse a été vue grâce à une vérification à l'écran, puis corrigée. Le test de la carte contrôle désormais que le moteur démarre ; il a été vu en échec sans la correction.
+- **Révision** : quand MapLibre fournira un moyen intégré de publier son moteur avec Next.js.
+

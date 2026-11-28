@@ -118,6 +118,9 @@ export function MapView({ properties }: { properties: MapProperty[] }) {
       .then(([lib, baseStyle]) => {
         if (cancelled || !containerRef.current || mapRef.current) return;
         libRef.current = lib;
+        // Moteur de dessin publié avec le site (scripts/copy-map-worker.mjs) : MapLibre 6 ne le
+        // trouve pas tout seul une fois la bibliothèque regroupée par Next.js.
+        lib.setWorkerUrl(`/vendor/maplibre-gl-worker-${lib.getVersion()}.mjs`);
         let map: MlMap;
         try {
           map = new lib.Map({

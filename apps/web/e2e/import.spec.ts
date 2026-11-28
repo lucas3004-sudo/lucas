@@ -108,7 +108,13 @@ test("un gérant importe l'export Poliris (ZIP) de son ancien logiciel : ventes 
   const csv = [annonce(vente), annonce({ ...vente, 2: "LO7", 3: "Location" })].join("\r\n");
   const zip = Buffer.from(zipSync({ "Annonces.csv": strToU8(csv), "Config.txt": strToU8("Version=4.09") }));
   await page.goto("/app/proprietes/import");
+  // Un ZIP trop lourd (photos comprises) est arrêté par le navigateur, avec un message clair.
+  const big = Buffer.from(zipSync({ "Annonces.csv": strToU8(csv), "photo.jpg": new Uint8Array(3_000_000).map((_, i) => (i * 2654435761) >>> 24) }, { level: 0 }));
+  await page.getByLabel("Fichier CSV").setInputFiles({ name: "export.zip", mimeType: "application/zip", buffer: big });
+  expect(await page.getByLabel("Fichier CSV").evaluate((el) => (el as HTMLInputElement).validationMessage))
+    .toBe("Fichier ZIP trop volumineux (2,8 Mo au maximum) : envoyez seulement le fichier Annonces.csv qu'il contient.");
   await page.getByLabel("Fichier CSV").setInputFiles({ name: "export.zip", mimeType: "application/zip", buffer: zip });
+  expect(await page.getByLabel("Fichier CSV").evaluate((el) => (el as HTMLInputElement).validationMessage)).toBe("");
   await page.getByRole("button", { name: "Vérifier le fichier" }).click();
   await expect(page.getByText("1 à importer")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Annonce LO7 : « Location » n'est pas une vente/)).toBeVisible();
