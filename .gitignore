@@ -15,3 +15,5 @@ apps/web/next-env.d.ts
 *.tsbuildinfo
 # Moteur de carte MapLibre, copié depuis node_modules à chaque build
 apps/web/public/vendor/
+# Copies de travail temporaires des agents parallèles (git worktree)
+.claude/worktrees/
